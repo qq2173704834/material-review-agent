@@ -1,0 +1,14 @@
+node_modules/
+.next/
+pnpm-lock.yaml
+next-env.d.ts
+docs/handoff/
+docs/requirements.md
+work/
+outputs/
+.env*
+playwright-report/
+test-results/
+blob-report/
+.local-data/
+*.tsbuildinfo
