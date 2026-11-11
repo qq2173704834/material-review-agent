@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { reviewTaskIdSchema } from "@/domain/review-task";
 import { getReviewStore } from "@/lib/server/review-store";
 import { RuleReview } from "@/components/rule-review";
+import { MaterialUpload } from "@/components/material-upload";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -60,6 +61,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         currentNoticeVersion={task.noticeSource.version}
         initialRuleSets={ruleSets}
       />
+      <MaterialUpload taskId={task.id} initialMaterials={task.materials} />
       <section
         aria-labelledby="notice-history-heading"
         className="mt-12 max-w-4xl border-t border-border pt-7"

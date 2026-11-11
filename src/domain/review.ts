@@ -49,6 +49,35 @@ export interface ReviewTaskDetails extends ReviewTaskSummary {
   createdAt: string;
   noticeSource: RequirementSourceVersion;
   noticeHistory: RequirementSourceVersion[];
+  materials: ReviewMaterialSummary[];
+}
+
+export type MaterialParseStatus = "text_extracted" | "partial" | "failed" | "ocr_required";
+
+export interface MaterialContentSegment {
+  segmentIndex: number;
+  text: string;
+  startOffset: number;
+  endOffset: number;
+  location: string;
+}
+
+export interface ReviewMaterialSummary {
+  id: string;
+  version: number;
+  originalFileName: string;
+  mediaType: string;
+  extension: string;
+  fileSizeBytes: number;
+  sha256: string;
+  parseStatus: MaterialParseStatus;
+  parserName: string;
+  extractedText: string;
+  segments: MaterialContentSegment[];
+  pageCount: number | null;
+  sheetNames: string[];
+  parseMessage: string;
+  createdAt: string;
 }
 
 export interface SourcePosition {

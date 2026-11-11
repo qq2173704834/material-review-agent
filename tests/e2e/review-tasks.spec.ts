@@ -1,4 +1,45 @@
 import { expect, test } from "@playwright/test";
+import ExcelJS from "exceljs";
+import JSZip from "jszip";
+
+function createSyntheticPdf(): Buffer {
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    "<< /Length 48 >>\nstream\nBT /F1 12 Tf 20 80 Td (PDF sample text) Tj ET\nendstream",
+  ];
+  let content = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const [index, object] of objects.entries()) {
+    offsets.push(Buffer.byteLength(content, "binary"));
+    content += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  }
+  const crossReferenceOffset = Buffer.byteLength(content, "binary");
+  content += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets.slice(1))
+    content += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  content += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${crossReferenceOffset}\n%%EOF`;
+  return Buffer.from(content, "binary");
+}
+
+async function createSyntheticDocx(): Promise<Buffer> {
+  const archive = new JSZip();
+  archive.file(
+    "[Content_Types].xml",
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>',
+  );
+  archive.file(
+    "_rels/.rels",
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
+  );
+  archive.file(
+    "word/document.xml",
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>DOCX sample text</w:t></w:r></w:p></w:body></w:document>',
+  );
+  return archive.generateAsync({ type: "nodebuffer" });
+}
 
 test.describe("本地审查任务 ENG-004 / ENG-005", () => {
   test("创建任务、刷新恢复并保存通知新版本", async ({ page }) => {
@@ -95,6 +136,161 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(ruleSetsResponse.ok()).toBe(true);
     await page.goto("/tasks/00000000-0000-4000-8000-000000000004");
     await expect(page.getByRole("heading", { name: "E2E 遗留任务 ENG-004" })).toBeVisible();
+  });
+
+  test("导入文本材料、保留定位并隔离不同任务", async ({ page, request }) => {
+    const taskResponse = await request.post("/api/tasks", {
+      data: { name: "材料导入合成任务", noticeText: "请提交可审查材料。" },
+    });
+    expect(taskResponse.status()).toBe(201);
+    const taskBody = (await taskResponse.json()) as { task: { id: string } };
+    const taskId = taskBody.task.id;
+
+    const uploadFiles: Array<{
+      name: string;
+      mimeType: string;
+      buffer: Buffer<ArrayBufferLike>;
+      expectedStatus: string;
+    }> = [
+      {
+        name: "说明.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from("第一行说明\n第二行说明", "utf8"),
+        expectedStatus: "text_extracted",
+      },
+      {
+        name: "记录.csv",
+        mimeType: "text/csv",
+        buffer: Buffer.from("名称,数量\n样品,2", "utf8"),
+        expectedStatus: "text_extracted",
+      },
+      {
+        name: "伪装.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from("not a pdf", "utf8"),
+        expectedStatus: "failed",
+      },
+    ];
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("规格表");
+    worksheet.addRow(["项目", "数量"]);
+    worksheet.addRow(["样品", 2]);
+    const workbookBuffer = Buffer.from(await workbook.xlsx.writeBuffer());
+    const docxBuffer = await createSyntheticDocx();
+    uploadFiles.push(
+      {
+        name: "说明.docx",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        buffer: docxBuffer,
+        expectedStatus: "text_extracted",
+      },
+      {
+        name: "清单.xlsx",
+        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        buffer: workbookBuffer,
+        expectedStatus: "text_extracted",
+      },
+      {
+        name: "一页.pdf",
+        mimeType: "application/pdf",
+        buffer: createSyntheticPdf(),
+        expectedStatus: "text_extracted",
+      },
+      {
+        name: "扫描.png",
+        mimeType: "image/png",
+        buffer: Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8X8AAAAASUVORK5CYII=",
+          "base64",
+        ),
+        expectedStatus: "ocr_required",
+      },
+      {
+        name: "扫描.jpg",
+        mimeType: "image/jpeg",
+        buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00]),
+        expectedStatus: "ocr_required",
+      },
+    );
+    for (const file of uploadFiles) {
+      const upload = await request.post(`/api/tasks/${taskId}/materials`, {
+        multipart: { files: { name: file.name, mimeType: file.mimeType, buffer: file.buffer } },
+      });
+      expect(upload.status()).toBe(201);
+      const uploadResult = await upload.json();
+      expect(uploadResult.materials[0].originalFileName).toBe(file.name);
+      expect(uploadResult.materials[0].parseStatus, uploadResult.materials[0].parseMessage).toBe(
+        file.expectedStatus,
+      );
+    }
+
+    const detailsResponse = await request.get(`/api/tasks/${taskId}`);
+    expect(detailsResponse.ok()).toBe(true);
+    const details = await detailsResponse.json();
+    expect(details.task.materials).toHaveLength(8);
+    expect(details.task.materials).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          originalFileName: "说明.txt",
+          extractedText: "第一行说明\n第二行说明",
+        }),
+        expect.objectContaining({
+          originalFileName: "记录.csv",
+          extractedText: "名称 | 数量\n样品 | 2",
+        }),
+        expect.objectContaining({
+          originalFileName: "伪装.pdf",
+          parseMessage: "扩展名与 PDF 文件签名不匹配。",
+        }),
+        expect.objectContaining({
+          originalFileName: "说明.docx",
+          extractedText: "DOCX sample text",
+        }),
+        expect.objectContaining({
+          originalFileName: "清单.xlsx",
+          sheetNames: ["规格表"],
+        }),
+        expect.objectContaining({
+          originalFileName: "一页.pdf",
+          pageCount: 1,
+          extractedText: "PDF sample text",
+        }),
+        expect.objectContaining({
+          originalFileName: "扫描.png",
+          parseStatus: "ocr_required",
+          extractedText: "",
+        }),
+        expect.objectContaining({
+          originalFileName: "扫描.jpg",
+          parseStatus: "ocr_required",
+          extractedText: "",
+        }),
+      ]),
+    );
+
+    const otherTaskResponse = await request.post("/api/tasks", {
+      data: { name: "另一合成任务", noticeText: "另一份通知。" },
+    });
+    const otherTaskBody = (await otherTaskResponse.json()) as { task: { id: string } };
+    const crossTaskUpload = await request.post(`/api/tasks/${otherTaskBody.task.id}/materials`, {
+      multipart: {
+        files: { name: "越权.txt", mimeType: "text/plain", buffer: Buffer.from("隔离检查") },
+      },
+    });
+    expect(crossTaskUpload.status()).toBe(201);
+    const otherDetails = await (await request.get(`/api/tasks/${otherTaskBody.task.id}`)).json();
+    expect(otherDetails.task.materials).toHaveLength(1);
+    expect(otherDetails.task.materials[0].originalFileName).toBe("越权.txt");
+
+    await page.goto(`/tasks/${taskId}`);
+    await expect(page.getByRole("heading", { name: "审查材料" })).toBeVisible();
+    await expect(page.getByText("说明.txt", { exact: true })).toBeVisible();
+    await page
+      .locator("li")
+      .filter({ hasText: "说明.txt" })
+      .getByText(/查看 2 个定位片段/)
+      .click();
+    await expect(page.getByText(/第一行说明/)).toBeVisible();
   });
 
   test("拒绝空通知、非法任务编号并报告本地 SQLite 状态", async ({ request }) => {

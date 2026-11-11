@@ -9,6 +9,9 @@ import Database from "better-sqlite3";
 import type {
   RequirementSourceSegment,
   RequirementSourceVersion,
+  MaterialContentSegment,
+  MaterialParseStatus,
+  ReviewMaterialSummary,
   ReviewTaskBackground,
   ReviewTaskDetails,
   ReviewTaskSummary,
@@ -18,7 +21,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 2;
+const DATABASE_SCHEMA_VERSION = 3;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -111,6 +114,51 @@ interface DatabaseRuleRow {
   end_offset: number;
 }
 
+interface DatabaseMaterialRow {
+  id: string;
+  version: number;
+  original_file_name: string;
+  media_type: string;
+  extension: string;
+  file_size_bytes: number;
+  sha256: string;
+  parse_status: string;
+  parser_name: string;
+  extracted_text: string;
+  page_count: number | null;
+  sheet_names_json: string;
+  parse_message: string;
+  created_at: string;
+}
+
+interface DatabaseMaterialSegmentRow {
+  segment_index: number;
+  text: string;
+  start_offset: number;
+  end_offset: number;
+  location: string;
+}
+
+export interface SaveMaterialVersionInput {
+  id: string;
+  taskId: string;
+  version: number;
+  originalFileName: string;
+  mediaType: string;
+  extension: string;
+  fileSizeBytes: number;
+  sha256: string;
+  storageKey: string;
+  parseStatus: MaterialParseStatus;
+  parserName: string;
+  extractedText: string;
+  segments: MaterialContentSegment[];
+  pageCount: number | null;
+  sheetNames: string[];
+  parseMessage: string;
+  createdAt: string;
+}
+
 function readProjectBackground(row: DatabaseTaskSummaryRow): ReviewTaskBackground {
   if (
     row.collaboration_scope !== "individual" &&
@@ -125,6 +173,23 @@ function readProjectBackground(row: DatabaseTaskSummaryRow): ReviewTaskBackgroun
     projectStage: row.project_stage ?? "",
     collaborationScope: row.collaboration_scope,
   };
+}
+
+function isMaterialParseStatus(value: string): value is MaterialParseStatus {
+  return (
+    value === "text_extracted" ||
+    value === "partial" ||
+    value === "failed" ||
+    value === "ocr_required"
+  );
+}
+
+function parseJsonStringArray(value: string): string[] {
+  const parsed: unknown = JSON.parse(value);
+  if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) {
+    throw new Error("Saved material metadata is invalid");
+  }
+  return parsed;
 }
 
 function readSourceSegments(
@@ -329,6 +394,60 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
       });
 
       migrateToVersionTwo();
+    }
+
+    const currentSchemaVersion = database.pragma("user_version", { simple: true });
+    if (currentSchemaVersion === 2) {
+      const migrateToVersionThree = database.transaction(() => {
+        database.exec(`
+          CREATE TABLE review_materials (
+            id TEXT PRIMARY KEY NOT NULL,
+            task_id TEXT NOT NULL REFERENCES review_tasks (id) ON DELETE CASCADE,
+            created_at TEXT NOT NULL,
+            UNIQUE (task_id, id)
+          );
+
+          CREATE TABLE review_material_versions (
+            material_id TEXT NOT NULL REFERENCES review_materials (id) ON DELETE CASCADE,
+            version INTEGER NOT NULL CHECK (version > 0),
+            original_file_name TEXT NOT NULL,
+            media_type TEXT NOT NULL,
+            extension TEXT NOT NULL,
+            file_size_bytes INTEGER NOT NULL CHECK (file_size_bytes > 0),
+            sha256 TEXT NOT NULL CHECK (length(sha256) = 64),
+            storage_key TEXT NOT NULL,
+            parse_status TEXT NOT NULL
+              CHECK (parse_status IN ('text_extracted', 'partial', 'failed', 'ocr_required')),
+            parser_name TEXT NOT NULL,
+            extracted_text TEXT NOT NULL DEFAULT '',
+            page_count INTEGER CHECK (page_count IS NULL OR page_count > 0),
+            sheet_names_json TEXT NOT NULL DEFAULT '[]',
+            parse_message TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (material_id, version)
+          );
+
+          CREATE TABLE review_material_segments (
+            material_id TEXT NOT NULL,
+            material_version INTEGER NOT NULL,
+            segment_index INTEGER NOT NULL CHECK (segment_index >= 0),
+            text TEXT NOT NULL,
+            start_offset INTEGER NOT NULL CHECK (start_offset >= 0),
+            end_offset INTEGER NOT NULL CHECK (end_offset > start_offset),
+            location TEXT NOT NULL,
+            PRIMARY KEY (material_id, material_version, segment_index),
+            FOREIGN KEY (material_id, material_version)
+              REFERENCES review_material_versions (material_id, version) ON DELETE CASCADE
+          );
+
+          CREATE INDEX review_materials_task_idx ON review_materials (task_id, created_at DESC);
+          CREATE INDEX review_material_versions_latest_idx
+            ON review_material_versions (material_id, version DESC);
+          PRAGMA user_version = 3;
+        `);
+      });
+
+      migrateToVersionThree();
     }
 
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
@@ -596,6 +715,7 @@ class ReviewStore {
       createdAt: row.created_at,
       noticeSource,
       noticeHistory,
+      materials: this.listMaterials(taskId),
     };
   }
 
@@ -780,6 +900,167 @@ class ReviewStore {
           },
         })),
       });
+    });
+  }
+
+  saveMaterialVersion(input: SaveMaterialVersionInput): ReviewMaterialSummary {
+    const materialExists = this.database
+      .prepare<[string], { task_id: string; latest_version: number | null }>(
+        `SELECT material.task_id, MAX(version.version) AS latest_version
+         FROM review_materials AS material
+         LEFT JOIN review_material_versions AS version ON version.material_id = material.id
+         WHERE material.id = ? GROUP BY material.id`,
+      )
+      .get(input.id);
+
+    if (
+      !this.database
+        .prepare<[string], { id: string }>("SELECT id FROM review_tasks WHERE id = ?")
+        .get(input.taskId)
+    ) {
+      throw new Error("Review task does not exist");
+    }
+    if (materialExists && materialExists.task_id !== input.taskId) {
+      throw new Error("Material does not belong to the review task");
+    }
+    if (materialExists && input.version !== (materialExists.latest_version ?? 0) + 1) {
+      throw new Error("Material versions must be saved in order");
+    }
+    if (!materialExists && input.version !== 1) {
+      throw new Error("A new material must start at version 1");
+    }
+
+    const save = this.database.transaction(() => {
+      if (!materialExists) {
+        this.database
+          .prepare("INSERT INTO review_materials (id, task_id, created_at) VALUES (?, ?, ?)")
+          .run(input.id, input.taskId, input.createdAt);
+      }
+
+      this.database
+        .prepare(
+          `
+          INSERT INTO review_material_versions (
+            material_id, version, original_file_name, media_type, extension, file_size_bytes,
+            sha256, storage_key, parse_status, parser_name, extracted_text, page_count,
+            sheet_names_json, parse_message, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        )
+        .run(
+          input.id,
+          input.version,
+          input.originalFileName,
+          input.mediaType,
+          input.extension,
+          input.fileSizeBytes,
+          input.sha256,
+          input.storageKey,
+          input.parseStatus,
+          input.parserName,
+          input.extractedText,
+          input.pageCount,
+          JSON.stringify(input.sheetNames),
+          input.parseMessage,
+          input.createdAt,
+        );
+
+      const insertSegment = this.database.prepare(`
+        INSERT INTO review_material_segments (
+          material_id, material_version, segment_index, text, start_offset, end_offset, location
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const segment of input.segments) {
+        insertSegment.run(
+          input.id,
+          input.version,
+          segment.segmentIndex,
+          segment.text,
+          segment.startOffset,
+          segment.endOffset,
+          segment.location,
+        );
+      }
+    });
+
+    save();
+    const savedMaterial = this.listMaterials(input.taskId).find(
+      (material) => material.id === input.id,
+    );
+    if (!savedMaterial) throw new Error("Saved material could not be read back");
+    return savedMaterial;
+  }
+
+  listMaterials(taskId: string): ReviewMaterialSummary[] {
+    const rows = this.database
+      .prepare<[string], DatabaseMaterialRow>(
+        `
+        SELECT material.id,
+               material_version.version,
+               material_version.original_file_name,
+               material_version.media_type,
+               material_version.extension,
+               material_version.file_size_bytes,
+               material_version.sha256,
+               material_version.parse_status,
+               material_version.parser_name,
+               material_version.extracted_text,
+               material_version.page_count,
+               material_version.sheet_names_json,
+               material_version.parse_message,
+               material_version.created_at
+        FROM review_materials AS material
+        JOIN (
+          SELECT material_id, MAX(version) AS version
+          FROM review_material_versions
+          GROUP BY material_id
+        ) AS latest ON latest.material_id = material.id
+        JOIN review_material_versions AS material_version
+          ON material_version.material_id = material.id AND material_version.version = latest.version
+        WHERE material.task_id = ?
+        ORDER BY material.created_at DESC, material.id
+      `,
+      )
+      .all(taskId);
+
+    return rows.map((row) => {
+      if (!isMaterialParseStatus(row.parse_status)) {
+        throw new Error("Saved material has an invalid parse status");
+      }
+      const segments = this.database
+        .prepare<[string, number], DatabaseMaterialSegmentRow>(
+          `
+          SELECT segment_index, text, start_offset, end_offset, location
+          FROM review_material_segments
+          WHERE material_id = ? AND material_version = ?
+          ORDER BY segment_index ASC
+        `,
+        )
+        .all(row.id, row.version);
+
+      return {
+        id: row.id,
+        version: row.version,
+        originalFileName: row.original_file_name,
+        mediaType: row.media_type,
+        extension: row.extension,
+        fileSizeBytes: row.file_size_bytes,
+        sha256: row.sha256,
+        parseStatus: row.parse_status,
+        parserName: row.parser_name,
+        extractedText: row.extracted_text,
+        segments: segments.map((segment) => ({
+          segmentIndex: segment.segment_index,
+          text: segment.text,
+          startOffset: segment.start_offset,
+          endOffset: segment.end_offset,
+          location: segment.location,
+        })),
+        pageCount: row.page_count,
+        sheetNames: parseJsonStringArray(row.sheet_names_json),
+        parseMessage: row.parse_message,
+        createdAt: row.created_at,
+      };
     });
   }
 

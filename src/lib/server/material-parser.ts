@@ -1,0 +1,223 @@
+import "server-only";
+
+import { parse as parseCsv } from "csv-parse/sync";
+import ExcelJS from "exceljs";
+import { fileTypeFromBuffer } from "file-type";
+import mammoth from "mammoth";
+import JSZip from "jszip";
+
+import type { MaterialContentSegment, MaterialParseStatus } from "@/domain/review";
+import type * as PdfJs from "pdfjs-dist";
+
+const MAXIMUM_ARCHIVE_EXPANDED_BYTES = 100 * 1024 * 1024;
+
+export interface ParsedMaterial {
+  mediaType: string;
+  extension: string;
+  parseStatus: MaterialParseStatus;
+  parserName: string;
+  extractedText: string;
+  segments: MaterialContentSegment[];
+  pageCount: number | null;
+  sheetNames: string[];
+  parseMessage: string;
+}
+
+function createSegments(blocks: Array<{ text: string; location: string }>): {
+  text: string;
+  segments: MaterialContentSegment[];
+} {
+  let text = "";
+  const segments: MaterialContentSegment[] = [];
+  for (const block of blocks) {
+    const normalized = block.text.trim();
+    if (!normalized) continue;
+    if (text) text += "\n";
+    const startOffset = text.length;
+    text += normalized;
+    segments.push({
+      segmentIndex: segments.length,
+      text: normalized,
+      startOffset,
+      endOffset: text.length,
+      location: block.location,
+    });
+  }
+  return { text, segments };
+}
+
+async function validateOfficeArchive(buffer: Buffer, requiredPath: string): Promise<void> {
+  const zip = await JSZip.loadAsync(buffer);
+  const paths = Object.keys(zip.files);
+  if (!paths.includes(requiredPath) || !paths.includes("[Content_Types].xml")) {
+    throw new Error("文件不是有效的 Office 文档容器。");
+  }
+  let expandedBytes = 0;
+  for (const entry of Object.values(zip.files)) {
+    if (entry.dir) continue;
+    const uncompressedSize = (entry as typeof entry & { _data?: { uncompressedSize?: number } })
+      ._data?.uncompressedSize;
+    if (typeof uncompressedSize !== "number" || uncompressedSize < 0) {
+      throw new Error("Office 文档包含无法校验的压缩条目。");
+    }
+    expandedBytes += uncompressedSize;
+    if (expandedBytes > MAXIMUM_ARCHIVE_EXPANDED_BYTES) {
+      throw new Error("Office 文档解压后超过 100 MiB 安全上限。");
+    }
+  }
+  for (const entry of Object.values(zip.files)) {
+    if (entry.dir) continue;
+    await entry.async("uint8array");
+  }
+}
+
+function assertUtf8(buffer: Buffer): string {
+  return new TextDecoder("utf-8", { fatal: true }).decode(buffer).replace(/^\uFEFF/, "");
+}
+
+export async function parseMaterial(
+  buffer: Buffer,
+  originalFileName: string,
+): Promise<ParsedMaterial> {
+  const extension = originalFileName.split(".").pop()?.toLowerCase() ?? "";
+  const signature = await fileTypeFromBuffer(buffer);
+
+  if (extension === "txt" || extension === "csv") {
+    const content = assertUtf8(buffer);
+    const parsed: string[][] =
+      extension === "csv"
+        ? (parseCsv(content, {
+            bom: true,
+            skip_empty_lines: true,
+            relax_column_count: true,
+          }) as unknown as string[][])
+        : content.split(/\r?\n/).map((line) => [line]);
+    const blocks: Array<{ text: string; location: string }> = parsed.map((row, index) => ({
+      text: extension === "csv" ? row.join(" | ") : (row[0] ?? ""),
+      location: `行 ${index + 1}`,
+    }));
+    const result = createSegments(blocks);
+    return {
+      mediaType: extension === "csv" ? "text/csv" : "text/plain",
+      extension,
+      parseStatus: result.text ? "text_extracted" : "failed",
+      parserName: "utf8-text",
+      extractedText: result.text,
+      segments: result.segments,
+      pageCount: null,
+      sheetNames: [],
+      parseMessage: result.text ? "" : "文件为空或没有可提取文本。",
+    };
+  }
+
+  if (extension === "pdf") {
+    if (signature?.mime !== "application/pdf") throw new Error("扩展名与 PDF 文件签名不匹配。");
+    const pdfjs = (await import("pdfjs-dist/legacy/build/pdf.mjs")) as typeof PdfJs;
+    const document = await pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true })
+      .promise;
+    const blocks: Array<{ text: string; location: string }> = [];
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item) => ("str" in item ? item.str : "")).join(" ");
+      blocks.push({ text: pageText, location: `第 ${pageNumber} 页` });
+    }
+    const result = createSegments(blocks);
+    const status = result.text ? "text_extracted" : "partial";
+    return {
+      mediaType: "application/pdf",
+      extension,
+      parseStatus: status,
+      parserName: "pdfjs-dist",
+      extractedText: result.text,
+      segments: result.segments,
+      pageCount: document.numPages,
+      sheetNames: [],
+      parseMessage: result.text ? "" : "PDF 页面存在，但未提取到文本；可能是扫描件，需要 OCR。",
+    };
+  }
+
+  if (extension === "docx") {
+    if (
+      signature?.mime !== "application/zip" &&
+      signature?.mime !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      throw new Error(`扩展名与 DOCX 文件签名不匹配（检测到 ${signature?.mime ?? "未知类型"}）。`);
+    }
+    await validateOfficeArchive(buffer, "word/document.xml");
+    const officeBuffer = Buffer.from(new Uint8Array(buffer).buffer);
+    const result = await mammoth.extractRawText({ buffer: officeBuffer as unknown as Buffer });
+    const parsed = createSegments(
+      result.value.split(/\r?\n/).map((line, index) => ({
+        text: line,
+        location: `段落 ${index + 1}`,
+      })),
+    );
+    return {
+      mediaType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      extension,
+      parseStatus: parsed.text ? (result.messages.length ? "partial" : "text_extracted") : "failed",
+      parserName: "mammoth",
+      extractedText: parsed.text,
+      segments: parsed.segments,
+      pageCount: null,
+      sheetNames: [],
+      parseMessage: result.messages.map((message) => message.message).join("；"),
+    };
+  }
+
+  if (extension === "xlsx") {
+    if (
+      signature?.mime !== "application/zip" &&
+      signature?.mime !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ) {
+      throw new Error(`扩展名与 XLSX 文件签名不匹配（检测到 ${signature?.mime ?? "未知类型"}）。`);
+    }
+    await validateOfficeArchive(buffer, "xl/workbook.xml");
+    const workbook = new ExcelJS.Workbook();
+    const workbookBuffer = Buffer.from(new Uint8Array(buffer).buffer);
+    await workbook.xlsx.load(workbookBuffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+    const blocks: Array<{ text: string; location: string }> = [];
+    for (const worksheet of workbook.worksheets) {
+      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        const cells = row.values as unknown[];
+        const values = cells.slice(1).map((cell) => {
+          if (cell && typeof cell === "object" && "text" in cell) return String(cell.text);
+          if (cell && typeof cell === "object" && "result" in cell) return String(cell.result);
+          return cell == null ? "" : String(cell);
+        });
+        blocks.push({ text: values.join(" | "), location: `${worksheet.name} 第 ${rowNumber} 行` });
+      });
+    }
+    const result = createSegments(blocks);
+    return {
+      mediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      extension,
+      parseStatus: result.text ? "text_extracted" : "failed",
+      parserName: "exceljs",
+      extractedText: result.text,
+      segments: result.segments,
+      pageCount: null,
+      sheetNames: workbook.worksheets.map((sheet) => sheet.name),
+      parseMessage: result.text ? "" : "工作簿中没有可提取的单元格文本。",
+    };
+  }
+
+  if (extension === "png" || extension === "jpg" || extension === "jpeg") {
+    const expectedMime = extension === "png" ? "image/png" : "image/jpeg";
+    if (signature?.mime !== expectedMime) throw new Error("扩展名与图片文件签名不匹配。");
+    return {
+      mediaType: expectedMime,
+      extension: extension === "jpeg" ? "jpg" : extension,
+      parseStatus: "ocr_required",
+      parserName: "metadata-only",
+      extractedText: "",
+      segments: [],
+      pageCount: null,
+      sheetNames: [],
+      parseMessage: "图片已安全保存；当前版本尚未接入 OCR，未读取图片文字。",
+    };
+  }
+
+  throw new Error("暂不支持该材料格式；当前支持 PDF、DOCX、TXT、XLSX、CSV、JPG 和 PNG。");
+}
