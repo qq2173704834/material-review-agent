@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import type { ReactElement, ReactNode } from "react";
 
 interface AppShellProps {
-  activePage: "tasks" | "setup";
+  activePage: "tasks" | "setup" | "task-detail";
   children: ReactNode;
 }
 
@@ -93,7 +93,7 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
         <header className="flex h-20 items-center justify-between border-b border-border bg-card/60 px-6 lg:px-10">
           <p className="text-sm text-muted-foreground">
             工作空间 <span className="mx-2 text-border">/</span>{" "}
-            {activePage === "tasks" ? "审查任务" : "本地环境"}
+            {activePage === "setup" ? "本地环境" : "审查任务"}
           </p>
           <Badge className="border-primary/15 bg-primary/5 text-primary">
             <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />

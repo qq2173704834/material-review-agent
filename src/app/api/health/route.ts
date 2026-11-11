@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { getRuntimeStatus } from "@/lib/server/runtime-status";
+import { getReviewStore } from "@/lib/server/review-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export function GET(): NextResponse {
-  const runtimeStatus = getRuntimeStatus();
+  getReviewStore().listTasks();
+  const runtimeStatus = getRuntimeStatus(true);
   const isConfiguredCorrectly = runtimeStatus.mode !== "invalid";
 
   return NextResponse.json(

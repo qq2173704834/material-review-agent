@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRuntimeStatus } from "@/lib/server/runtime-status";
+import { getReviewStore } from "@/lib/server/review-store";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -15,18 +16,19 @@ export const dynamic = "force-dynamic";
 const initializedItems = [
   "Next.js App Router 与严格 TypeScript",
   "Tailwind CSS 与 shadcn/ui 基础组件",
+  "SQLite 本地任务、通知版本与来源位置存储",
   "服务端环境状态与健康检查",
   "代码检查、格式化与 Playwright 测试入口",
 ];
 const pendingItems = [
-  "任务保存与文本通知导入",
-  "免费模型接口联调与动态规则提取",
-  "PDF 解析、材料匹配与规格检查",
-  "证据定位、修订复检与报告导出",
+  "动态规则提取与免费模型接口联调",
+  "常见文档、表格与图片材料解析和匹配",
+  "规格检查、证据、复检与报告导出",
 ];
 
 export default function SetupPage(): ReactElement {
-  const runtimeStatus = getRuntimeStatus();
+  const taskCount = getReviewStore().listTasks().length;
+  const runtimeStatus = getRuntimeStatus(true);
   const modeLabel =
     runtimeStatus.mode === "invalid"
       ? "配置无效"
@@ -36,7 +38,7 @@ export default function SetupPage(): ReactElement {
 
   return (
     <AppShell activePage="setup">
-      <Badge className="mb-4">开发环境 · ENG-002 / ENG-003</Badge>
+      <Badge className="mb-4">开发环境 · ENG-002 / ENG-004</Badge>
       <h1 className="text-2xl font-semibold sm:text-3xl">本地环境与开发状态</h1>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
         这里展示初始化基础与尚未接入的能力。配置模式和真实联调状态分别记录。
@@ -106,8 +108,9 @@ export default function SetupPage(): ReactElement {
           模型配置准备
         </h2>
         <p className="mt-3 text-sm leading-7 text-muted-foreground">
-          将根目录 .env.example 复制为
-          .env.local，未来在本地填写服务地址、模型名与密钥。密钥只由服务端读取；填写配置不代表已完成真实接入。此版本尚未初始化数据库，不保存任务或材料。
+          任务与通知原文保存在项目本地数据目录中，当前共保存 {taskCount}{" "}
+          个任务；单机数据没有账户或多人访问隔离。将根目录 .env.example 复制为
+          .env.local，未来在本地填写服务地址、模型名与密钥。密钥只由服务端读取；填写配置不代表已完成真实接入。
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Button asChild variant="outline" size="sm">
