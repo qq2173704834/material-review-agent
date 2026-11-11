@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { reviewTaskIdSchema } from "@/domain/review-task";
 import { getReviewStore } from "@/lib/server/review-store";
+import { RuleReview } from "@/components/rule-review";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -30,6 +31,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
   if (!reviewTaskIdSchema.safeParse(taskId).success) notFound();
   const task = getReviewStore().getTask(taskId);
   if (!task) notFound();
+  const ruleSets = getReviewStore().listRuleSets(taskId);
 
   return (
     <AppShell activePage="task-detail">
@@ -53,6 +55,11 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         <Badge>通知 v{task.noticeSource.version}</Badge>
       </div>
       <TaskEditor task={task} />
+      <RuleReview
+        taskId={task.id}
+        currentNoticeVersion={task.noticeSource.version}
+        initialRuleSets={ruleSets}
+      />
       <section
         aria-labelledby="notice-history-heading"
         className="mt-12 max-w-4xl border-t border-border pt-7"

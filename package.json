@@ -19,7 +19,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm test:unit",
     "test:unit": "node --test tests/unit/*.test.mjs",
     "test:ui": "playwright test --ui --ui-host 127.0.0.1",
-    "test:e2e": "node scripts/reset-e2e-database.mjs && playwright test",
+    "test:e2e": "node scripts/reset-e2e-database.mjs && node scripts/seed-e2e-v1-database.mjs && playwright test",
     "test:report": "playwright show-report --host 127.0.0.1",
     "test:install": "playwright install chromium",
     "git:setup": "node scripts/setup-git.mjs",

@@ -13,9 +13,12 @@ import type {
   ReviewTaskDetails,
   ReviewTaskSummary,
 } from "@/domain/review";
+import { reviewRuleSetSchema } from "@/domain/review-rule";
+
+import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 1;
+const DATABASE_SCHEMA_VERSION = 2;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -73,6 +76,39 @@ interface DatabaseSourceVersionRow {
   original_text: string;
   parse_status: string;
   created_at: string;
+}
+
+interface DatabaseRuleSetRow {
+  id: string;
+  task_id: string;
+  source_id: string;
+  source_version: number;
+  mode: string;
+  provider: string;
+  model: string;
+  status: string;
+  warnings_json: string;
+  created_at: string;
+}
+
+interface DatabaseRuleRow {
+  id: string;
+  code: string;
+  description: string;
+  target: string;
+  strength: string;
+  applicability_scope: string;
+  applicability_condition: string;
+  parameters_json: string;
+  checkability: string;
+  generation_method: string;
+  uncertainty: string;
+  source_id: string;
+  source_version: number;
+  paragraph_index: number;
+  quoted_text: string;
+  start_offset: number;
+  end_offset: number;
 }
 
 function readProjectBackground(row: DatabaseTaskSummaryRow): ReviewTaskBackground {
@@ -180,12 +216,9 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
       throw new Error("The local review database uses a newer unsupported schema");
     }
 
-    if (schemaVersionRow === DATABASE_SCHEMA_VERSION) {
-      return database;
-    }
-
-    const migrateToVersionOne = database.transaction(() => {
-      database.exec(`
+    if (schemaVersionRow === 0) {
+      const migrateToVersionOne = database.transaction(() => {
+        database.exec(`
       CREATE TABLE review_tasks (
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
@@ -236,10 +269,72 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
         ON requirement_source_versions (source_id, version DESC);
 
       PRAGMA user_version = 1;
-    `);
-    });
+      `);
+      });
 
-    migrateToVersionOne();
+      migrateToVersionOne();
+    }
+
+    const migratedSchemaVersion = database.pragma("user_version", { simple: true });
+    if (migratedSchemaVersion === 1) {
+      const migrateToVersionTwo = database.transaction(() => {
+        database.exec(`
+          CREATE TABLE requirement_rule_sets (
+            id TEXT PRIMARY KEY NOT NULL,
+            task_id TEXT NOT NULL REFERENCES review_tasks (id) ON DELETE CASCADE,
+            source_id TEXT NOT NULL,
+            source_version INTEGER NOT NULL CHECK (source_version > 0),
+            mode TEXT NOT NULL CHECK (mode IN ('mock', 'live')),
+            provider TEXT NOT NULL DEFAULT '',
+            model TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL CHECK (status IN ('completed', 'failed')),
+            warnings_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (source_id, source_version)
+              REFERENCES requirement_source_versions (source_id, version)
+          );
+
+          CREATE TABLE requirement_rules (
+            id TEXT PRIMARY KEY NOT NULL,
+            rule_set_id TEXT NOT NULL REFERENCES requirement_rule_sets (id) ON DELETE CASCADE,
+            ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
+            code TEXT NOT NULL,
+            description TEXT NOT NULL,
+            target TEXT NOT NULL,
+            strength TEXT NOT NULL CHECK (strength IN ('required', 'recommended', 'optional', 'unknown')),
+            applicability_scope TEXT NOT NULL CHECK (applicability_scope IN ('individual', 'team', 'unknown')),
+            applicability_condition TEXT NOT NULL DEFAULT '',
+            parameters_json TEXT NOT NULL DEFAULT '[]',
+            checkability TEXT NOT NULL CHECK (checkability IN ('deterministic', 'assisted', 'unable_to_check')),
+            generation_method TEXT NOT NULL CHECK (generation_method IN ('mock', 'live', 'manual')),
+            uncertainty TEXT NOT NULL DEFAULT '',
+            source_id TEXT NOT NULL,
+            source_version INTEGER NOT NULL CHECK (source_version > 0),
+            paragraph_index INTEGER NOT NULL CHECK (paragraph_index >= 0),
+            quoted_text TEXT NOT NULL,
+            start_offset INTEGER NOT NULL CHECK (start_offset >= 0),
+            end_offset INTEGER NOT NULL CHECK (end_offset > start_offset),
+            UNIQUE (rule_set_id, ordinal),
+            FOREIGN KEY (source_id, source_version)
+              REFERENCES requirement_source_versions (source_id, version)
+          );
+
+          CREATE INDEX requirement_rule_sets_task_idx
+            ON requirement_rule_sets (task_id, created_at DESC);
+          CREATE INDEX requirement_rules_rule_set_idx
+            ON requirement_rules (rule_set_id, ordinal ASC);
+
+          PRAGMA user_version = 2;
+        `);
+      });
+
+      migrateToVersionTwo();
+    }
+
+    const finalSchemaVersion = database.pragma("user_version", { simple: true });
+    if (finalSchemaVersion !== DATABASE_SCHEMA_VERSION) {
+      throw new Error("The local review database migration did not complete");
+    }
     return database;
   } catch (error) {
     if (database.open) database.close();
@@ -539,6 +634,152 @@ class ReviewStore {
         segments: readSourceSegments(this.database, sourceId, versionRow.version),
         createdAt: versionRow.created_at,
       };
+    });
+  }
+
+  saveRuleSet(ruleSet: ReviewRuleSet): ReviewRuleSet {
+    const parsedRuleSet = reviewRuleSetSchema.parse(ruleSet);
+    const taskSource = this.database
+      .prepare<[string], { source_id: string; version: number }>(
+        `
+        SELECT source.id AS source_id, source_version.version
+        FROM review_tasks AS task
+        JOIN requirement_sources AS source ON source.task_id = task.id AND source.source_role = 'notice'
+        JOIN requirement_source_versions AS source_version ON source_version.source_id = source.id
+        WHERE task.id = ?
+        ORDER BY source_version.version DESC
+        LIMIT 1
+      `,
+      )
+      .get(parsedRuleSet.taskId);
+
+    if (
+      !taskSource ||
+      taskSource.source_id !== parsedRuleSet.sourceId ||
+      taskSource.version !== parsedRuleSet.sourceVersion
+    ) {
+      throw new Error("Rule set must reference the task's current notice version");
+    }
+
+    const insertRuleSet = this.database.transaction(() => {
+      this.database
+        .prepare(
+          `
+          INSERT INTO requirement_rule_sets (
+            id, task_id, source_id, source_version, mode, provider, model, status, warnings_json, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        )
+        .run(
+          parsedRuleSet.id,
+          parsedRuleSet.taskId,
+          parsedRuleSet.sourceId,
+          parsedRuleSet.sourceVersion,
+          parsedRuleSet.mode,
+          parsedRuleSet.provider,
+          parsedRuleSet.model,
+          parsedRuleSet.status,
+          JSON.stringify(parsedRuleSet.warnings),
+          parsedRuleSet.createdAt,
+        );
+
+      const insertRule = this.database.prepare(`
+        INSERT INTO requirement_rules (
+          id, rule_set_id, ordinal, code, description, target, strength, applicability_scope,
+          applicability_condition, parameters_json, checkability, generation_method,
+          uncertainty, source_id, source_version, paragraph_index, quoted_text, start_offset, end_offset
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      parsedRuleSet.rules.forEach((rule, ordinal) => {
+        insertRule.run(
+          rule.id,
+          parsedRuleSet.id,
+          ordinal,
+          rule.code,
+          rule.description,
+          rule.target,
+          rule.strength,
+          rule.applicabilityScope,
+          rule.applicabilityCondition,
+          JSON.stringify(rule.parameters),
+          rule.checkability,
+          rule.generationMethod,
+          rule.uncertainty,
+          rule.source.sourceId,
+          rule.source.sourceVersion,
+          rule.source.paragraphIndex,
+          rule.source.quotedText,
+          rule.source.startOffset,
+          rule.source.endOffset,
+        );
+      });
+    });
+
+    insertRuleSet();
+    return parsedRuleSet;
+  }
+
+  listRuleSets(taskId: string): ReviewRuleSet[] {
+    const ruleSetRows = this.database
+      .prepare<[string], DatabaseRuleSetRow>(
+        `
+        SELECT id, task_id, source_id, source_version, mode, provider, model, status, warnings_json, created_at
+        FROM requirement_rule_sets
+        WHERE task_id = ?
+        ORDER BY created_at DESC
+      `,
+      )
+      .all(taskId);
+
+    return ruleSetRows.map((row) => {
+      const warnings: unknown = JSON.parse(row.warnings_json);
+      const rules = this.database
+        .prepare<[string], DatabaseRuleRow>(
+          `
+          SELECT id, code, description, target, strength, applicability_scope, applicability_condition,
+                 parameters_json, checkability, generation_method, uncertainty, source_id,
+                 source_version, paragraph_index, quoted_text, start_offset, end_offset
+          FROM requirement_rules
+          WHERE rule_set_id = ?
+          ORDER BY ordinal ASC
+        `,
+        )
+        .all(row.id);
+
+      return reviewRuleSetSchema.parse({
+        id: row.id,
+        taskId: row.task_id,
+        sourceId: row.source_id,
+        sourceVersion: row.source_version,
+        mode: row.mode,
+        provider: row.provider,
+        model: row.model,
+        status: row.status,
+        warnings,
+        createdAt: row.created_at,
+        rules: rules.map((ruleRow) => ({
+          id: ruleRow.id,
+          code: ruleRow.code,
+          description: ruleRow.description,
+          target: ruleRow.target,
+          strength: ruleRow.strength,
+          applicabilityScope: ruleRow.applicability_scope,
+          applicabilityCondition: ruleRow.applicability_condition,
+          parameters: JSON.parse(ruleRow.parameters_json) as unknown,
+          checkability: ruleRow.checkability,
+          generationMethod: ruleRow.generation_method,
+          uncertainty: ruleRow.uncertainty,
+          source: {
+            sourceId: ruleRow.source_id,
+            sourceVersion: ruleRow.source_version,
+            paragraphIndex: ruleRow.paragraph_index,
+            quotedText: ruleRow.quoted_text,
+            startOffset: ruleRow.start_offset,
+            endOffset: ruleRow.end_offset,
+          },
+        })),
+      });
     });
   }
 

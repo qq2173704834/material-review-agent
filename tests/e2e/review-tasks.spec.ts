@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("本地审查任务 ENG-004", () => {
+test.describe("本地审查任务 ENG-004 / ENG-005", () => {
   test("创建任务、刷新恢复并保存通知新版本", async ({ page }) => {
     const runtimeErrors: string[] = [];
     page.on("pageerror", (error) => runtimeErrors.push(error.message));
@@ -15,11 +15,27 @@ test.describe("本地审查任务 ENG-004", () => {
     await page.getByLabel("任务说明").fill("只包含浏览器验收使用的合成数据。");
     await page
       .getByRole("textbox", { name: "通知或要求原文" })
-      .fill("合成通知标题\n第一项要求：提交一份说明。\n第二项要求：文件不超过 5 MB。");
+      .fill(
+        "合成通知标题\n第一项要求：提交一份说明。\n第二项要求：文件不超过 5 MB。\n可选提供 PDF。\n规格：PDF 格式，文件不超过 5 MB，页数不超过 20 页。",
+      );
     await page.getByRole("button", { name: "创建审查任务" }).click();
 
     await expect(page.getByRole("heading", { name: "E2E 合成任务 ENG-004" })).toBeVisible();
     await expect(page.getByText("版本 1 · 当前版本")).toBeVisible();
+    await page.getByRole("button", { name: "从通知生成草稿" }).click();
+    await expect(page.getByText("模拟模式", { exact: true })).toBeVisible();
+    await expect(page.getByText(/必须.*可用确定性工具检查/).first()).toBeVisible();
+    await expect(page.getByText(/字符 7–19/)).toBeVisible();
+    await expect(page.getByText(/可选/).first()).toBeVisible();
+    await expect(page.locator("ol.divide-y > li")).toHaveCount(6);
+    const pageLimitRule = page.locator("ol.divide-y > li").filter({ hasText: "页数不超过 20 页" });
+    await expect(pageLimitRule.getByText("页数不超过 20 页", { exact: true })).toBeVisible();
+    const initialRuleSetsResponse = await page.request.get(
+      page.url().replace(/\/tasks\//, "/api/tasks/") + "/rules",
+    );
+    expect(initialRuleSetsResponse.ok()).toBe(true);
+    const initialRuleSetsBody: unknown = await initialRuleSetsResponse.json();
+    expect(JSON.stringify(initialRuleSetsBody)).toContain('"mode":"mock"');
     await page.getByText("查看原文段落位置").click();
     await expect(page.getByText(/字符 0–6/)).toBeVisible();
     await page.reload();
@@ -40,6 +56,10 @@ test.describe("本地审查任务 ENG-004", () => {
     await expect(page.getByRole("textbox", { name: "通知或要求原文" })).toHaveValue(
       /修订后的合成通知/,
     );
+    await expect(page.getByText(/通知 v1 的规则草稿/)).toBeVisible();
+    await page.getByRole("button", { name: "从通知生成草稿" }).click();
+    await expect(page.getByText(/通知 v1 的规则草稿/)).toHaveCount(0);
+    await expect(page.getByText(/修订后的合成通知/).first()).toBeVisible();
 
     const response = await page.request.get("/api/tasks");
     expect(response.ok()).toBe(true);
@@ -51,6 +71,30 @@ test.describe("本地审查任务 ENG-004", () => {
     );
     expect(hasHorizontalOverflow).toBe(false);
     expect(runtimeErrors).toEqual([]);
+  });
+
+  test("从上一版数据库升级并保留原任务和通知", async ({ page, request }) => {
+    const taskResponse = await request.get("/api/tasks/00000000-0000-4000-8000-000000000004");
+    expect(taskResponse.ok()).toBe(true);
+    const body: unknown = await taskResponse.json();
+    expect(body).toMatchObject({
+      task: {
+        name: "E2E 遗留任务 ENG-004",
+        background: {
+          projectType: "合成项目",
+          projectStage: "历史阶段",
+          collaborationScope: "team",
+        },
+        noticeSource: { version: 1, originalText: "遗留版本通知\n提交一份说明。" },
+      },
+    });
+
+    const ruleSetsResponse = await request.get(
+      "/api/tasks/00000000-0000-4000-8000-000000000004/rules",
+    );
+    expect(ruleSetsResponse.ok()).toBe(true);
+    await page.goto("/tasks/00000000-0000-4000-8000-000000000004");
+    await expect(page.getByRole("heading", { name: "E2E 遗留任务 ENG-004" })).toBeVisible();
   });
 
   test("拒绝空通知、非法任务编号并报告本地 SQLite 状态", async ({ request }) => {
