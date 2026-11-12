@@ -47,6 +47,12 @@ const verdictOrder: ReviewVerdict[] = [
   "not_applicable",
 ];
 
+const methodLabels = {
+  deterministic: "程序核验",
+  model: "模型辅助",
+  unavailable: "无法执行检查",
+} as const;
+
 export function ReviewExecutionPanel({
   taskId,
   initialExecutions,
@@ -641,6 +647,9 @@ export function ReviewExecutionPanel({
                           : ""}
                     </span>
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    检查方法：{result.method ? methodLabels[result.method] : "未记录"}
+                  </p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.reason}</p>
                   {result.recommendation ? (
                     <p className="mt-2 text-xs leading-5 text-primary">
