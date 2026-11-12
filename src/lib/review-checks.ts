@@ -19,6 +19,17 @@ const EXTENSION_NAMES: Record<string, string> = {
   PNG: "png",
 };
 
+const CONSISTENCY_FIELDS = [
+  "申请单位名称",
+  "项目名称",
+  "团队名称",
+  "项目编号",
+  "申报单位",
+  "申请单位",
+  "项目名",
+  "负责人",
+] as const;
+
 function materialEvidence(material: ReviewMaterialSummary): ReviewCheckEvidence {
   return {
     materialId: material.id,
@@ -56,6 +67,42 @@ function materialDateEvidence(
     materialId: material.id,
     materialVersion: material.version,
     quotedText: segment?.text ?? matchedDateText,
+    location: segment?.location ?? "已提取全文",
+    ...(segmentIndex >= 0 ? { segmentIndex } : {}),
+  };
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function fieldValues(material: ReviewMaterialSummary, field: string): string[] {
+  const fieldPattern = new RegExp(`${field}\\s*[：:]\\s*([^\\r\\n|,，;；。]+)`, "g");
+  const normalizedValues = new Set<string>();
+  for (const match of material.extractedText.matchAll(fieldPattern)) {
+    const value = match[1]
+      ?.trim()
+      .replace(/^[“”"'「『]|[“”"'」』]$/g, "")
+      .trim();
+    if (value) normalizedValues.add(value.normalize("NFC").replace(/\s+/gu, " "));
+  }
+  return [...normalizedValues];
+}
+
+function fieldEvidence(
+  material: ReviewMaterialSummary,
+  field: string,
+  value: string,
+): ReviewCheckEvidence {
+  const fieldValuePattern = new RegExp(`${field}\\s*[：:]\\s*${escapeRegExp(value)}`);
+  const segmentIndex = material.segments.findIndex((segment) =>
+    fieldValuePattern.test(segment.text),
+  );
+  const segment = material.segments[segmentIndex];
+  return {
+    materialId: material.id,
+    materialVersion: material.version,
+    quotedText: segment?.text ?? `${field}：${value}`,
     location: segment?.location ?? "已提取全文",
     ...(segmentIndex >= 0 ? { segmentIndex } : {}),
   };
@@ -181,6 +228,63 @@ function compareRule(
             dates[0] ? [materialDateEvidence(material, dates[0].text)] : [],
           ),
         };
+  }
+  const consistencyField = CONSISTENCY_FIELDS.find((field) => description.includes(field));
+  if (consistencyField && /一致|相同/.test(description)) {
+    if (materials.length < 2)
+      return {
+        verdict: "needs_confirmation",
+        reason: `至少需要两份材料才能比较“${consistencyField}”。`,
+        recommendation: "补充相关材料后重新检查。",
+        evidence,
+      };
+    if (materials.some((material) => material.parseStatus !== "text_extracted"))
+      return {
+        verdict: "unable_to_check",
+        reason: "至少一份材料未能完整提取文本，无法可靠比较字段一致性。",
+        recommendation: "替换为可完整解析的材料后重新检查。",
+        evidence,
+      };
+
+    const materialFields = materials.map((material) => ({
+      material,
+      values: fieldValues(material, consistencyField),
+    }));
+    if (materialFields.some(({ values }) => values.length === 0))
+      return {
+        verdict: "needs_confirmation",
+        reason: `至少一份材料没有明确的“${consistencyField}”字段，无法完成跨材料比较。`,
+        recommendation: "人工确认字段位置或补充相关材料。",
+        evidence,
+      };
+    if (materialFields.some(({ values }) => values.length > 1))
+      return {
+        verdict: "needs_confirmation",
+        reason: `至少一份材料中“${consistencyField}”出现多个不同值。`,
+        recommendation: "人工确认每份材料中本次审查适用的字段值。",
+        evidence,
+      };
+
+    const distinctValues = new Set(materialFields.map(({ values }) => values[0]));
+    const fieldEvidenceList = materialFields.flatMap(({ material, values }) => {
+      const value = values[0];
+      return value ? [fieldEvidence(material, consistencyField, value)] : [];
+    });
+    if (distinctValues.size > 1)
+      return {
+        verdict: "failed",
+        reason: `材料中的“${consistencyField}”不一致：${materialFields
+          .map(({ material, values }) => `${material.originalFileName}（${values[0] ?? "未知"}）`)
+          .join("、")}。`,
+        recommendation: "核实并统一各份材料中的字段值。",
+        evidence: fieldEvidenceList,
+      };
+    return {
+      verdict: "passed",
+      reason: `${materials.length} 份材料中的“${consistencyField}”一致。`,
+      recommendation: "",
+      evidence: fieldEvidenceList,
+    };
   }
   const characterLimit = description.match(
     /(?:不超过|至多|最多|≤|<=)\s*(\d+)\s*(?:个)?(?:汉字|字|字符)|(?:不少于|至少|≥|>=)\s*(\d+)\s*(?:个)?(?:汉字|字|字符)/,

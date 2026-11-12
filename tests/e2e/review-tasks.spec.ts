@@ -1647,6 +1647,69 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(inside.execution.results[0]?.evidence[0]?.quotedText).toContain("2025年6月1日");
   });
 
+  test("明确项目名称跨材料不一致时失败且缺字段时待确认", async ({ request }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "跨材料字段一致性",
+        noticeText: "所有材料中的项目名称必须一致。",
+      },
+    });
+    const { task } = await created.json();
+    const ruleResponse = await request.post(`/api/tasks/${task.id}/rules`);
+    const { ruleSet } = await ruleResponse.json();
+    expect(ruleSet.rules).toHaveLength(1);
+    expect(ruleSet.rules[0]).toMatchObject({ checkability: "deterministic" });
+
+    for (const [name, value] of [
+      ["申请书.txt", "材料审查系统"],
+      ["预算表.txt", "预审工作台"],
+    ] as const) {
+      const upload = await request.post(`/api/tasks/${task.id}/materials`, {
+        multipart: {
+          files: {
+            name,
+            mimeType: "text/plain",
+            buffer: Buffer.from(`项目名称：${value}`),
+          },
+        },
+      });
+      expect(upload.status()).toBe(201);
+    }
+
+    const mismatch = await runCheckStream(request, task.id);
+    expect(mismatch.execution.results[0]).toMatchObject({ verdict: "failed" });
+    expect(mismatch.execution.results[0]?.evidence).toHaveLength(2);
+    expect(mismatch.execution.results[0]?.evidence.map(({ quotedText }) => quotedText)).toEqual(
+      expect.arrayContaining(["项目名称：材料审查系统", "项目名称：预审工作台"]),
+    );
+
+    const revision = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "预算表.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("项目名称：材料审查系统"),
+        },
+      },
+    });
+    expect(revision.status()).toBe(201);
+    const consistent = await runCheckStream(request, task.id);
+    expect(consistent.execution.results[0]).toMatchObject({ verdict: "passed" });
+
+    const missingField = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "说明.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("本材料未标注项目名称。"),
+        },
+      },
+    });
+    expect(missingField.status()).toBe(201);
+    const ambiguous = await runCheckStream(request, task.id);
+    expect(ambiguous.execution.results[0]).toMatchObject({ verdict: "needs_confirmation" });
+  });
+
   test("SQLite 保存失败时回收本次上传原件", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: { name: "文件回收故障注入", noticeText: "用于验证保存失败清理。" },
