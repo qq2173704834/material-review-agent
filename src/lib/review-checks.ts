@@ -275,7 +275,14 @@ export function executeReviewRule(
               recommendation: "对照通知原文确认规则含义和强度。",
               evidence: [],
             }
-          : compareRule(rule, materials);
+          : rule.strength === "optional" && materials.length === 0
+            ? {
+                verdict: "not_applicable" as const,
+                reason: "该项为可选材料，当前未提交，不构成缺失问题。",
+                recommendation: "如需提交，可上传后检查其明确规格要求。",
+                evidence: [],
+              }
+            : compareRule(rule, materials);
   return {
     ruleId: rule.id,
     ruleCode: rule.code,

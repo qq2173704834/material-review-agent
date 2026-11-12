@@ -615,6 +615,28 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(checks.executions[0].results.length + checks.executions[0].unexecutedCount).toBe(80);
   });
 
+  test("缺少可选材料不会判定为未通过", async ({ request }) => {
+    const taskResponse = await request.post("/api/tasks", {
+      data: {
+        name: "可选材料边界任务",
+        noticeText: "申请人必须提交申请表。\n申请人可以选择提交项目介绍材料。",
+      },
+    });
+    const { task } = await taskResponse.json();
+    const rulesResponse = await request.post(`/api/tasks/${task.id}/rules`);
+    expect(rulesResponse.status()).toBe(201);
+
+    const run = await runCheckStream(request, task.id);
+    const optionalResult = run.execution.results.find((result) =>
+      result.requirement.includes("可以选择提交项目介绍"),
+    );
+    expect(optionalResult).toMatchObject({
+      strength: "optional",
+      verdict: "not_applicable",
+    });
+    expect(optionalResult?.reason).toContain("不构成缺失问题");
+  });
+
   test("拒绝空通知、非法任务编号并报告本地 SQLite 状态", async ({ request }) => {
     const invalidJson = await request.post("/api/tasks", { data: { noticeText: "  " } });
     expect(invalidJson.status()).toBe(400);
