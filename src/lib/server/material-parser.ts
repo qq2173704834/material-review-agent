@@ -5,11 +5,16 @@ import ExcelJS from "exceljs";
 import { fileTypeFromBuffer } from "file-type";
 import mammoth from "mammoth";
 import JSZip from "jszip";
+import sharp from "sharp";
 
 import type { MaterialContentSegment, MaterialParseStatus } from "@/domain/review";
 import type * as PdfJs from "pdfjs-dist";
+import { recognizeImageText } from "@/lib/server/image-ocr";
 
 const MAXIMUM_ARCHIVE_EXPANDED_BYTES = 100 * 1024 * 1024;
+const MAXIMUM_IMAGE_PIXELS = 25_000_000;
+const MAXIMUM_OCR_IMAGE_EDGE = 4_096;
+const MINIMUM_COMPLETE_OCR_CONFIDENCE = 45;
 
 export interface ParsedMaterial {
   mediaType: string;
@@ -206,16 +211,54 @@ export async function parseMaterial(
   if (extension === "png" || extension === "jpg" || extension === "jpeg") {
     const expectedMime = extension === "png" ? "image/png" : "image/jpeg";
     if (signature?.mime !== expectedMime) throw new Error("扩展名与图片文件签名不匹配。");
+    const image = sharp(buffer, { limitInputPixels: MAXIMUM_IMAGE_PIXELS });
+    const metadata = await image.metadata();
+    if (!metadata.width || !metadata.height) throw new Error("无法读取图片尺寸，未执行 OCR。");
+    const normalizedImage = await image
+      .rotate()
+      .resize({
+        width: MAXIMUM_OCR_IMAGE_EDGE,
+        height: MAXIMUM_OCR_IMAGE_EDGE,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .png()
+      .toBuffer();
+    const recognized = await recognizeImageText(normalizedImage);
+    const text = recognized.text
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const extractedText = text.join("\n");
+    let textOffset = 0;
+    const segments = text.map((line, segmentIndex) => {
+      const startOffset = textOffset;
+      textOffset += line.length + 1;
+      return {
+        segmentIndex,
+        text: line,
+        startOffset,
+        endOffset: startOffset + line.length,
+        location: `OCR 第 ${segmentIndex + 1} 行`,
+      };
+    });
+    const hasRecognizedText = Boolean(extractedText);
+    const isComplete =
+      hasRecognizedText && recognized.confidence >= MINIMUM_COMPLETE_OCR_CONFIDENCE;
     return {
       mediaType: expectedMime,
       extension: extension === "jpeg" ? "jpg" : extension,
-      parseStatus: "ocr_required",
-      parserName: "metadata-only",
-      extractedText: "",
-      segments: [],
+      parseStatus: isComplete ? "text_extracted" : hasRecognizedText ? "partial" : "failed",
+      parserName: "tesseract.js-chi_sim-eng",
+      extractedText,
+      segments,
       pageCount: null,
       sheetNames: [],
-      parseMessage: "图片已安全保存；当前版本尚未接入 OCR，未读取图片文字。",
+      parseMessage: !hasRecognizedText
+        ? "OCR 未识别到可用文字；请上传更清晰的图片或人工核对。"
+        : isComplete
+          ? `已提取中文/英文 OCR 文字（识别置信度 ${Math.round(recognized.confidence)}）；请核对识别内容。`
+          : `OCR 已提取部分文字，但识别置信度较低（${Math.round(recognized.confidence)}）；请人工核对。`,
     };
   }
 

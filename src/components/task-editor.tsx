@@ -241,7 +241,8 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
           />
         )}
         <p className="text-xs leading-5 text-muted-foreground">
-          创建任务后可上传 PDF、DOCX、TXT、XLSX、CSV、JPG 与 PNG 材料；图片和扫描件尚未进行 OCR。
+          创建任务后可上传 PDF、DOCX、TXT、XLSX、CSV、JPG 与 PNG 材料；JPG/PNG 会进行中文和英文
+          OCR，扫描 PDF 暂不支持 OCR。
         </p>
       </section>
       {error ? (

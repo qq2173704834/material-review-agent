@@ -267,13 +267,13 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
           "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8X8AAAAASUVORK5CYII=",
           "base64",
         ),
-        expectedStatus: "ocr_required",
+        expectedStatus: "failed",
       },
       {
         name: "扫描.jpg",
         mimeType: "image/jpeg",
         buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00]),
-        expectedStatus: "ocr_required",
+        expectedStatus: "failed",
       },
     );
     for (const file of uploadFiles) {
@@ -346,12 +346,12 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
         }),
         expect.objectContaining({
           originalFileName: "扫描.png",
-          parseStatus: "ocr_required",
+          parseStatus: "failed",
           extractedText: "",
         }),
         expect.objectContaining({
           originalFileName: "扫描.jpg",
-          parseStatus: "ocr_required",
+          parseStatus: "failed",
           extractedText: "",
         }),
       ]),
