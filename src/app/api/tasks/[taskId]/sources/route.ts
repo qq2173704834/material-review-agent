@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { reviewTaskIdSchema } from "@/domain/review-task";
+import { MAXIMUM_NOTICE_CHARACTERS, reviewTaskIdSchema } from "@/domain/review-task";
 import { parseMaterial } from "@/lib/server/material-parser";
 import { getReviewStore } from "@/lib/server/review-store";
 import { MultipartSizeLimitError, readLimitedFormData } from "@/lib/server/limited-form-data";
@@ -53,6 +53,13 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       Buffer.from(await sourceFile.arrayBuffer()),
       sourceFile.name,
     );
+    if (parsed.extractedText.length > MAXIMUM_NOTICE_CHARACTERS)
+      return NextResponse.json(
+        {
+          error: `提取正文超过 ${MAXIMUM_NOTICE_CHARACTERS.toLocaleString()} 字符上限，请拆分来源。`,
+        },
+        { status: 422 },
+      );
     if (!parsed.extractedText.trim())
       return NextResponse.json(
         { error: parsed.parseMessage || "文件未提取到可用文字，未添加来源。" },

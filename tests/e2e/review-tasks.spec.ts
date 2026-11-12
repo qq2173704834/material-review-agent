@@ -1170,6 +1170,46 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(await response.json()).toMatchObject({ error: "上传请求超过允许大小。" });
   });
 
+  test("主来源与补充来源拒绝超过 200,000 字符的提取正文", async ({ request }) => {
+    const oversizedText = Buffer.from("a".repeat(200_001));
+    const mainResponse = await request.post("/api/tasks", {
+      multipart: {
+        sourceFile: { name: "超长通知.txt", mimeType: "text/plain", buffer: oversizedText },
+        background: JSON.stringify({
+          projectType: "",
+          projectStage: "",
+          collaborationScope: "unknown",
+        }),
+      },
+    });
+    expect(mainResponse.status()).toBe(422);
+    expect(await mainResponse.json()).toMatchObject({
+      error: "提取正文超过 200,000 字符上限，请拆分要求或粘贴必要片段。",
+    });
+
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "来源长度验证任务",
+        description: "",
+        background: { projectType: "", projectStage: "", collaborationScope: "unknown" },
+        noticeText: "主通知。",
+      },
+    });
+    const { task } = await created.json();
+    const supplementResponse = await request.post(`/api/tasks/${task.id}/sources`, {
+      multipart: {
+        sourceFile: { name: "超长附件.txt", mimeType: "text/plain", buffer: oversizedText },
+      },
+    });
+    expect(supplementResponse.status()).toBe(422);
+    expect(await supplementResponse.json()).toMatchObject({
+      error: "提取正文超过 200,000 字符上限，请拆分来源。",
+    });
+    expect(
+      (await (await request.get(`/api/tasks/${task.id}`)).json()).task.supplementalSources,
+    ).toHaveLength(0);
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {
