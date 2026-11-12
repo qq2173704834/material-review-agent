@@ -60,14 +60,16 @@ function isPublicAddress(address: string): boolean {
   if (family !== 6) return false;
   const normalized = address.toLowerCase().split("%", 1)[0] ?? "";
   if (normalized.startsWith("::ffff:")) return isPublicAddress(normalized.slice(7));
+  const [firstSegment = "", secondSegment = ""] = normalized.split(":");
+  const firstValue = Number.parseInt(firstSegment || "0", 16);
+  const secondValue = Number.parseInt(secondSegment || "0", 16);
   return !(
     normalized === "::" ||
     normalized === "::1" ||
-    normalized.startsWith("fc") ||
-    normalized.startsWith("fd") ||
-    /^fe[89ab]/.test(normalized) ||
-    normalized.startsWith("ff") ||
-    normalized.startsWith("2001:db8")
+    firstValue < 0x2000 ||
+    firstValue >= 0x4000 ||
+    (firstValue === 0x2001 && (secondValue < 0x0200 || secondValue === 0x0db8)) ||
+    firstValue === 0x2002
   );
 }
 

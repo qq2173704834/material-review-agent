@@ -38,7 +38,7 @@ ENG-001 至 ENG-010 已按各自范围完成或部分完成。当前支持 DeepS
 
 - 实现：新建任务可输入公开网页 URL；服务端只获取 HTML/XHTML，手动跟随最多 5 次重定向并逐次校验协议、端口和目标；连接时解析 DNS 并拒绝含非公网地址的结果。设置 12 秒请求超时、4 MiB 响应体和 200,000 字符正文上限；拒绝登录/授权状态、非 HTML 与无法提取的短正文，失败时保留粘贴文本入口。
 - 数据：SQLite schema v10 为来源增加 URL 和抓取时间；旧 v9 数据库有增量迁移。任务详情显示来源地址、获取时间及标题/地址显示名。
-- 验证：`pnpm check`、`pnpm build`、桌面/移动 `pnpm test:e2e`（48 项）通过；浏览器用例实际提交 IPv4 回环、RFC1918 私网和 IPv6 回环地址并验证私网拒绝。另在隔离目录 `.local-data/webpage-validation` 用 `https://example.com/` 完成正向 API 导入、GET 恢复及详情 HTML 来源显示检查；在 `.local-data/webpage-redirect-validation` 经 `httpbin.org` 重定向到 `example.org` 并确认保存最终 URL。两项验证任务均已通过 API 删除。
+- 验证：`pnpm check`、`pnpm build`、桌面/移动 `pnpm test:e2e`（48 项）通过；浏览器用例实际提交 IPv4 回环、RFC1918 私网、IPv6 回环及可嵌入私网 IPv4 的 6to4 地址并验证拒绝。另在隔离目录 `.local-data/webpage-validation` 用 `https://example.com/` 完成正向 API 导入、GET 恢复及详情 HTML 来源显示检查；在 `.local-data/webpage-redirect-validation` 经 `httpbin.org` 重定向到 `example.org` 并确认保存最终 URL。两项验证任务均已通过 API 删除。
 - 限制：正文提取为通用 HTML 文本，未做正文区块/导航模板识别或附件抓取；公开站点正向流程、重定向链目前仅人工验证，自动回归没有覆盖 DNS 混合公网/私网响应、重定向链、超时和大小上限。v9→v10 迁移代码已加入；E2E 会从 v1 旧库逐次升级至当前版本并保留数据，但本轮未单独构造 v9 快照。S02、S04、S06、N06 仍只完成部分覆盖；扩展格式尚未开发。
 
 ## ENG-004 检查记录
