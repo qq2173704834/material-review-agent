@@ -1,9 +1,13 @@
+import { readdirSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { expect, test } from "@playwright/test";
 
 import type { APIRequestContext } from "@playwright/test";
 import type { ReviewCheckResult, ReviewExecution } from "@/domain/review";
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
+import Database from "better-sqlite3";
 
 function createSyntheticPdf(): Buffer {
   const objects = [
@@ -854,6 +858,43 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const unknownTaskId = await createWithScope("unknown");
     const unknown = await runCheckStream(request, unknownTaskId);
     expect(unknown.execution.results[0]).toMatchObject({ verdict: "needs_confirmation" });
+  });
+
+  test("SQLite 保存失败时回收本次上传原件", async ({ request }) => {
+    const created = await request.post("/api/tasks", {
+      data: { name: "文件回收故障注入", noticeText: "用于验证保存失败清理。" },
+    });
+    const { task } = await created.json();
+    const triggerName = `reject_upload_${task.id.replaceAll("-", "")}`;
+    const database = new Database(resolve(process.cwd(), ".local-data/e2e/reviews.sqlite"));
+    database.exec(`CREATE TRIGGER ${triggerName}
+      BEFORE INSERT ON review_material_versions
+      WHEN NEW.original_file_name = 'force-db-error.txt'
+      BEGIN SELECT RAISE(ABORT, 'synthetic save failure'); END;`);
+    try {
+      const response = await request.post(`/api/tasks/${task.id}/materials`, {
+        multipart: {
+          files: {
+            name: "force-db-error.txt",
+            mimeType: "text/plain",
+            buffer: Buffer.from("synthetic"),
+          },
+        },
+      });
+      expect(response.status()).toBe(500);
+      expect(await response.json()).toMatchObject({
+        error: "材料元数据保存失败，本次上传未完成。",
+      });
+      expect(
+        readdirSync(resolve(process.cwd(), `.local-data/e2e/materials/${task.id}`)),
+      ).toHaveLength(0);
+      expect(
+        (await (await request.get(`/api/tasks/${task.id}`)).json()).task.materials,
+      ).toHaveLength(0);
+    } finally {
+      database.exec(`DROP TRIGGER IF EXISTS ${triggerName}`);
+      database.close();
+    }
   });
 
   test("不存在的页面提供可用返回入口", async ({ page }) => {

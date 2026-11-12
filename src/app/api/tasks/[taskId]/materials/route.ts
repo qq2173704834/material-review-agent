@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { NextResponse } from "next/server";
@@ -97,25 +97,31 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
     await mkdir(storageDirectory, { recursive: true });
     const storageKey = `materials/${taskId}/${key}`;
     await writeFile(resolve(storageDirectory, key), buffer, { flag: "wx", mode: 0o600 });
-    const saved = store.saveMaterialVersion({
-      id: previous?.id ?? id,
-      taskId,
-      version,
-      originalFileName,
-      mediaType: parsed.mediaType,
-      extension: parsed.extension,
-      fileSizeBytes: buffer.byteLength,
-      sha256: createHash("sha256").update(buffer).digest("hex"),
-      storageKey,
-      parseStatus: parsed.parseStatus,
-      parserName: parsed.parserName,
-      extractedText: parsed.extractedText,
-      segments: parsed.segments,
-      pageCount: parsed.pageCount,
-      sheetNames: parsed.sheetNames,
-      parseMessage: parsed.parseMessage,
-      createdAt: new Date().toISOString(),
-    });
+    let saved;
+    try {
+      saved = store.saveMaterialVersion({
+        id: previous?.id ?? id,
+        taskId,
+        version,
+        originalFileName,
+        mediaType: parsed.mediaType,
+        extension: parsed.extension,
+        fileSizeBytes: buffer.byteLength,
+        sha256: createHash("sha256").update(buffer).digest("hex"),
+        storageKey,
+        parseStatus: parsed.parseStatus,
+        parserName: parsed.parserName,
+        extractedText: parsed.extractedText,
+        segments: parsed.segments,
+        pageCount: parsed.pageCount,
+        sheetNames: parsed.sheetNames,
+        parseMessage: parsed.parseMessage,
+        createdAt: new Date().toISOString(),
+      });
+    } catch {
+      await rm(resolve(storageDirectory, key), { force: true }).catch(() => undefined);
+      return NextResponse.json({ error: "材料元数据保存失败，本次上传未完成。" }, { status: 500 });
+    }
     results.push({
       id: saved.id,
       version: saved.version,
