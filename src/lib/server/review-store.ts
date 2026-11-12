@@ -549,6 +549,10 @@ export function createReviewStore(databaseDirectory: string): ReviewStore {
 class ReviewStore {
   constructor(private readonly database: Database.Database) {}
 
+  deleteTask(taskId: string): boolean {
+    return this.database.prepare("DELETE FROM review_tasks WHERE id = ?").run(taskId).changes > 0;
+  }
+
   createTask(input: CreateReviewTaskInput): ReviewTaskDetails {
     const taskId = randomUUID();
     const sourceId = randomUUID();

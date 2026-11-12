@@ -680,6 +680,29 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     });
   });
 
+  test("删除任务会级联清除数据且不影响其他任务", async ({ request }) => {
+    const first = await request.post("/api/tasks", {
+      data: { name: "待删除任务", noticeText: "删除范围合成通知" },
+    });
+    const second = await request.post("/api/tasks", {
+      data: { name: "保留任务", noticeText: "保留范围合成通知" },
+    });
+    const firstTask = (await first.json()).task;
+    const secondTask = (await second.json()).task;
+    const upload = await request.post(`/api/tasks/${firstTask.id}/materials`, {
+      multipart: {
+        files: { name: "原件.txt", mimeType: "text/plain", buffer: Buffer.from("synthetic") },
+      },
+    });
+    expect(upload.status()).toBe(201);
+
+    const deletion = await request.delete(`/api/tasks/${firstTask.id}`);
+    expect(deletion.status()).toBe(204);
+    expect((await request.get(`/api/tasks/${firstTask.id}`)).status()).toBe(404);
+    expect(await request.get(`/api/tasks/${secondTask.id}`)).toBeTruthy();
+    expect((await request.get(`/api/tasks/${secondTask.id}`)).status()).toBe(200);
+  });
+
   test("不存在的页面提供可用返回入口", async ({ page }) => {
     const response = await page.goto("/missing-page");
     expect(response?.status()).toBe(404);

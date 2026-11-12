@@ -13,6 +13,7 @@ import { MaterialUpload } from "@/components/material-upload";
 import { ReviewExecutionPanel } from "@/components/review-execution";
 import { getRuntimeStatus } from "@/lib/server/runtime-status";
 import { annotateExecutions } from "@/lib/review-history";
+import { TaskDeleteControl } from "@/components/task-delete-control";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -76,7 +77,10 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
             </time>
           </p>
         </div>
-        <Badge>通知 v{task.noticeSource.version}</Badge>
+        <div className="flex items-center gap-3">
+          <Badge>通知 v{task.noticeSource.version}</Badge>
+          <TaskDeleteControl taskId={task.id} taskName={task.name} />
+        </div>
       </div>
       <TaskEditor task={task} />
       <RuleReview
