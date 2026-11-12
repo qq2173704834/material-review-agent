@@ -54,6 +54,65 @@ function compareRule(
 ): Pick<ReviewCheckResult, "verdict" | "reason" | "recommendation" | "evidence"> {
   const description = rule.description;
   const evidence = materials.map(materialEvidence);
+  const characterLimit = description.match(
+    /(?:不超过|至多|最多|≤|<=)\s*(\d+)\s*(?:个)?(?:汉字|字|字符)|(?:不少于|至少|≥|>=)\s*(\d+)\s*(?:个)?(?:汉字|字|字符)/,
+  );
+  if (characterLimit) {
+    const maximum = characterLimit[1] ? Number(characterLimit[1]) : null;
+    const minimum = characterLimit[2] ? Number(characterLimit[2]) : null;
+    if (!materials.length)
+      return {
+        verdict: "needs_confirmation",
+        reason: "尚无材料可进行全文字数统计。",
+        recommendation: "上传可提取文本的材料后重新检查。",
+        evidence: [],
+      };
+    const unavailable = materials.filter((material) => material.parseStatus !== "text_extracted");
+    if (unavailable.length)
+      return {
+        verdict: "unable_to_check",
+        reason:
+          "以下材料未能完整提取文本，无法可靠统计全文字符数：" +
+          unavailable.map((material) => material.originalFileName).join("、") +
+          "。",
+        recommendation: "替换为可完整解析的材料后重新检查。",
+        evidence: unavailable.map(materialEvidence),
+      };
+    const counts = materials.map((material) => ({
+      material,
+      count: Array.from(material.extractedText.replace(/\s/gu, "")).length,
+    }));
+    const outside = counts.filter(
+      ({ count }) => (maximum !== null && count > maximum) || (minimum !== null && count < minimum),
+    );
+    const bound =
+      maximum !== null ? "不超过 " + maximum + " 字" : "不少于 " + (minimum ?? 0) + " 字";
+    return outside.length
+      ? {
+          verdict: "failed",
+          reason:
+            outside
+              .map(({ material, count }) => material.originalFileName + " 为 " + count + " 字")
+              .join("、") +
+            "，不符合全文" +
+            bound +
+            "要求。",
+          recommendation: "调整全文长度后重新上传。统计范围为已提取全文文本，空白字符不计。",
+          evidence: outside.map(({ material }) => materialEvidence(material)),
+        }
+      : {
+          verdict: "passed",
+          reason:
+            counts
+              .map(({ material, count }) => material.originalFileName + " 为 " + count + " 字")
+              .join("、") +
+            "，符合全文" +
+            bound +
+            "要求。",
+          recommendation: "",
+          evidence,
+        };
+  }
   const extensions = [...description.matchAll(/\b(PDF|DOCX|TXT|XLSX|CSV|JPG|JPEG|PNG)\b/gi)]
     .map((match) => EXTENSION_NAMES[(match[1] ?? "").toUpperCase()])
     .filter((extension): extension is string => Boolean(extension));

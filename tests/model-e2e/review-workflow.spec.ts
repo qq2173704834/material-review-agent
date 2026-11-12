@@ -184,11 +184,24 @@ test("覆盖截断时模型通过意见降级为待确认", async ({ request }) 
   });
 });
 
-test("模型不能代替尚未实现的字数工具直接判通过", async ({ request }) => {
+test("全文字数工具在下限边界失败并在准确边界通过", async ({ request }) => {
   const { task } = await createTask(request, "项目说明字数必须不少于500字。", "100");
-  const execution = await runChecks(request, task.id);
-  expect(execution.results[0]?.verdict).not.toBe("passed");
-  expect(execution.results[0]?.method).toBe("deterministic");
+  const failed = await runChecks(request, task.id);
+  expect(failed.results[0]).toMatchObject({ verdict: "failed", method: "deterministic" });
+  expect(failed.results[0]?.reason).toContain("为 3 字");
+  const repaired = await request.post(`/api/tasks/${task.id}/materials`, {
+    multipart: {
+      files: {
+        name: "任意名称.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from("字".repeat(500)),
+      },
+    },
+  });
+  expect(repaired.status()).toBe(201);
+  const passed = await runChecks(request, task.id);
+  expect(passed.results[0]).toMatchObject({ verdict: "passed", method: "deterministic" });
+  expect(passed.results[0]?.reason).toContain("为 500 字");
 });
 
 test("恰好一份的数量规则拒绝两份材料", async ({ request }) => {
