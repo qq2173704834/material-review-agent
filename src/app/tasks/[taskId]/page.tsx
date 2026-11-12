@@ -57,6 +57,19 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
   const remediationTasks = getReviewStore().listRemediationTasks(taskId);
   const runtimeStatus = getRuntimeStatus(true);
   const latestExecution = executions[0];
+  const hasReviewIssues = Boolean(
+    latestExecution?.validity === "needs_recheck" ||
+    latestExecution?.results.some((result) =>
+      ["failed", "needs_confirmation", "unable_to_check"].includes(result.verdict),
+    ),
+  );
+  const currentStageIndex = !currentRuleSet
+    ? 1
+    : latestExecution?.status !== "completed"
+      ? 2
+      : hasReviewIssues
+        ? 3
+        : 4;
   const contextKey = `${ruleSets[0]?.id ?? "none"}:${task.latestUpdatedAt}:${task.materials.map((material) => `${material.id}-${material.version}`).join(",")}`;
 
   return (
@@ -96,7 +109,56 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
           <TaskDeleteControl taskId={task.id} taskName={task.name} />
         </div>
       </div>
-      <TaskEditor task={task} />
+      <nav aria-label="任务阶段" className="mb-7 border-y border-border py-3">
+        <ol className="flex flex-wrap gap-x-5 gap-y-2">
+          {[
+            ["导入要求", "#stage-source"],
+            ["准备材料", "#stage-prepare"],
+            ["审查", "#stage-review"],
+            ["整改复检", "#stage-remediation"],
+            ["报告与历史", "#stage-report"],
+          ].map(([label, href], index) => (
+            <li key={label}>
+              {index < 3 || latestExecution ? (
+                <a
+                  href={href}
+                  aria-current={index === currentStageIndex ? "step" : undefined}
+                  className={
+                    index === currentStageIndex
+                      ? "text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                      : "text-xs text-muted-foreground underline-offset-4 hover:underline"
+                  }
+                >
+                  {index < currentStageIndex
+                    ? "已完成 · "
+                    : index === currentStageIndex
+                      ? "当前 · "
+                      : "待开始 · "}
+                  {label}
+                </a>
+              ) : (
+                <span className="text-xs text-muted-foreground">待开始 · {label}</span>
+              )}
+            </li>
+          ))}
+        </ol>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {!currentRuleSet
+            ? "下一步：为当前要求来源生成或更新规则草稿。"
+            : !latestExecution
+              ? "下一步：可先上传材料，也可直接审查以发现必交材料缺失。"
+              : latestExecution.validity === "needs_recheck"
+                ? "下一步：当前结果已失效，请重新审查。"
+                : hasReviewIssues
+                  ? "下一步：处理问题后重新审查，再导出报告。"
+                  : latestExecution.status === "completed"
+                    ? "检查已完成，可查看报告与历史快照。"
+                    : "下一步：完成当前审查或重试中断的检查。"}
+        </p>
+      </nav>
+      <div id="stage-source" className="scroll-mt-6">
+        <TaskEditor task={task} />
+      </div>
       {task.noticeSource.inputType === "webpage" ? (
         <p className="mt-4 max-w-4xl break-words border-l-2 border-border pl-3 text-xs leading-5 text-muted-foreground">
           网页来源：
@@ -171,20 +233,22 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
       ) : null}
       <SupplementSourceUpload taskId={task.id} />
       <ClarificationPanel task={task} currentRuleSet={currentRuleSet} />
-      <RuleReview
-        key={`rules-${ruleSets[0]?.id ?? "none"}`}
-        taskId={task.id}
-        currentNoticeVersion={task.noticeSource.version}
-        sources={currentSources}
-        materials={task.materials.map(({ id, version, originalFileName }) => ({
-          id,
-          version,
-          originalFileName,
-        }))}
-        initialRuleSets={ruleSets}
-        mode={runtimeStatus.mode}
-      />
-      <MaterialUpload taskId={task.id} initialMaterials={task.materials} />
+      <div id="stage-prepare" className="scroll-mt-6">
+        <RuleReview
+          key={`rules-${ruleSets[0]?.id ?? "none"}`}
+          taskId={task.id}
+          currentNoticeVersion={task.noticeSource.version}
+          sources={currentSources}
+          materials={task.materials.map(({ id, version, originalFileName }) => ({
+            id,
+            version,
+            originalFileName,
+          }))}
+          initialRuleSets={ruleSets}
+          mode={runtimeStatus.mode}
+        />
+        <MaterialUpload taskId={task.id} initialMaterials={task.materials} />
+      </div>
       <ReviewExecutionPanel
         key={`execution-${latestExecution?.id ?? "none"}-${contextKey}`}
         taskId={task.id}

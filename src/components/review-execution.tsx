@@ -405,6 +405,7 @@ export function ReviewExecutionPanel({
 
   return (
     <section
+      id="stage-review"
       aria-labelledby="execution-heading"
       className="mt-12 max-w-4xl border-t border-border pt-7"
     >
@@ -514,7 +515,7 @@ export function ReviewExecutionPanel({
               )}
             </time>
             {currentExecution.status !== "running" ? (
-              <>
+              <div id="stage-report" className="flex flex-wrap gap-x-4 gap-y-2">
                 <a
                   href={`/api/tasks/${taskId}/report?executionId=${currentExecution.id}`}
                   className="font-medium text-primary underline underline-offset-4"
@@ -527,7 +528,7 @@ export function ReviewExecutionPanel({
                 >
                   导出整改清单
                 </a>
-              </>
+              </div>
             ) : null}
           </div>
           {comparison?.canCompare ? (
@@ -836,59 +837,67 @@ export function ReviewExecutionPanel({
               已保留 {executions.length} 次检查快照。
             </p>
           ) : null}
-          {remediationTasks.length ? (
-            <section
-              aria-labelledby="remediation-heading"
-              className="mt-8 border-t border-border pt-5"
-            >
-              <h3 id="remediation-heading" className="text-sm font-semibold">
-                整改待办 · {remediationTasks.length}
-              </h3>
-              <ol className="mt-3 divide-y divide-border border-y border-border">
-                {remediationTasks.map((todo) => (
-                  <li
-                    key={todo.id}
-                    className="flex flex-wrap items-start justify-between gap-3 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">
-                        {todo.ruleCode} · {todo.requirement}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{todo.reason}</p>
-                      {todo.recommendation ? (
-                        <p className="mt-1 text-xs text-primary">建议：{todo.recommendation}</p>
-                      ) : null}
-                      <a
-                        className="mt-1 inline-block text-xs text-primary underline"
-                        href={`/tasks/${taskId}#execution-${todo.executionId}-result-${todo.ruleId}`}
-                      >
-                        来源执行 {todo.executionId.slice(0, 8)} · {todo.materialIds.length}{" "}
-                        份关联材料
-                      </a>
-                    </div>
-                    <select
-                      aria-label={`${todo.ruleCode} 整改待办状态`}
-                      value={todo.status}
-                      onChange={(event) =>
-                        void updateRemediationTask(
-                          todo.id,
-                          event.target.value as RemediationTask["status"],
-                        )
-                      }
-                      className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+          <section
+            id="stage-remediation"
+            aria-labelledby="remediation-heading"
+            className="mt-8 border-t border-border pt-5"
+          >
+            <h3 id="remediation-heading" className="text-sm font-semibold">
+              整改待办 · {remediationTasks.length}
+            </h3>
+            {remediationTasks.length === 0 ? (
+              <p className="mt-3 text-xs text-muted-foreground">当前没有已创建的整改待办。</p>
+            ) : null}
+            {remediationTasks.length > 0 ? (
+              <>
+                <ol className="mt-3 divide-y divide-border border-y border-border">
+                  {remediationTasks.map((todo) => (
+                    <li
+                      key={todo.id}
+                      className="flex flex-wrap items-start justify-between gap-3 py-3"
                     >
-                      <option value="open">待处理</option>
-                      <option value="in_progress">处理中</option>
-                      <option value="done">已处理</option>
-                    </select>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-2 text-xs text-muted-foreground">
-                待办状态只记录人工处理进度，不改变检查结论；完成后需重新检查确认。
-              </p>
-            </section>
-          ) : null}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">
+                          {todo.ruleCode} · {todo.requirement}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {todo.reason}
+                        </p>
+                        {todo.recommendation ? (
+                          <p className="mt-1 text-xs text-primary">建议：{todo.recommendation}</p>
+                        ) : null}
+                        <a
+                          className="mt-1 inline-block text-xs text-primary underline"
+                          href={`/tasks/${taskId}#execution-${todo.executionId}-result-${todo.ruleId}`}
+                        >
+                          来源执行 {todo.executionId.slice(0, 8)} · {todo.materialIds.length}{" "}
+                          份关联材料
+                        </a>
+                      </div>
+                      <select
+                        aria-label={`${todo.ruleCode} 整改待办状态`}
+                        value={todo.status}
+                        onChange={(event) =>
+                          void updateRemediationTask(
+                            todo.id,
+                            event.target.value as RemediationTask["status"],
+                          )
+                        }
+                        className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+                      >
+                        <option value="open">待处理</option>
+                        <option value="in_progress">处理中</option>
+                        <option value="done">已处理</option>
+                      </select>
+                    </li>
+                  ))}
+                </ol>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  待办状态只记录人工处理进度，不改变检查结论；完成后需重新检查确认。
+                </p>
+              </>
+            ) : null}
+          </section>
         </div>
       )}
     </section>
