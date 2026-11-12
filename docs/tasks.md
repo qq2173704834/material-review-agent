@@ -58,8 +58,9 @@ ENG-001 至 ENG-004 与 Git 配置已完成或部分完成。当前 ENG-005 提�
 - PDF.js 提取页文本与页数；Mammoth 提取 DOCX 文本；ExcelJS 提取工作表行；TXT/CSV 严格 UTF-8 解码；图片仅保存原件和真实 MIME/大小并标记 `ocr_required`，没有将图片声称为已读。
 - DOCX/XLSX 检查 ZIP Office 容器结构，并在解压前依据 ZIP 元数据限制解压总量 100 MiB。上传限制为每批最多 10 个、单文件最多 20 MiB、批次最多 50 MiB。
 - 用合成 E2E 文件实际覆盖 7 种支持格式及伪装 PDF；PDF 断言 1 页与提取文本，Office/TXT/CSV 断言文字，PNG/JPG 断言需 OCR；验证任务之间材料隔离及桌面/移动详情展示。
-- `pnpm check` 通过（ESLint、TypeScript、Prettier、4 项单测）；`pnpm build` 通过；`pnpm test:e2e` 桌面/移动共 10 项通过。
-- 限制：ENG-006 仍是部分完成。尚未对每种格式系统覆盖空文件、损坏容器、超限、加密、UTF-8 错误、重复文件版本和 Office ZIP 炸弹样例；图像 OCR、DOCX 页数、公式计算结果等未实现。文件名相同会作为同一材料的新版本处理。
+- 边界回归：空文件和空白文本、单文件 20 MiB 与批次 50 MiB 上限、11 文件数量上限、错误 UTF-8、损坏 PDF/DOCX/XLSX/CSV/PNG/JPG、Office 加密容器的 OLE 签名拒绝、101 MiB 解压内容压缩包拒绝、同名材料升至 v2 均有合成样例覆盖。上传请求体增加 52 MiB 快速限制。
+- `pnpm check` 通过（ESLint、TypeScript、Prettier、4 项单测）；`pnpm build` 通过；扩展后的 `pnpm test:e2e` 桌面/移动共 12 项通过。
+- 限制：ENG-006 仍是部分完成。异常样例覆盖了每种格式的损坏签名/解析代表项，但尚未穷尽所有格式与每类边界的笛卡尔组合；目前验证的是加密 Office 常见 OLE 容器签名拒绝，不是解密支持。图像 OCR、DOCX 页数、公式计算结果等未实现。文件名相同会作为同一材料的新版本处理。
 - 已知后续工作：补全边界样本与批量上传逐文件结果 UI；处理失败后保存原件但数据库保存异常时的孤儿文件回收；再进入 ENG-007 规格工具与受限执行闭环。
 
 ## 接手阶段检查记录

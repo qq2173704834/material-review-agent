@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 const MAXIMUM_FILE_COUNT = 10;
 const MAXIMUM_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const MAXIMUM_BATCH_SIZE_BYTES = 50 * 1024 * 1024;
+const MAXIMUM_MULTIPART_REQUEST_BYTES = MAXIMUM_BATCH_SIZE_BYTES + 2 * 1024 * 1024;
 
 interface RouteContext {
   params: Promise<{ taskId: string }>;
@@ -27,6 +28,11 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
   const store = getReviewStore();
   if (!store.getTask(taskId))
     return NextResponse.json({ error: "没有找到该任务。" }, { status: 404 });
+
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAXIMUM_MULTIPART_REQUEST_BYTES) {
+    return NextResponse.json({ error: "上传请求超过 52 MiB 上限。" }, { status: 413 });
+  }
 
   let formData: FormData;
   try {

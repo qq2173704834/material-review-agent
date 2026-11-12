@@ -41,6 +41,21 @@ async function createSyntheticDocx(): Promise<Buffer> {
   return archive.generateAsync({ type: "nodebuffer" });
 }
 
+function createMultipartBody(
+  files: Array<{ name: string; mimeType: string; buffer: Buffer<ArrayBufferLike> }>,
+  boundary: string,
+): Buffer {
+  const parts = files.flatMap((file) => [
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="${file.name}"\r\nContent-Type: ${file.mimeType}\r\n\r\n`,
+    ),
+    file.buffer,
+    Buffer.from("\r\n"),
+  ]);
+  parts.push(Buffer.from(`--${boundary}--\r\n`));
+  return Buffer.concat(parts);
+}
+
 test.describe("本地审查任务 ENG-004 / ENG-005", () => {
   test("创建任务、刷新恢复并保存通知新版本", async ({ page }) => {
     const runtimeErrors: string[] = [];
@@ -224,6 +239,30 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       );
     }
 
+    await page.goto(`/tasks/${taskId}`);
+    await expect(page.getByRole("heading", { name: "审查材料" })).toBeVisible();
+    await expect(page.getByText("说明.txt", { exact: true })).toBeVisible();
+    await page
+      .locator("li")
+      .filter({ hasText: "说明.txt" })
+      .getByText(/查看 2 个定位片段/)
+      .click();
+    await expect(page.getByText(/第一行说明/)).toBeVisible();
+
+    const revisedText = await request.post(`/api/tasks/${taskId}/materials`, {
+      multipart: {
+        files: {
+          name: "说明.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("第二版说明", "utf8"),
+        },
+      },
+    });
+    expect(revisedText.status()).toBe(201);
+    expect(await revisedText.json()).toMatchObject({
+      materials: [{ originalFileName: "说明.txt", version: 2 }],
+    });
+
     const detailsResponse = await request.get(`/api/tasks/${taskId}`);
     expect(detailsResponse.ok()).toBe(true);
     const details = await detailsResponse.json();
@@ -232,7 +271,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       expect.arrayContaining([
         expect.objectContaining({
           originalFileName: "说明.txt",
-          extractedText: "第一行说明\n第二行说明",
+          version: 2,
+          extractedText: "第二版说明",
         }),
         expect.objectContaining({
           originalFileName: "记录.csv",
@@ -281,16 +321,132 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const otherDetails = await (await request.get(`/api/tasks/${otherTaskBody.task.id}`)).json();
     expect(otherDetails.task.materials).toHaveLength(1);
     expect(otherDetails.task.materials[0].originalFileName).toBe("越权.txt");
+  });
 
-    await page.goto(`/tasks/${taskId}`);
-    await expect(page.getByRole("heading", { name: "审查材料" })).toBeVisible();
-    await expect(page.getByText("说明.txt", { exact: true })).toBeVisible();
-    await page
-      .locator("li")
-      .filter({ hasText: "说明.txt" })
-      .getByText(/查看 2 个定位片段/)
-      .click();
-    await expect(page.getByText(/第一行说明/)).toBeVisible();
+  test("拒绝空文件、超限批次和不完整或损坏的材料", async ({ request }) => {
+    const taskResponse = await request.post("/api/tasks", {
+      data: { name: "材料边界合成任务", noticeText: "用于测试材料边界。" },
+    });
+    const taskBody = (await taskResponse.json()) as { task: { id: string } };
+    const uploadUrl = `/api/tasks/${taskBody.task.id}/materials`;
+
+    const emptyFile = await request.post(uploadUrl, {
+      multipart: { files: { name: "空.txt", mimeType: "text/plain", buffer: Buffer.alloc(0) } },
+    });
+    expect(emptyFile.status()).toBe(413);
+
+    const oversizedFile = await request.post(uploadUrl, {
+      multipart: {
+        files: {
+          name: "超限.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.alloc(20 * 1024 * 1024 + 1, 0x61),
+        },
+      },
+    });
+    expect(oversizedFile.status()).toBe(413);
+
+    const batchBoundary = "eng006-large-batch";
+    const oversizedBatch = await request.post(uploadUrl, {
+      data: createMultipartBody(
+        ["一", "二", "三"].map((label, index) => ({
+          name: `批次${label}.txt`,
+          mimeType: "text/plain",
+          buffer: Buffer.alloc(17 * 1024 * 1024, 0x61 + index),
+        })),
+        batchBoundary,
+      ),
+      headers: { "Content-Type": `multipart/form-data; boundary=${batchBoundary}` },
+    });
+    expect(oversizedBatch.status()).toBe(413);
+
+    const manyFiles = Array.from({ length: 11 }, (_, index) => ({
+      name: `文件-${index}.txt`,
+      mimeType: "text/plain",
+      buffer: Buffer.from("synthetic"),
+    }));
+    const boundary = "eng006-boundary-test";
+    const excessiveCount = await request.post(uploadUrl, {
+      data: createMultipartBody(manyFiles, boundary),
+      headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+    });
+    expect(excessiveCount.status()).toBe(400);
+
+    const encryptedOfficeSignature = Buffer.from([
+      0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0x00, 0x00, 0x00, 0x00,
+    ]);
+    const zipBomb = new JSZip();
+    zipBomb.file("[Content_Types].xml", "<Types/>");
+    zipBomb.file("word/document.xml", "<document/>");
+    zipBomb.file("large.bin", Buffer.alloc(101 * 1024 * 1024));
+    const zipBombBuffer = await zipBomb.generateAsync({
+      type: "nodebuffer",
+      compression: "DEFLATE",
+      compressionOptions: { level: 9 },
+    });
+    expect(zipBombBuffer.byteLength).toBeLessThan(1024 * 1024);
+
+    const invalidFiles = [
+      {
+        name: "空白.txt",
+        buffer: Buffer.from("  \n\r\n", "utf8"),
+        expectedMessage: "文件为空或没有可提取文本。",
+      },
+      { name: "错误编码.txt", buffer: Buffer.from([0xc3, 0x28]), expectedMessage: "" },
+      { name: "损坏.pdf", buffer: Buffer.from("%PDF-1.7 damaged", "utf8"), expectedMessage: "" },
+      {
+        name: "损坏.docx",
+        buffer: Buffer.from("PK\u0003\u0004broken office zip"),
+        expectedMessage: "",
+      },
+      {
+        name: "损坏.xlsx",
+        buffer: Buffer.from("PK\u0003\u0004broken workbook zip"),
+        expectedMessage: "",
+      },
+      { name: "损坏.csv", buffer: Buffer.from([0xc3, 0x28]), expectedMessage: "" },
+      {
+        name: "损坏.png",
+        buffer: Buffer.from("not png"),
+        expectedMessage: "扩展名与图片文件签名不匹配。",
+      },
+      {
+        name: "损坏.jpg",
+        buffer: Buffer.from("not jpeg"),
+        expectedMessage: "扩展名与图片文件签名不匹配。",
+      },
+      {
+        name: "加密.docx",
+        buffer: encryptedOfficeSignature,
+        expectedMessage: "扩展名与 DOCX 文件签名不匹配",
+      },
+      {
+        name: "超量.docx",
+        buffer: zipBombBuffer,
+        expectedMessage: "Office 文档解压后超过 100 MiB 安全上限。",
+      },
+    ];
+    for (const file of invalidFiles) {
+      const response = await request.post(uploadUrl, {
+        multipart: {
+          files: { name: file.name, mimeType: "application/octet-stream", buffer: file.buffer },
+        },
+      });
+      expect(response.status()).toBe(201);
+      const body = await response.json();
+      expect(body.materials[0].parseStatus).toBe("failed");
+      if (file.expectedMessage) {
+        expect(body.materials[0].parseMessage).toContain(file.expectedMessage);
+      }
+    }
+
+    const taskDetails = await (await request.get(`/api/tasks/${taskBody.task.id}`)).json();
+    expect(taskDetails.task.materials).toHaveLength(invalidFiles.length);
+    expect(
+      taskDetails.task.materials.map(
+        (material: { originalFileName: string }) => material.originalFileName,
+      ),
+    ).toEqual(expect.arrayContaining(invalidFiles.map((file) => file.name)));
   });
 
   test("拒绝空通知、非法任务编号并报告本地 SQLite 状态", async ({ request }) => {
