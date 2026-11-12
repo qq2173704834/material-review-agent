@@ -345,6 +345,28 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       ]),
     );
 
+    await page.locator("#material-files").setInputFiles({
+      name: "恢复测试.docx",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      buffer: Buffer.from("invalid Office package"),
+    });
+    await page.getByRole("button", { name: "上传 1" }).click();
+    const batchResults = page.getByRole("list", { name: "本批上传结果" });
+    await expect(batchResults.getByText("解析失败", { exact: true })).toBeVisible();
+    await expect(batchResults).toContainText("恢复测试.docx · v1");
+    const recovered = await request.post(`/api/tasks/${taskId}/materials`, {
+      multipart: {
+        files: {
+          name: "恢复测试.docx",
+          mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          buffer: await createSyntheticDocx(),
+        },
+      },
+    });
+    expect(await recovered.json()).toMatchObject({
+      materials: [{ originalFileName: "恢复测试.docx", version: 2, parseStatus: "text_extracted" }],
+    });
+
     const otherTaskResponse = await request.post("/api/tasks", {
       data: { name: "另一合成任务", noticeText: "另一份通知。" },
     });

@@ -18,6 +18,14 @@ const statusLabels = {
   ocr_required: "需要 OCR",
 } as const;
 
+interface MaterialUploadResult {
+  id: string;
+  version: number;
+  originalFileName: string;
+  parseStatus: ReviewMaterialSummary["parseStatus"];
+  parseMessage: string;
+}
+
 function formatBytes(fileSizeBytes: number): string {
   return fileSizeBytes < 1024 * 1024
     ? `${Math.max(1, Math.round(fileSizeBytes / 1024))} KiB`
@@ -27,12 +35,14 @@ function formatBytes(fileSizeBytes: number): string {
 export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps): ReactElement {
   const router = useRouter();
   const [materials, setMaterials] = useState(initialMaterials);
+  const [uploadResults, setUploadResults] = useState<MaterialUploadResult[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   function selectFiles(event: ChangeEvent<HTMLInputElement>): void {
     setSelectedFiles(Array.from(event.currentTarget.files ?? []));
+    setUploadResults([]);
     setError("");
   }
 
@@ -64,6 +74,29 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
         );
         return;
       }
+      if (
+        !Array.isArray(payload.materials) ||
+        payload.materials.some(
+          (item) =>
+            typeof item !== "object" ||
+            item === null ||
+            !("id" in item) ||
+            typeof item.id !== "string" ||
+            !("version" in item) ||
+            typeof item.version !== "number" ||
+            !("originalFileName" in item) ||
+            typeof item.originalFileName !== "string" ||
+            !("parseStatus" in item) ||
+            typeof item.parseStatus !== "string" ||
+            !Object.hasOwn(statusLabels, item.parseStatus) ||
+            !("parseMessage" in item) ||
+            typeof item.parseMessage !== "string",
+        )
+      ) {
+        setError("服务返回的逐文件上传结果无法识别。");
+        return;
+      }
+      setUploadResults(payload.materials as MaterialUploadResult[]);
       const refreshed = await fetch(`/api/tasks/${taskId}`, { cache: "no-store" });
       const taskPayload: unknown = await refreshed.json();
       if (
@@ -124,6 +157,31 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
         <p role="alert" className="mt-3 text-sm text-red-700">
           {error}
         </p>
+      ) : null}
+      {uploadResults.length > 0 ? (
+        <ul
+          aria-label="本批上传结果"
+          className="mt-4 divide-y divide-border border-y border-border"
+        >
+          {uploadResults.map((result) => (
+            <li
+              key={result.id}
+              className="flex flex-wrap items-start justify-between gap-2 py-3 text-xs"
+            >
+              <span className="min-w-0 break-words font-medium">
+                {result.originalFileName} · v{result.version}
+                {result.parseMessage ? (
+                  <span className="mt-1 block font-normal leading-5 text-amber-800">
+                    {result.parseMessage}
+                  </span>
+                ) : null}
+              </span>
+              <span className="shrink-0 text-muted-foreground">
+                {statusLabels[result.parseStatus]}
+              </span>
+            </li>
+          ))}
+        </ul>
       ) : null}
       {materials.length === 0 ? (
         <p className="mt-5 text-sm text-muted-foreground">尚未上传材料。</p>
