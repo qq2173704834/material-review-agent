@@ -22,7 +22,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 4;
+const DATABASE_SCHEMA_VERSION = 5;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -146,6 +146,7 @@ interface DatabaseExecutionRow {
   rule_set_id: string;
   source_version: number;
   status: string;
+  unexecuted_count: number;
   material_snapshot_json: string;
   results_json: string;
   created_at: string;
@@ -483,6 +484,37 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
         `);
       });
       migrateToVersionFour();
+    }
+
+    const executionSchemaVersion = database.pragma("user_version", { simple: true });
+    if (executionSchemaVersion === 4) {
+      const migrateToVersionFive = database.transaction(() => {
+        database.exec(`
+          ALTER TABLE review_executions RENAME TO review_executions_v4;
+          CREATE TABLE review_executions (
+            id TEXT PRIMARY KEY NOT NULL,
+            task_id TEXT NOT NULL REFERENCES review_tasks (id) ON DELETE CASCADE,
+            rule_set_id TEXT NOT NULL REFERENCES requirement_rule_sets (id),
+            source_version INTEGER NOT NULL CHECK (source_version > 0),
+            status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'cancelled', 'failed')),
+            unexecuted_count INTEGER NOT NULL DEFAULT 0 CHECK (unexecuted_count >= 0),
+            material_snapshot_json TEXT NOT NULL,
+            results_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            completed_at TEXT NOT NULL DEFAULT ''
+          );
+          INSERT INTO review_executions (
+            id, task_id, rule_set_id, source_version, status, material_snapshot_json,
+            results_json, created_at, completed_at
+          ) SELECT id, task_id, rule_set_id, source_version, status, material_snapshot_json,
+                   results_json, created_at, completed_at
+            FROM review_executions_v4;
+          DROP TABLE review_executions_v4;
+          CREATE INDEX review_executions_task_idx ON review_executions (task_id, created_at DESC);
+          PRAGMA user_version = 5;
+        `);
+      });
+      migrateToVersionFive();
     }
 
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
@@ -1119,9 +1151,9 @@ class ReviewStore {
       .prepare(
         `
       INSERT INTO review_executions (
-        id, task_id, rule_set_id, source_version, status, material_snapshot_json,
-        results_json, created_at, completed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, task_id, rule_set_id, source_version, status, unexecuted_count,
+        material_snapshot_json, results_json, created_at, completed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       )
       .run(
@@ -1130,6 +1162,7 @@ class ReviewStore {
         execution.ruleSetId,
         execution.sourceVersion,
         execution.status,
+        execution.unexecutedCount,
         JSON.stringify(execution.materialSnapshot),
         JSON.stringify(execution.results),
         execution.createdAt,
@@ -1138,11 +1171,50 @@ class ReviewStore {
     return execution;
   }
 
+  appendReviewExecutionResult(
+    executionId: string,
+    result: ReviewExecution["results"][number],
+  ): void {
+    const append = this.database.transaction(() => {
+      const row = this.database
+        .prepare<[string], { status: string; results_json: string }>(
+          "SELECT status, results_json FROM review_executions WHERE id = ?",
+        )
+        .get(executionId);
+      if (!row || row.status !== "running") throw new Error("Review execution is not running");
+      const results = JSON.parse(row.results_json) as ReviewExecution["results"];
+      results.push(result);
+      this.database
+        .prepare(
+          "UPDATE review_executions SET results_json = ? WHERE id = ? AND status = 'running'",
+        )
+        .run(JSON.stringify(results), executionId);
+    });
+    append();
+  }
+
+  finishReviewExecution(
+    executionId: string,
+    status: Exclude<ReviewExecution["status"], "running">,
+    unexecutedCount: number,
+    completedAt: string,
+  ): void {
+    this.database
+      .prepare(
+        `
+        UPDATE review_executions
+        SET status = ?, unexecuted_count = ?, completed_at = ?
+        WHERE id = ? AND status = 'running'
+      `,
+      )
+      .run(status, unexecutedCount, completedAt, executionId);
+  }
+
   listReviewExecutions(taskId: string): ReviewExecution[] {
     const rows = this.database
       .prepare<[string], DatabaseExecutionRow>(
         `
-        SELECT id, task_id, rule_set_id, source_version, status, material_snapshot_json,
+        SELECT id, task_id, rule_set_id, source_version, status, unexecuted_count, material_snapshot_json,
                results_json, created_at, completed_at
         FROM review_executions WHERE task_id = ? ORDER BY created_at DESC
       `,
@@ -1154,6 +1226,7 @@ class ReviewStore {
       ruleSetId: row.rule_set_id,
       sourceVersion: row.source_version,
       status: row.status as ReviewExecution["status"],
+      unexecutedCount: row.unexecuted_count,
       materialSnapshot: JSON.parse(
         row.material_snapshot_json,
       ) as ReviewExecution["materialSnapshot"],

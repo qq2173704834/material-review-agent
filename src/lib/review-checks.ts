@@ -247,6 +247,49 @@ function compareRule(
   };
 }
 
+export function executeReviewRule(
+  rule: ReviewRule,
+  materials: ReviewMaterialSummary[],
+  background: ReviewTaskBackground,
+): ReviewCheckResult {
+  const applies = applicableRule(rule, background);
+  const comparison =
+    applies === false
+      ? {
+          verdict: "not_applicable" as const,
+          reason: "该规则的个人/团队适用范围与任务背景不符。",
+          recommendation: "",
+          evidence: [],
+        }
+      : applies === undefined
+        ? {
+            verdict: "needs_confirmation" as const,
+            reason: "规则包含条件，但当前项目背景不足以确认是否适用。",
+            recommendation: "补充项目背景或人工确认适用条件。",
+            evidence: [],
+          }
+        : rule.uncertainty || rule.strength === "unknown"
+          ? {
+              verdict: "needs_confirmation" as const,
+              reason: rule.uncertainty || "规则强度尚未确认。",
+              recommendation: "对照通知原文确认规则含义和强度。",
+              evidence: [],
+            }
+          : compareRule(rule, materials);
+  return {
+    ruleId: rule.id,
+    ruleCode: rule.code,
+    requirement: rule.description,
+    strength: rule.strength,
+    ...comparison,
+    source: {
+      sourceId: rule.source.sourceId,
+      paragraphIndex: rule.source.paragraphIndex,
+      quotedText: rule.source.quotedText,
+    },
+  };
+}
+
 export function executeDeterministicChecks(
   ruleSet: ReviewRuleSet,
   materials: ReviewMaterialSummary[],
@@ -254,50 +297,14 @@ export function executeDeterministicChecks(
   createdAt: string,
   executionId: string,
 ): ReviewExecution {
-  const results: ReviewCheckResult[] = ruleSet.rules.map((rule) => {
-    const applies = applicableRule(rule, background);
-    const comparison =
-      applies === false
-        ? {
-            verdict: "not_applicable" as const,
-            reason: "该规则的个人/团队适用范围与任务背景不符。",
-            recommendation: "",
-            evidence: [],
-          }
-        : applies === undefined
-          ? {
-              verdict: "needs_confirmation" as const,
-              reason: "规则包含条件，但当前项目背景不足以确认是否适用。",
-              recommendation: "补充项目背景或人工确认适用条件。",
-              evidence: [],
-            }
-          : rule.uncertainty || rule.strength === "unknown"
-            ? {
-                verdict: "needs_confirmation" as const,
-                reason: rule.uncertainty || "规则强度尚未确认。",
-                recommendation: "对照通知原文确认规则含义和强度。",
-                evidence: [],
-              }
-            : compareRule(rule, materials);
-    return {
-      ruleId: rule.id,
-      ruleCode: rule.code,
-      requirement: rule.description,
-      strength: rule.strength,
-      ...comparison,
-      source: {
-        sourceId: rule.source.sourceId,
-        paragraphIndex: rule.source.paragraphIndex,
-        quotedText: rule.source.quotedText,
-      },
-    };
-  });
+  const results = ruleSet.rules.map((rule) => executeReviewRule(rule, materials, background));
   return {
     id: executionId,
     taskId: ruleSet.taskId,
     ruleSetId: ruleSet.id,
     sourceVersion: ruleSet.sourceVersion,
     status: "completed" as const,
+    unexecutedCount: 0,
     materialSnapshot: materials.map(({ id, version }) => ({ materialId: id, version })),
     results,
     createdAt,

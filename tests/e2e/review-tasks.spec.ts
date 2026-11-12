@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+
+import type { APIRequestContext } from "@playwright/test";
+import type { ReviewCheckResult, ReviewExecution } from "@/domain/review";
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
 
@@ -54,6 +57,40 @@ function createMultipartBody(
   ]);
   parts.push(Buffer.from(`--${boundary}--\r\n`));
   return Buffer.concat(parts);
+}
+
+interface CheckSseEvent {
+  type: string;
+  execution?: ReviewExecution;
+  result?: ReviewCheckResult;
+}
+
+async function runCheckStream(
+  request: APIRequestContext,
+  taskId: string,
+): Promise<{ status: number; events: CheckSseEvent[]; execution: ReviewExecution }> {
+  const response = await request.post(`/api/tasks/${taskId}/checks`);
+  const body = await response.text();
+  const events = body
+    .trim()
+    .split(/\r?\n\r?\n/)
+    .filter(Boolean)
+    .map((message) =>
+      message
+        .split(/\r?\n/)
+        .find((line) => line.startsWith("data: "))
+        ?.slice(6),
+    )
+    .filter((data): data is string => Boolean(data))
+    .map((data) => JSON.parse(data) as CheckSseEvent);
+  const execution = events.find((event) => event.type === "completed")?.execution;
+  if (!execution)
+    throw new Error("The check event stream did not finish with an execution snapshot.");
+  return {
+    status: response.status(),
+    events,
+    execution,
+  };
 }
 
 test.describe("本地审查任务 ENG-004 / ENG-005", () => {
@@ -461,9 +498,9 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const rulesResponse = await request.post(`/api/tasks/${task.id}/rules`);
     expect(rulesResponse.status()).toBe(201);
 
-    const firstExecutionResponse = await request.post(`/api/tasks/${task.id}/checks`);
-    expect(firstExecutionResponse.status()).toBe(201);
-    const firstExecution = (await firstExecutionResponse.json()).execution;
+    const firstRun = await runCheckStream(request, task.id);
+    expect(firstRun.status).toBe(200);
+    const firstExecution = firstRun.execution;
     expect(firstExecution.status).toBe("completed");
     expect(firstExecution.materialSnapshot).toEqual([]);
     expect(firstExecution.results).toEqual(
@@ -490,9 +527,9 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       },
     });
     expect(uploadResponse.status()).toBe(201);
-    const secondExecutionResponse = await request.post(`/api/tasks/${task.id}/checks`);
-    expect(secondExecutionResponse.status()).toBe(201);
-    const secondExecution = (await secondExecutionResponse.json()).execution;
+    const secondRun = await runCheckStream(request, task.id);
+    expect(secondRun.status).toBe(200);
+    const secondExecution = secondRun.execution;
     expect(secondExecution.materialSnapshot).toHaveLength(1);
     expect(secondExecution.results).toEqual(
       expect.arrayContaining([
@@ -531,9 +568,9 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       },
     });
     expect(invalidPdfUpload.status()).toBe(201);
-    const invalidPdfExecutionResponse = await request.post(`/api/tasks/${task.id}/checks`);
-    expect(invalidPdfExecutionResponse.status()).toBe(201);
-    const invalidPdfExecution = (await invalidPdfExecutionResponse.json()).execution;
+    const invalidPdfRun = await runCheckStream(request, task.id);
+    expect(invalidPdfRun.status).toBe(200);
+    const invalidPdfExecution = invalidPdfRun.execution;
     expect(invalidPdfExecution.results).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -543,6 +580,39 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
         }),
       ]),
     );
+  });
+
+  test("逐项展示真实进度并取消后保留已完成项", async ({ page, request }) => {
+    const noticeText = Array.from(
+      { length: 80 },
+      (_, index) => `必须提交第 ${index + 1} 项材料。`,
+    ).join("\n");
+    const taskResponse = await request.post("/api/tasks", {
+      data: { name: "取消执行合成任务", noticeText },
+    });
+    const { task } = await taskResponse.json();
+    const rulesResponse = await request.post(`/api/tasks/${task.id}/rules`);
+    expect(rulesResponse.status()).toBe(201);
+    const rulesBody = await rulesResponse.json();
+    expect(rulesBody.ruleSet.rules).toHaveLength(80);
+
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByRole("button", { name: "运行检查" }).click();
+    await expect(page.getByText(/已完成 \d+ \/ 80 项/)).toBeVisible();
+    await page.getByRole("button", { name: "取消检查" }).click();
+    await expect(page.getByText(/已取消，\d+ 项未执行/)).toBeVisible();
+
+    await expect
+      .poll(async () => {
+        const response = await request.get(`/api/tasks/${task.id}/checks`);
+        const payload = await response.json();
+        return payload.executions[0]?.status;
+      })
+      .toBe("cancelled");
+    const checks = await (await request.get(`/api/tasks/${task.id}/checks`)).json();
+    expect(checks.executions[0].results.length).toBeGreaterThan(0);
+    expect(checks.executions[0].unexecutedCount).toBeGreaterThan(0);
+    expect(checks.executions[0].results.length + checks.executions[0].unexecutedCount).toBe(80);
   });
 
   test("拒绝空通知、非法任务编号并报告本地 SQLite 状态", async ({ request }) => {

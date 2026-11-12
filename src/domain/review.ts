@@ -80,7 +80,7 @@ export interface ReviewMaterialSummary {
   createdAt: string;
 }
 
-export type ReviewExecutionStatus = "completed";
+export type ReviewExecutionStatus = "running" | "completed" | "cancelled" | "failed";
 
 export interface ReviewCheckEvidence {
   materialId: string;
@@ -107,6 +107,7 @@ export interface ReviewExecution {
   ruleSetId: string;
   sourceVersion: number;
   status: ReviewExecutionStatus;
+  unexecutedCount: number;
   materialSnapshot: Array<{ materialId: string; version: number }>;
   results: ReviewCheckResult[];
   createdAt: string;
