@@ -89,6 +89,8 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         key={`rules-${ruleSets[0]?.id ?? "none"}`}
         taskId={task.id}
         currentNoticeVersion={task.noticeSource.version}
+        noticeText={task.noticeSource.originalText}
+        noticeSegments={task.noticeSource.segments}
         initialRuleSets={ruleSets}
         mode={runtimeStatus.mode}
       />

@@ -9,6 +9,13 @@ import type { FormEvent, ReactElement } from "react";
 interface RuleReviewProps {
   taskId: string;
   currentNoticeVersion: number;
+  noticeText: string;
+  noticeSegments: Array<{
+    paragraphIndex: number;
+    text: string;
+    startOffset: number;
+    endOffset: number;
+  }>;
   initialRuleSets: ReviewRuleSet[];
   mode: "mock" | "live" | "invalid";
 }
@@ -29,6 +36,8 @@ const checkabilityLabels = {
 export function RuleReview({
   taskId,
   currentNoticeVersion,
+  noticeText,
+  noticeSegments,
   initialRuleSets,
   mode,
 }: RuleReviewProps): ReactElement {
@@ -37,6 +46,7 @@ export function RuleReview({
   const [error, setError] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [editingRule, setEditingRule] = useState<ReviewRule | null>(null);
+  const [isAddingRule, setIsAddingRule] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const currentRuleSet = ruleSets[0];
   const hasCurrentRuleSet = currentRuleSet?.sourceVersion === currentNoticeVersion;
@@ -134,6 +144,75 @@ export function RuleReview({
     }
   }
 
+  async function addManualRule(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (!currentRuleSet || !hasCurrentRuleSet || isSaving) return;
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const description = String(form.get("description") ?? "").trim();
+    const target = String(form.get("target") ?? "").trim();
+    const quotedText = String(form.get("quotedText") ?? "").trim();
+    const startOffset = noticeText.indexOf(quotedText);
+    const segment = noticeSegments.find(
+      (item) =>
+        startOffset >= item.startOffset && startOffset + quotedText.length <= item.endOffset,
+    );
+    if (!description || !target || !quotedText || startOffset < 0 || !segment) {
+      setError("请填写要求、目标材料，并引用当前通知中的完整原文片段。");
+      return;
+    }
+    const rule: ReviewRule = {
+      id: crypto.randomUUID(),
+      code: "R-999",
+      description,
+      target,
+      strength: String(form.get("strength")) as ReviewRule["strength"],
+      applicabilityScope: "unknown",
+      applicabilityCondition: "",
+      parameters: [],
+      checkability: String(form.get("checkability")) as ReviewRule["checkability"],
+      generationMethod: "manual",
+      uncertainty: "由用户手动新增，尚未由模型或自动规则验证。",
+      source: {
+        sourceId: currentRuleSet.sourceId,
+        sourceVersion: currentNoticeVersion,
+        paragraphIndex: segment.paragraphIndex,
+        quotedText,
+        startOffset,
+        endOffset: startOffset + quotedText.length,
+      },
+    };
+    setError("");
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/rules`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rules: [...currentRuleSet.rules, rule] }),
+      });
+      const result: unknown = await response.json();
+      if (!response.ok || typeof result !== "object" || result === null || !("ruleSet" in result)) {
+        setError(
+          typeof result === "object" &&
+            result !== null &&
+            "error" in result &&
+            typeof result.error === "string"
+            ? result.error
+            : "人工新增规则保存失败。",
+        );
+        return;
+      }
+      setRuleSets((existing) => [result.ruleSet as ReviewRuleSet, ...existing]);
+      setIsAddingRule(false);
+      formElement.reset();
+      router.refresh();
+    } catch {
+      setError("暂时无法连接本地服务，请稍后重试。");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <section
       aria-labelledby="rules-heading"
@@ -158,7 +237,81 @@ export function RuleReview({
         >
           {isExtracting ? "正在整理…" : hasCurrentRuleSet ? "重新生成草稿" : "从通知生成草稿"}
         </button>
+        {hasCurrentRuleSet ? (
+          <button
+            type="button"
+            onClick={() => setIsAddingRule((visible) => !visible)}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-border px-3 text-xs font-medium hover:bg-muted"
+          >
+            {isAddingRule ? "取消新增" : "新增人工规则"}
+          </button>
+        ) : null}
       </div>
+      {isAddingRule && currentRuleSet ? (
+        <form onSubmit={addManualRule} className="mt-5 space-y-3 border-l-2 border-primary/40 pl-4">
+          <label className="block text-xs font-medium">
+            要求描述
+            <textarea
+              name="description"
+              required
+              maxLength={2_000}
+              className="mt-1 min-h-16 w-full rounded-md border border-border bg-background p-2 text-sm"
+            />
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs font-medium">
+              目标材料
+              <input
+                name="target"
+                required
+                maxLength={200}
+                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+              />
+            </label>
+            <label className="text-xs font-medium">
+              要求强度
+              <select
+                name="strength"
+                defaultValue="unknown"
+                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+              >
+                <option value="required">必须</option>
+                <option value="recommended">建议</option>
+                <option value="optional">可选</option>
+                <option value="unknown">待确认</option>
+              </select>
+            </label>
+          </div>
+          <label className="block text-xs font-medium">
+            检查方式
+            <select
+              name="checkability"
+              defaultValue="assisted"
+              className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+            >
+              <option value="deterministic">确定性规格</option>
+              <option value="assisted">需要材料证据</option>
+              <option value="unable_to_check">当前无法检查</option>
+            </select>
+          </label>
+          <label className="block text-xs font-medium">
+            通知原文引用
+            <textarea
+              name="quotedText"
+              required
+              maxLength={20_000}
+              className="mt-1 min-h-16 w-full rounded-md border border-border bg-background p-2 text-sm"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {isSaving ? "保存中…" : "保存为新规则版本"}
+          </button>
+        </form>
+      ) : null}
       {error ? (
         <p role="alert" className="mt-4 text-sm text-red-700">
           {error}

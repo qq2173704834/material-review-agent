@@ -820,6 +820,36 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(ruleSets[1].rules).toHaveLength(1);
   });
 
+  test("人工新增规则必须引用当前通知原文并作为新版本保存", async ({ page, request }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "人工新增规则任务",
+        noticeText: "必须提交项目说明。另需提供签章页原件。",
+      },
+    });
+    const { task } = await created.json();
+    await request.post(`/api/tasks/${task.id}/rules`);
+    const before = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
+    const previousCount = before.ruleSets[0].rules.length;
+
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByRole("button", { name: "新增人工规则" }).click();
+    await page.getByLabel("要求描述").last().fill("补充核对签章页原件");
+    await page.getByLabel("目标材料").last().fill("签章页原件");
+    await page.getByLabel("通知原文引用").fill("另需提供签章页原件。");
+    await page.getByRole("button", { name: "保存为新规则版本" }).click();
+
+    const { ruleSets } = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
+    expect(ruleSets[0].rules).toHaveLength(previousCount + 1);
+    expect(ruleSets[0].rules.at(-1)).toMatchObject({
+      description: "补充核对签章页原件",
+      target: "签章页原件",
+      generationMethod: "manual",
+      source: { quotedText: "另需提供签章页原件。" },
+    });
+    expect(ruleSets[1].rules).toHaveLength(previousCount);
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {
