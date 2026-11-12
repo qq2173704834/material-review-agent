@@ -126,6 +126,17 @@ test("模型伪造材料引用时结果不会通过", async ({ request }) => {
   });
 });
 
+test("材料只有标题时内容要求不能判通过", async ({ request }) => {
+  const { task } = await createTask(request, "项目说明必须给出测试样本量。", "项目说明");
+  const execution = await runChecks(request, task.id);
+  expect(execution.results[0]).toMatchObject({
+    verdict: "failed",
+    method: "model",
+    reason: expect.stringContaining("只有标题"),
+    evidence: [expect.objectContaining({ quotedText: "项目说明" })],
+  });
+});
+
 test("材料中的指令覆盖文本不改变规则且不交给模型裁决", async ({ request }) => {
   const { task, rules } = await createTask(
     request,
