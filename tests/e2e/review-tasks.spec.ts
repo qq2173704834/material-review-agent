@@ -161,9 +161,9 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await expect(page.getByRole("textbox", { name: "通知或要求原文" })).toHaveValue(
       /修订后的合成通知/,
     );
-    await expect(page.getByText(/通知 v1 的规则草稿/)).toBeVisible();
+    await expect(page.getByText(/当前来源集合与最近规则草稿不一致/)).toBeVisible();
     await page.getByRole("button", { name: "从通知生成草稿" }).click();
-    await expect(page.getByText(/通知 v1 的规则草稿/)).toHaveCount(0);
+    await expect(page.getByText(/当前来源集合与最近规则草稿不一致/)).toHaveCount(0);
     await expect(page.getByText(/修订后的合成通知/).first()).toBeVisible();
 
     const response = await page.request.get("/api/tasks");
@@ -836,7 +836,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await page.getByRole("button", { name: "新增人工规则" }).click();
     await page.getByLabel("要求描述").last().fill("补充核对签章页原件");
     await page.getByLabel("目标材料").last().fill("签章页原件");
-    await page.getByLabel("通知原文引用").fill("另需提供签章页原件。");
+    await page.getByLabel("来源原文引用").fill("另需提供签章页原件。");
     await page.getByRole("button", { name: "保存为新规则版本" }).click();
 
     const { ruleSets } = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
@@ -953,13 +953,26 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
         note: "人工对照原文及材料后确认",
       }),
     ]);
+    const addedAfterExecution = await request.post(`/api/tasks/${task.id}/sources`, {
+      multipart: {
+        sourceFile: {
+          name: "后续补充附件.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("本附件在本次检查完成后新增。"),
+        },
+      },
+    });
+    expect(addedAfterExecution.status()).toBe(201);
     const report = await request.get(
       `/api/tasks/${task.id}/report?executionId=${checked.execution.id}`,
     );
     const reportText = await report.text();
     expect(reportText).toContain("人工复核意见：认为符合 · 人工对照原文及材料后确认");
     expect(reportText).toContain("报告范围附件.txt");
-    expect(reportText).toContain("未纳入本次执行规则集");
+    expect(reportText).toContain("规则来源快照");
+    expect(reportText).toContain("报告范围附件.txt · v1");
+    expect(reportText).toContain("执行后新增的补充来源");
+    expect(reportText).toContain("后续补充附件.txt");
     const remediation = await request.get(
       `/api/tasks/${task.id}/report?executionId=${checked.execution.id}&type=remediation`,
     );
@@ -1195,6 +1208,74 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(
       afterDelete.supplementalSources.map((source: { displayName: string }) => source.displayName),
     ).toEqual(["补充通知.txt"]);
+  });
+
+  test("补充来源参与规则提取并保留引用，来源删除后旧规则集失效", async ({ request, page }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "多来源规则引用验证",
+        description: "",
+        background: { projectType: "", projectStage: "", collaborationScope: "unknown" },
+        noticeText: "本次通知说明审查范围。",
+      },
+    });
+    const { task } = await created.json();
+    const attachmentResponse = await request.post(`/api/tasks/${task.id}/sources`, {
+      multipart: {
+        sourceFile: {
+          name: "补充材料清单.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("必须提交技术说明书。"),
+        },
+      },
+    });
+    const { source } = await attachmentResponse.json();
+    const extraction = await request.post(`/api/tasks/${task.id}/rules`);
+    expect(extraction.status()).toBe(201);
+    const { ruleSet } = await extraction.json();
+    expect(ruleSet.sourceVersions).toHaveLength(2);
+    expect(ruleSet.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          description: "必须提交技术说明书",
+          source: expect.objectContaining({
+            sourceId: source.id,
+            displayName: "补充材料清单.txt",
+            quotedText: "必须提交技术说明书",
+          }),
+        }),
+      ]),
+    );
+
+    await page.goto(`/tasks/${task.id}`);
+    await expect(page.getByText("补充材料清单.txt v1 · 行 1", { exact: false })).toBeVisible();
+    await expect(page.getByText("必须提交技术说明书", { exact: true })).toBeVisible();
+    const checked = await runCheckStream(request, task.id);
+    expect(
+      checked.execution.results.some(
+        (result: { source: { displayName?: string } }) =>
+          result.source.displayName === "补充材料清单.txt",
+      ),
+    ).toBe(true);
+    const report = await request.get(`/api/tasks/${task.id}/report`);
+    expect(await report.text()).toContain("要求依据：补充材料清单.txt v1");
+
+    const deleted = await request.delete(`/api/tasks/${task.id}/sources/${source.id}`);
+    expect(deleted.status()).toBe(204);
+    const staleCheck = await request.post(`/api/tasks/${task.id}/checks`);
+    expect(staleCheck.status()).toBe(409);
+    const persistedRuleSets = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
+    expect(persistedRuleSets.ruleSets[0].rules[0].source.displayName).toBe("补充材料清单.txt");
+
+    const regenerated = await request.post(`/api/tasks/${task.id}/rules`);
+    expect(regenerated.status()).toBe(201);
+    const { ruleSet: currentRuleSet } = await regenerated.json();
+    expect(currentRuleSet.sourceVersions).toHaveLength(1);
+    expect(
+      currentRuleSet.rules.every(
+        (rule: { source: { sourceId: string } }) => rule.source.sourceId === task.noticeSource.id,
+      ),
+    ).toBe(true);
   });
 
   test("要求来源上传在解析 multipart 前限制请求体字节数", async ({ request }) => {

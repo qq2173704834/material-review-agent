@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { reviewTaskIdSchema } from "@/domain/review-task";
+import { hasCurrentRuleSources } from "@/domain/review-rule";
 import type { ReviewCheckResult, ReviewExecution } from "@/domain/review";
 import { executeReviewRule } from "@/lib/review-checks";
 import { getReviewStore } from "@/lib/server/review-store";
@@ -57,9 +58,16 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     if (!task) return NextResponse.json({ error: "没有找到该任务。" }, { status: 404 });
     const ruleSet = store
       .listRuleSets(taskId)
-      .find((candidate) => candidate.sourceVersion === task.noticeSource.version);
+      .find(
+        (candidate) =>
+          candidate.sourceVersion === task.noticeSource.version &&
+          hasCurrentRuleSources(candidate, [task.noticeSource, ...task.supplementalSources]),
+      );
     if (!ruleSet) {
-      return NextResponse.json({ error: "请先根据当前通知生成规则草稿。" }, { status: 409 });
+      return NextResponse.json(
+        { error: "来源已变化，请先根据当前全部要求来源重新生成规则草稿。" },
+        { status: 409 },
+      );
     }
     if (activeReviewTasks.has(taskId))
       return NextResponse.json({ error: "该任务正在检查，请等待结束或先取消。" }, { status: 409 });

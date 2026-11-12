@@ -7,6 +7,7 @@ import { TaskEditor } from "@/components/task-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { reviewTaskIdSchema } from "@/domain/review-task";
+import { hasCurrentRuleSources } from "@/domain/review-rule";
 import { getReviewStore } from "@/lib/server/review-store";
 import { RuleReview } from "@/components/rule-review";
 import { MaterialUpload } from "@/components/material-upload";
@@ -41,6 +42,12 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
   const task = getReviewStore().getTask(taskId);
   if (!task) notFound();
   const ruleSets = getReviewStore().listRuleSets(taskId);
+  const currentSources = [task.noticeSource, ...task.supplementalSources];
+  const currentRuleSet = ruleSets.find(
+    (ruleSet) =>
+      ruleSet.sourceVersion === task.noticeSource.version &&
+      hasCurrentRuleSources(ruleSet, currentSources),
+  );
   const executions = annotateExecutions(
     task,
     ruleSets,
@@ -156,18 +163,12 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         </section>
       ) : null}
       <SupplementSourceUpload taskId={task.id} />
-      <ClarificationPanel
-        task={task}
-        currentRuleSet={ruleSets.find(
-          (ruleSet) => ruleSet.sourceVersion === task.noticeSource.version,
-        )}
-      />
+      <ClarificationPanel task={task} currentRuleSet={currentRuleSet} />
       <RuleReview
         key={`rules-${ruleSets[0]?.id ?? "none"}`}
         taskId={task.id}
         currentNoticeVersion={task.noticeSource.version}
-        noticeText={task.noticeSource.originalText}
-        noticeSegments={task.noticeSource.segments}
+        sources={currentSources}
         materials={task.materials.map(({ id, version, originalFileName }) => ({
           id,
           version,
@@ -182,9 +183,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         taskId={task.id}
         initialExecutions={executions}
         initialRemediationTasks={remediationTasks}
-        hasCurrentRuleSet={ruleSets.some(
-          (ruleSet) => ruleSet.sourceVersion === task.noticeSource.version,
-        )}
+        hasCurrentRuleSet={Boolean(currentRuleSet)}
         mode={runtimeStatus.mode}
         materials={task.materials.map(({ id, version, originalFileName }) => ({
           id,

@@ -4,19 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { ReviewRule, ReviewRuleSet } from "@/domain/review-rule";
+import { hasCurrentRuleSources } from "@/domain/review-rule";
+import type { RequirementSourceVersion } from "@/domain/review";
 import type { FormEvent, ReactElement } from "react";
 
 interface RuleReviewProps {
   taskId: string;
   currentNoticeVersion: number;
-  noticeText: string;
-  noticeSegments: Array<{
-    paragraphIndex: number;
-    text: string;
-    startOffset: number;
-    endOffset: number;
-    location?: string;
-  }>;
+  sources: RequirementSourceVersion[];
   materials: Array<{ id: string; version: number; originalFileName: string }>;
   initialRuleSets: ReviewRuleSet[];
   mode: "mock" | "live" | "invalid";
@@ -38,8 +33,7 @@ const checkabilityLabels = {
 export function RuleReview({
   taskId,
   currentNoticeVersion,
-  noticeText,
-  noticeSegments,
+  sources,
   materials,
   initialRuleSets,
   mode,
@@ -51,8 +45,13 @@ export function RuleReview({
   const [editingRule, setEditingRule] = useState<ReviewRule | null>(null);
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const currentRuleSet = ruleSets[0];
-  const hasCurrentRuleSet = currentRuleSet?.sourceVersion === currentNoticeVersion;
+  const latestRuleSet = ruleSets[0];
+  const currentRuleSet = ruleSets.find(
+    (ruleSet) =>
+      ruleSet.sourceVersion === currentNoticeVersion && hasCurrentRuleSources(ruleSet, sources),
+  );
+  const displayedRuleSet = currentRuleSet ?? latestRuleSet;
+  const hasCurrentRuleSet = Boolean(currentRuleSet);
 
   async function extractRules(): Promise<void> {
     setError("");
@@ -154,14 +153,16 @@ export function RuleReview({
     const form = new FormData(formElement);
     const description = String(form.get("description") ?? "").trim();
     const target = String(form.get("target") ?? "").trim();
+    const sourceId = String(form.get("sourceId") ?? "");
+    const source = sources.find((candidate) => candidate.id === sourceId);
     const quotedText = String(form.get("quotedText") ?? "").trim();
-    const startOffset = noticeText.indexOf(quotedText);
-    const segment = noticeSegments.find(
+    const startOffset = source?.originalText.indexOf(quotedText) ?? -1;
+    const segment = source?.segments.find(
       (item) =>
         startOffset >= item.startOffset && startOffset + quotedText.length <= item.endOffset,
     );
-    if (!description || !target || !quotedText || startOffset < 0 || !segment) {
-      setError("请填写要求、目标材料，并引用当前通知中的完整原文片段。");
+    if (!description || !target || !quotedText || startOffset < 0 || !segment || !source) {
+      setError("请填写要求、目标材料，并引用所选来源中的完整原文片段。");
       return;
     }
     const rule: ReviewRule = {
@@ -178,8 +179,9 @@ export function RuleReview({
       generationMethod: "manual",
       uncertainty: "",
       source: {
-        sourceId: currentRuleSet.sourceId,
-        sourceVersion: currentNoticeVersion,
+        sourceId: source.id,
+        sourceVersion: source.version,
+        displayName: source.displayName,
         paragraphIndex: segment.paragraphIndex,
         quotedText,
         startOffset,
@@ -299,7 +301,22 @@ export function RuleReview({
             </select>
           </label>
           <label className="block text-xs font-medium">
-            通知原文引用
+            要求来源
+            <select
+              name="sourceId"
+              defaultValue={sources[0]?.id ?? ""}
+              required
+              className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+            >
+              {sources.map((source) => (
+                <option key={source.id} value={source.id}>
+                  {source.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs font-medium">
+            来源原文引用
             <textarea
               name="quotedText"
               required
@@ -321,36 +338,38 @@ export function RuleReview({
           {error}
         </p>
       ) : null}
-      {!currentRuleSet ? (
+      {!displayedRuleSet ? (
         <p className="mt-5 text-sm text-muted-foreground">尚未生成规则草稿。</p>
       ) : null}
-      {currentRuleSet ? (
+      {displayedRuleSet ? (
         <div className="mt-6 space-y-5">
           {!hasCurrentRuleSet ? (
             <p className="border-l-2 border-amber-500 pl-3 text-sm leading-6 text-amber-900">
-              当前显示的是通知 v{currentRuleSet.sourceVersion} 的规则草稿；任务通知已更新为 v
-              {currentNoticeVersion}，请重新生成后再使用。
+              当前来源集合与最近规则草稿不一致，请重新生成后再使用。规则生成会读取主通知及所有已添加的补充来源。
             </p>
           ) : null}
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
-            <span>通知 v{currentRuleSet.sourceVersion}</span>
+            <span>通知 v{displayedRuleSet.sourceVersion}</span>
             <span>
-              {currentRuleSet.mode === "live"
-                ? `真实模型 · ${currentRuleSet.provider} / ${currentRuleSet.model}`
+              {displayedRuleSet.mode === "live"
+                ? `真实模型 · ${displayedRuleSet.provider} / ${displayedRuleSet.model}`
                 : "模拟模式"}
             </span>
-            <span>{currentRuleSet.rules.length} 条草稿</span>
-            <time dateTime={currentRuleSet.createdAt}>
-              {new Date(currentRuleSet.createdAt).toLocaleString("zh-CN")}
+            <span>
+              {displayedRuleSet.rules.length} 条草稿 · {displayedRuleSet.sourceVersions.length}{" "}
+              个来源
+            </span>
+            <time dateTime={displayedRuleSet.createdAt}>
+              {new Date(displayedRuleSet.createdAt).toLocaleString("zh-CN")}
             </time>
           </div>
-          {currentRuleSet.rules.length === 0 ? (
+          {displayedRuleSet.rules.length === 0 ? (
             <p className="border-l-2 border-amber-500 pl-3 text-sm leading-6">
-              {currentRuleSet.warnings[0]?.message ?? "未识别到规则草稿。"}
+              {displayedRuleSet.warnings[0]?.message ?? "未识别到规则草稿。"}
             </p>
           ) : null}
           <ol className="divide-y divide-border border-y border-border">
-            {currentRuleSet.rules.map((rule) => (
+            {displayedRuleSet.rules.map((rule) => (
               <li key={rule.id} className="py-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -526,10 +545,12 @@ export function RuleReview({
                 ) : null}
                 <blockquote className="mt-3 border-l-2 border-primary/40 pl-3 text-xs leading-6 text-muted-foreground">
                   <span className="font-mono">
-                    通知 v{rule.source.sourceVersion} ·{" "}
-                    {noticeSegments.find(
-                      (segment) => segment.paragraphIndex === rule.source.paragraphIndex,
-                    )?.location ?? `段落 ${rule.source.paragraphIndex + 1}`}{" "}
+                    {rule.source.displayName ?? "主通知"} v{rule.source.sourceVersion} ·{" "}
+                    {sources
+                      .find((source) => source.id === rule.source.sourceId)
+                      ?.segments.find(
+                        (segment) => segment.paragraphIndex === rule.source.paragraphIndex,
+                      )?.location ?? `段落 ${rule.source.paragraphIndex + 1}`}{" "}
                     · 字符 {rule.source.startOffset}–{rule.source.endOffset}
                   </span>
                   <span className="mt-1 block break-words text-foreground">
@@ -539,13 +560,13 @@ export function RuleReview({
               </li>
             ))}
           </ol>
-          {currentRuleSet.warnings.length > 0 ? (
+          {displayedRuleSet.warnings.length > 0 ? (
             <details>
               <summary className="cursor-pointer text-xs text-muted-foreground">
-                查看 {currentRuleSet.warnings.length} 条需要人工留意的信息
+                查看 {displayedRuleSet.warnings.length} 条需要人工留意的信息
               </summary>
               <ul className="mt-3 space-y-2 text-xs leading-5 text-amber-800">
-                {currentRuleSet.warnings.map((warning, index) => (
+                {displayedRuleSet.warnings.map((warning, index) => (
                   <li key={`${warning.code}-${index}`}>{warning.message}</li>
                 ))}
               </ul>

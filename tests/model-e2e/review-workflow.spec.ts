@@ -117,6 +117,36 @@ test("真实模式代码链完成提取、证据审查、复检和报告（受�
   );
 });
 
+test("真实模式逐来源提取补充要求并保存可核验引用（受控模型）", async ({ request, page }) => {
+  const created = await request.post("/api/tasks", {
+    data: { name: "受控多来源规则样例", noticeText: "主通知必须提交项目说明。" },
+  });
+  const { task } = (await created.json()) as { task: ReviewTaskDetails };
+  const sourceResponse = await request.post(`/api/tasks/${task.id}/sources`, {
+    multipart: {
+      sourceFile: {
+        name: "补充通知.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from("补充来源必须提交项目预算。"),
+      },
+    },
+  });
+  const { source } = await sourceResponse.json();
+  const response = await request.post(`/api/tasks/${task.id}/rules`);
+  expect(response.status()).toBe(201);
+  const { ruleSet } = await response.json();
+  expect(ruleSet.modelCalls).toHaveLength(2);
+  expect(ruleSet.rules).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        source: expect.objectContaining({ sourceId: source.id, displayName: "补充通知.txt" }),
+      }),
+    ]),
+  );
+  await page.goto(`/tasks/${task.id}`);
+  await expect(page.getByText("补充通知.txt v1 · 行 1", { exact: false })).toBeVisible();
+});
+
 test("模型伪造通知原文时拒绝保存规则", async ({ request }) => {
   const { task, rules } = await createTask(request, "INVALID_SOURCE 必须提交项目说明。");
   expect(rules.status()).toBe(422);

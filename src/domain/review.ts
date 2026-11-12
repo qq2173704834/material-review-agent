@@ -159,6 +159,8 @@ export interface RemediationTask {
 
 export interface SourcePosition {
   sourceId: string;
+  sourceVersion?: number;
+  displayName?: string;
   paragraphIndex: number;
   quotedText: string;
   pageNumber?: number;

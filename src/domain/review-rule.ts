@@ -10,6 +10,7 @@ export const ruleGenerationMethodSchema = z.enum(["mock", "live", "manual"]);
 export const ruleSourcePositionSchema = z.object({
   sourceId: z.string().uuid(),
   sourceVersion: z.number().int().positive(),
+  displayName: z.string().min(1).max(500).optional(),
   paragraphIndex: z.number().int().nonnegative(),
   quotedText: z.string().min(1).max(20_000),
   startOffset: z.number().int().nonnegative(),
@@ -50,12 +51,22 @@ export const reviewRuleSetSchema = z.object({
   taskId: z.string().uuid(),
   sourceId: z.string().uuid(),
   sourceVersion: z.number().int().positive(),
+  sourceVersions: z
+    .array(
+      z.object({
+        sourceId: z.string().uuid(),
+        version: z.number().int().positive(),
+        displayName: z.string().min(1).max(500),
+      }),
+    )
+    .max(11)
+    .default([]),
   mode: z.enum(["mock", "live"]),
   provider: z.string().max(120),
   model: z.string().max(120),
   status: z.enum(["completed", "failed"]),
   createdAt: z.string().datetime(),
-  modelCalls: z.array(modelCallSchema).max(10).default([]),
+  modelCalls: z.array(modelCallSchema).max(11).default([]),
   rules: z.array(reviewRuleSchema).max(500),
   warnings: z.array(ruleExtractionWarningSchema).max(500),
 });
@@ -76,7 +87,20 @@ export interface RuleExtractionInput {
   taskId: string;
   sourceId: string;
   sourceVersion: number;
+  sourceDisplayName?: string;
   noticeText: string;
 }
 
 export type RuleCollaborationScope = CollaborationScope;
+
+export function hasCurrentRuleSources(
+  ruleSet: Pick<ReviewRuleSet, "sourceVersions" | "sourceId" | "sourceVersion">,
+  sources: Array<{ id: string; version: number }>,
+): boolean {
+  const recorded = ruleSet.sourceVersions.length
+    ? ruleSet.sourceVersions
+    : [{ sourceId: ruleSet.sourceId, version: ruleSet.sourceVersion }];
+  if (recorded.length !== sources.length) return false;
+  const recordedById = new Map(recorded.map((source) => [source.sourceId, source.version]));
+  return sources.every((source) => recordedById.get(source.id) === source.version);
+}

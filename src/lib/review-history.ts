@@ -1,5 +1,6 @@
 import type { ReviewCheckResult, ReviewExecution, ReviewTaskDetails } from "@/domain/review";
 import type { ReviewRuleSet } from "@/domain/review-rule";
+import { hasCurrentRuleSources } from "@/domain/review-rule";
 
 export function annotateExecutions(
   task: ReviewTaskDetails,
@@ -7,7 +8,9 @@ export function annotateExecutions(
   executions: ReviewExecution[],
 ): ReviewExecution[] {
   const latestRuleSet = ruleSets.find(
-    (ruleSet) => ruleSet.sourceVersion === task.noticeSource.version,
+    (ruleSet) =>
+      ruleSet.sourceVersion === task.noticeSource.version &&
+      hasCurrentRuleSources(ruleSet, [task.noticeSource, ...task.supplementalSources]),
   );
   const currentMaterials = new Map(
     task.materials.map((material) => [material.id, material.version]),
@@ -15,6 +18,12 @@ export function annotateExecutions(
   return executions.map((execution) => {
     const reasons: string[] = [];
     if (execution.sourceVersion !== task.noticeSource.version) reasons.push("通知已经更新");
+    const executionRuleSet = ruleSets.find((ruleSet) => ruleSet.id === execution.ruleSetId);
+    if (
+      executionRuleSet &&
+      !hasCurrentRuleSources(executionRuleSet, [task.noticeSource, ...task.supplementalSources])
+    )
+      reasons.push("要求来源已经更新");
     if (latestRuleSet?.id !== execution.ruleSetId) reasons.push("规则草稿已经更新");
     if (
       execution.materialSnapshot.length !== currentMaterials.size ||
@@ -46,7 +55,12 @@ export interface RecheckComparison {
 }
 
 function resultKey(result: ReviewCheckResult): string {
-  return JSON.stringify([result.requirement, result.strength, result.source.quotedText]);
+  return JSON.stringify([
+    result.source.sourceId,
+    result.requirement,
+    result.strength,
+    result.source.quotedText,
+  ]);
 }
 
 export function compareExecutions(

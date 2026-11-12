@@ -107,6 +107,7 @@ export function extractMockRules(input: RuleExtractionInput): {
     const source = {
       sourceId: input.sourceId,
       sourceVersion: input.sourceVersion,
+      displayName: input.sourceDisplayName ?? "主通知",
       paragraphIndex: fragment.paragraphIndex,
       quotedText: fragment.text,
       startOffset: fragment.startOffset,

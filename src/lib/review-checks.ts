@@ -425,6 +425,8 @@ export function executeReviewRule(
     ...comparison,
     source: {
       sourceId: rule.source.sourceId,
+      sourceVersion: rule.source.sourceVersion,
+      displayName: rule.source.displayName,
       paragraphIndex: rule.source.paragraphIndex,
       quotedText: rule.source.quotedText,
     },

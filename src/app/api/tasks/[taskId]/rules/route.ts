@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { reviewTaskIdSchema } from "@/domain/review-task";
-import { reviewRuleSchema, reviewRuleSetSchema } from "@/domain/review-rule";
+import { hasCurrentRuleSources, reviewRuleSchema, reviewRuleSetSchema } from "@/domain/review-rule";
 import { extractMockRules } from "@/lib/rule-extractor";
 import { findRuleConflicts } from "@/lib/rule-conflicts";
 import { findMissingAttachmentWarnings } from "@/lib/attachment-dependencies";
@@ -57,21 +57,45 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
 
     const mode = getAiMode();
     const configuration = mode === "live" ? getModelConfiguration() : null;
+    const sources = [task.noticeSource, ...task.supplementalSources];
+    const sourceVersions = sources.map(({ id, version, displayName }) => ({
+      sourceId: id,
+      version,
+      displayName,
+    }));
+    const extractedSources = sources.filter((source) => source.parseStatus === "text_extracted");
+    if (!extractedSources.length)
+      return NextResponse.json({ error: "当前来源没有可用于规则提取的正文。" }, { status: 422 });
     const extractedRules =
       mode === "live"
-        ? await extractLiveRules(task.noticeSource, request.signal)
-        : extractMockRules({
-            taskId,
-            sourceId: task.noticeSource.id,
-            sourceVersion: task.noticeSource.version,
-            noticeText: task.noticeSource.originalText,
-          });
+        ? await extractLiveRules(extractedSources, request.signal)
+        : (() => {
+            const sourceResults = extractedSources.map((source) =>
+              extractMockRules({
+                taskId,
+                sourceId: source.id,
+                sourceVersion: source.version,
+                sourceDisplayName: source.displayName,
+                noticeText: source.originalText,
+              }),
+            );
+            const rules = sourceResults.flatMap((result) => result.rules);
+            return {
+              rules: rules.map((rule, index) => ({
+                ...rule,
+                code: `R-${String(index + 1).padStart(3, "0")}`,
+              })),
+              warnings: sourceResults.flatMap((result) => result.warnings),
+              modelCalls: [],
+            };
+          })();
     const createdAt = new Date().toISOString();
     const ruleSet = reviewRuleSetSchema.parse({
       id: randomUUID(),
       taskId,
       sourceId: task.noticeSource.id,
       sourceVersion: task.noticeSource.version,
+      sourceVersions,
       mode,
       provider: configuration?.provider ?? "",
       model: configuration?.model ?? "",
@@ -80,6 +104,12 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       ...extractedRules,
       warnings: [
         ...extractedRules.warnings,
+        ...sources
+          .filter((source) => source.parseStatus !== "text_extracted")
+          .map((source) => ({
+            code: "unsupported_input" as const,
+            message: `来源“${source.displayName}”的解析状态为 ${source.parseStatus}，未参与规则提取。`,
+          })),
         ...findRuleConflicts(extractedRules.rules),
         ...findMissingAttachmentWarnings(task.noticeSource, task.supplementalSources.length),
       ],
@@ -87,14 +117,17 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
 
     for (const rule of ruleSet.rules) {
       const { startOffset, endOffset, quotedText } = rule.source;
-      const sourceSegment = task.noticeSource.segments.find(
+      const source = sources.find((candidate) => candidate.id === rule.source.sourceId);
+      const sourceSegment = source?.segments.find(
         (segment) => segment.paragraphIndex === rule.source.paragraphIndex,
       );
       if (
+        !source ||
+        source.version !== rule.source.sourceVersion ||
         !sourceSegment ||
         startOffset < sourceSegment.startOffset ||
         endOffset > sourceSegment.endOffset ||
-        task.noticeSource.originalText.slice(startOffset, endOffset) !== quotedText
+        source.originalText.slice(startOffset, endOffset) !== quotedText
       ) {
         return NextResponse.json(
           { error: "生成结果包含无法定位到当前通知的原文引用，未保存规则。" },
@@ -152,22 +185,40 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Ne
     }
     const currentRuleSet = store
       .listRuleSets(taskId)
-      .find((ruleSet) => ruleSet.sourceVersion === task.noticeSource.version);
+      .find(
+        (ruleSet) =>
+          ruleSet.sourceVersion === task.noticeSource.version &&
+          hasCurrentRuleSources(ruleSet, [task.noticeSource, ...task.supplementalSources]),
+      );
     if (!currentRuleSet) {
       return NextResponse.json({ error: "请先为当前通知生成规则草稿。" }, { status: 409 });
     }
     const rules = parsedRules.flatMap((parsed) => (parsed.success ? [parsed.data] : []));
+    const sources = [task.noticeSource, ...task.supplementalSources];
     const ruleIds = new Set<string>();
     for (const rule of rules) {
       if (
-        rule.source.sourceId !== task.noticeSource.id ||
-        rule.source.sourceVersion !== task.noticeSource.version ||
+        !sources.some(
+          (source) =>
+            source.id === rule.source.sourceId && source.version === rule.source.sourceVersion,
+        ) ||
         ruleIds.has(rule.id) ||
-        task.noticeSource.originalText.slice(rule.source.startOffset, rule.source.endOffset) !==
-          rule.source.quotedText
+        !sources.some((source) => {
+          if (source.id !== rule.source.sourceId) return false;
+          const segment = source.segments.find(
+            (candidate) => candidate.paragraphIndex === rule.source.paragraphIndex,
+          );
+          return Boolean(
+            segment &&
+            rule.source.startOffset >= segment.startOffset &&
+            rule.source.endOffset <= segment.endOffset &&
+            source.originalText.slice(rule.source.startOffset, rule.source.endOffset) ===
+              rule.source.quotedText,
+          );
+        })
       ) {
         return NextResponse.json(
-          { error: "规则来源必须是当前通知中的有效原文位置。" },
+          { error: "规则来源必须是当前任务来源中的有效原文位置。" },
           { status: 422 },
         );
       }

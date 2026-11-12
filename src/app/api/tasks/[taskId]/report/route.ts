@@ -35,7 +35,7 @@ export async function GET(
   if (!ruleSet) return NextResponse.json({ error: "没有找到对应的规则快照。" }, { status: 409 });
   const body =
     reportType === "remediation"
-      ? createRemediationReport(task, execution)
+      ? createRemediationReport(task, execution, ruleSet)
       : createReviewReport(task, execution, ruleSet, executions[index + 1]);
   return new Response(body, {
     headers: {
