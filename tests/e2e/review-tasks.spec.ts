@@ -1427,7 +1427,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(unknown.execution.results[0]).toMatchObject({ verdict: "needs_confirmation" });
   });
 
-  test("同一材料互斥的页数边界会提示冲突原文", async ({ page, request }) => {
+  test("同来源与跨来源的互斥页数要求保持待确认并支持选定依据", async ({ page, request }) => {
     const created = await request.post("/api/tasks", {
       data: {
         name: "页数冲突样例",
@@ -1437,15 +1437,20 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const { task } = await created.json();
     const response = await request.post(`/api/tasks/${task.id}/rules`);
     const { ruleSet } = await response.json();
-    expect(ruleSet.warnings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: "conflicting_constraints",
-          message: expect.stringContaining("至少12页"),
-        }),
-      ]),
+    const conflict = ruleSet.warnings.find(
+      (warning: { code: string }) => warning.code === "conflicting_constraints",
     );
-    expect(ruleSet.warnings[0].message).toContain("最多10页");
+    expect(conflict).toMatchObject({
+      relatedRuleIds: expect.arrayContaining(ruleSet.rules.map((rule: { id: string }) => rule.id)),
+      sources: expect.arrayContaining([
+        expect.objectContaining({ quotedText: "项目说明至少12页" }),
+        expect.objectContaining({ quotedText: "项目说明最多10页" }),
+      ]),
+    });
+    const unresolved = await runCheckStream(request, task.id);
+    expect(
+      unresolved.execution.results.map((result: { verdict: string }) => result.verdict),
+    ).toEqual(["needs_confirmation", "needs_confirmation"]);
 
     const compatible = await request.post("/api/tasks", {
       data: {
@@ -1461,7 +1466,48 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
 
     await page.goto(`/tasks/${task.id}`);
     await page.getByText(/需要人工留意的信息/).click();
-    await expect(page.getByText(/两处原文/)).toBeVisible();
+    await expect(page.getByText("项目说明至少12页", { exact: true })).toBeVisible();
+    await expect(page.getByText("项目说明最多10页", { exact: true })).toBeVisible();
+    page.once("dialog", (dialog) => void dialog.accept());
+    await page.getByRole("button", { name: "采用 R-001 并停用冲突项" }).click();
+    const adopted = (await (await request.get(`/api/tasks/${task.id}/rules`)).json()).ruleSets[0];
+    expect(adopted.rules).toHaveLength(1);
+    expect(adopted.warnings).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "conflicting_constraints" })]),
+    );
+
+    const crossSource = await request.post("/api/tasks", {
+      data: {
+        name: "跨来源页数冲突样例",
+        noticeText: "项目说明至少12页。",
+      },
+    });
+    const { task: crossSourceTask } = await crossSource.json();
+    const supplement = await request.post(`/api/tasks/${crossSourceTask.id}/sources`, {
+      multipart: {
+        sourceFile: {
+          name: "补充格式通知.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("项目说明最多10页。"),
+        },
+      },
+    });
+    expect(supplement.status()).toBe(201);
+    const crossSourceRules = await request.post(`/api/tasks/${crossSourceTask.id}/rules`);
+    const { ruleSet: crossSourceRuleSet } = await crossSourceRules.json();
+    const crossSourceConflict = crossSourceRuleSet.warnings.find(
+      (warning: { code: string }) => warning.code === "conflicting_constraints",
+    );
+    expect(crossSourceConflict.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ displayName: "通知原文" }),
+        expect.objectContaining({ displayName: "补充格式通知.txt" }),
+      ]),
+    );
+    const crossSourceChecks = await runCheckStream(request, crossSourceTask.id);
+    expect(
+      crossSourceChecks.execution.results.map((result: { verdict: string }) => result.verdict),
+    ).toEqual(["needs_confirmation", "needs_confirmation"]);
   });
 
   test("PDF 总页数上限的精确边界值通过且超出一页失败", async ({ request }) => {

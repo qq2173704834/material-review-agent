@@ -54,8 +54,10 @@ export function findRuleConflicts(rules: ReviewRule[]): RuleExtractionWarning[] 
       if (!conflict) continue;
       warnings.push({
         code: "conflicting_constraints",
-        message: `检测到同一目标的数值边界相互矛盾，请核对两处原文：“${firstRule.source.quotedText}”；“${secondRule.source.quotedText}”。系统不会自行选择其中一项。`,
+        message: `不同要求来源对“${firstRule.target}”的数值边界相互矛盾，尚未指定采用依据。`,
         source: firstRule.source,
+        sources: [firstRule.source, secondRule.source],
+        relatedRuleIds: [firstRule.id, secondRule.id],
       });
     }
   }

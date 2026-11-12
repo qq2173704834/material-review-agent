@@ -146,8 +146,31 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
             const ruleMaterials = rule.materialIds.length
               ? task.materials.filter((material) => rule.materialIds.includes(material.id))
               : task.materials;
+            const unresolvedConflict = ruleSet.warnings.find(
+              (warning) =>
+                warning.code === "conflicting_constraints" &&
+                warning.relatedRuleIds?.includes(rule.id),
+            );
             try {
-              if (mode === "live") {
+              if (unresolvedConflict) {
+                result = {
+                  ruleId: rule.id,
+                  ruleCode: rule.code,
+                  requirement: rule.description,
+                  strength: rule.strength,
+                  verdict: "needs_confirmation",
+                  reason: unresolvedConflict.message,
+                  recommendation: "在规则草稿中指定采用依据，或先保持待确认。",
+                  source: {
+                    sourceId: rule.source.sourceId,
+                    sourceVersion: rule.source.sourceVersion,
+                    displayName: rule.source.displayName,
+                    paragraphIndex: rule.source.paragraphIndex,
+                    quotedText: rule.source.quotedText,
+                  },
+                  evidence: [],
+                };
+              } else if (mode === "live") {
                 const reviewed = await reviewLiveRule({
                   rule,
                   materials: ruleMaterials,
@@ -187,6 +210,8 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
                 recommendation: "人工复核，之后可重新运行检查。",
                 source: {
                   sourceId: rule.source.sourceId,
+                  sourceVersion: rule.source.sourceVersion,
+                  displayName: rule.source.displayName,
                   paragraphIndex: rule.source.paragraphIndex,
                   quotedText: rule.source.quotedText,
                 },

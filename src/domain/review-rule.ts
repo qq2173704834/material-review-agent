@@ -44,6 +44,8 @@ export const ruleExtractionWarningSchema = z.object({
   ]),
   message: z.string().min(1).max(500),
   source: ruleSourcePositionSchema.optional(),
+  sources: z.array(ruleSourcePositionSchema).max(5).optional(),
+  relatedRuleIds: z.array(z.string().uuid()).max(20).optional(),
 });
 
 export const reviewRuleSetSchema = z.object({

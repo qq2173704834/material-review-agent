@@ -234,16 +234,21 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Ne
       }
       ruleIds.add(rule.id);
     }
+    const editedRules = rules.map((rule, index) => ({
+      ...rule,
+      id: randomUUID(),
+      code: `R-${String(index + 1).padStart(3, "0")}`,
+      generationMethod: "manual" as const,
+    }));
     const editedRuleSet = reviewRuleSetSchema.parse({
       ...currentRuleSet,
       id: randomUUID(),
       createdAt: new Date().toISOString(),
-      rules: rules.map((rule, index) => ({
-        ...rule,
-        id: randomUUID(),
-        code: `R-${String(index + 1).padStart(3, "0")}`,
-        generationMethod: "manual" as const,
-      })),
+      rules: editedRules,
+      warnings: [
+        ...currentRuleSet.warnings.filter((warning) => warning.code !== "conflicting_constraints"),
+        ...findRuleConflicts(editedRules),
+      ],
     });
     store.saveRuleSet(editedRuleSet);
     return NextResponse.json({ ruleSet: editedRuleSet }, { status: 201 });

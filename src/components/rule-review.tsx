@@ -146,6 +146,60 @@ export function RuleReview({
     }
   }
 
+  async function adoptConflictBasis(ruleId: string): Promise<void> {
+    if (!currentRuleSet || isSaving) return;
+    const relatedRuleIds = new Set(
+      currentRuleSet.warnings
+        .filter(
+          (warning) =>
+            warning.code === "conflicting_constraints" && warning.relatedRuleIds?.includes(ruleId),
+        )
+        .flatMap((warning) => warning.relatedRuleIds ?? []),
+    );
+    const selectedRule = currentRuleSet.rules.find((rule) => rule.id === ruleId);
+    if (!selectedRule || relatedRuleIds.size < 2) return;
+    const removedRules = currentRuleSet.rules.filter(
+      (rule) => relatedRuleIds.has(rule.id) && rule.id !== ruleId,
+    );
+    if (
+      !window.confirm(
+        `采用 ${selectedRule.code} 的来源依据，并停用 ${removedRules.map((rule) => rule.code).join("、")}？原规则仍保留在历史版本中。`,
+      )
+    )
+      return;
+    setError("");
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/rules`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rules: currentRuleSet.rules.filter(
+            (rule) => !relatedRuleIds.has(rule.id) || rule.id === ruleId,
+          ),
+        }),
+      });
+      const result: unknown = await response.json();
+      if (!response.ok || typeof result !== "object" || result === null || !("ruleSet" in result)) {
+        setError(
+          typeof result === "object" &&
+            result !== null &&
+            "error" in result &&
+            typeof result.error === "string"
+            ? result.error
+            : "冲突依据未能保存。",
+        );
+        return;
+      }
+      setRuleSets((existing) => [result.ruleSet as ReviewRuleSet, ...existing]);
+      router.refresh();
+    } catch {
+      setError("暂时无法连接本地服务，请稍后重试。");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function addManualRule(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (!currentRuleSet || !hasCurrentRuleSet || isSaving) return;
@@ -567,7 +621,34 @@ export function RuleReview({
               </summary>
               <ul className="mt-3 space-y-2 text-xs leading-5 text-amber-800">
                 {displayedRuleSet.warnings.map((warning, index) => (
-                  <li key={`${warning.code}-${index}`}>{warning.message}</li>
+                  <li key={`${warning.code}-${index}`} className="border-l-2 border-amber-300 pl-3">
+                    <p>{warning.message}</p>
+                    {warning.sources?.map((source, sourceIndex) => (
+                      <p key={`${source.sourceId}-${sourceIndex}`} className="mt-1 text-foreground">
+                        {source.displayName ?? "要求来源"} · {source.quotedText}
+                      </p>
+                    ))}
+                    {hasCurrentRuleSet && warning.relatedRuleIds?.length ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {warning.relatedRuleIds.map((ruleId) => {
+                          const rule = displayedRuleSet.rules.find(
+                            (candidate) => candidate.id === ruleId,
+                          );
+                          return rule ? (
+                            <button
+                              key={rule.id}
+                              type="button"
+                              disabled={isSaving}
+                              onClick={() => void adoptConflictBasis(rule.id)}
+                              className="text-xs font-medium text-primary underline-offset-4 hover:underline disabled:opacity-50"
+                            >
+                              采用 {rule.code} 并停用冲突项
+                            </button>
+                          ) : null;
+                        })}
+                      </div>
+                    ) : null}
+                  </li>
                 ))}
               </ul>
             </details>
