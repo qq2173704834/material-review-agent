@@ -1015,9 +1015,11 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
   test("公开网页来源拒绝访问本机网络地址并保留粘贴替代入口", async ({ page }) => {
     await page.goto("/tasks/new");
     await page.getByRole("button", { name: "公开网页" }).click();
-    await page.getByLabel("网页 URL").fill("http://127.0.0.1/api/health");
-    await page.getByRole("button", { name: "读取网页并创建任务" }).click();
-    await expect(page.locator('p[role="alert"]')).toContainText("非公开网络");
+    for (const url of ["http://127.0.0.1/api/health", "http://10.0.0.1/", "http://[::1]/"]) {
+      await page.getByLabel("网页 URL").fill(url);
+      await page.getByRole("button", { name: "读取网页并创建任务" }).click();
+      await expect(page.locator('p[role="alert"]')).toContainText("非公开网络");
+    }
     await expect(page.getByRole("button", { name: "粘贴文本" })).toBeVisible();
   });
 
