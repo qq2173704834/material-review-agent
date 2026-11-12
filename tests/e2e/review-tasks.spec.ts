@@ -9,13 +9,21 @@ import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import Database from "better-sqlite3";
 
-function createSyntheticPdf(): Buffer {
+function createSyntheticPdf(pageCount = 1): Buffer {
+  const firstContentObject = pageCount + 4;
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    `<< /Type /Pages /Kids [${Array.from({ length: pageCount }, (_, index) => `${index + 3} 0 R`).join(" ")}] /Count ${pageCount} >>`,
+    ...Array.from(
+      { length: pageCount },
+      (_, index) =>
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Resources << /Font << /F1 ${pageCount + 3} 0 R >> >> /Contents ${firstContentObject + index} 0 R >>`,
+    ),
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    "<< /Length 48 >>\nstream\nBT /F1 12 Tf 20 80 Td (PDF sample text) Tj ET\nendstream",
+    ...Array.from({ length: pageCount }, () => {
+      const stream = "BT /F1 12 Tf 20 80 Td (PDF sample text) Tj ET";
+      return `<< /Length ${Buffer.byteLength(stream, "binary")} >>\nstream\n${stream}\nendstream`;
+    }),
   ];
   let content = "%PDF-1.4\n";
   const offsets = [0];
@@ -895,6 +903,49 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await page.goto(`/tasks/${task.id}`);
     await page.getByText(/需要人工留意的信息/).click();
     await expect(page.getByText(/两处原文/)).toBeVisible();
+  });
+
+  test("PDF 总页数上限的精确边界值通过且超出一页失败", async ({ request }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "PDF 页数边界",
+        noticeText: "PDF总页数不超过2页。",
+      },
+    });
+    const { task } = await created.json();
+    const rules = await request.post(`/api/tasks/${task.id}/rules`);
+    expect(rules.status()).toBe(201);
+
+    const atLimit = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "项目说明.pdf",
+          mimeType: "application/pdf",
+          buffer: createSyntheticPdf(2),
+        },
+      },
+    });
+    expect((await atLimit.json()).materials[0]).toMatchObject({ parseStatus: "text_extracted" });
+    const passing = await runCheckStream(request, task.id);
+    expect(passing.execution.results[0]).toMatchObject({ verdict: "passed" });
+    expect(passing.execution.results[0]?.reason).toContain("均不超过 2 页");
+
+    const overLimit = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "项目说明.pdf",
+          mimeType: "application/pdf",
+          buffer: createSyntheticPdf(3),
+        },
+      },
+    });
+    expect((await overLimit.json()).materials[0]).toMatchObject({
+      version: 2,
+      parseStatus: "text_extracted",
+    });
+    const failing = await runCheckStream(request, task.id);
+    expect(failing.execution.results[0]).toMatchObject({ verdict: "failed" });
+    expect(failing.execution.results[0]?.reason).toContain("3 页");
   });
 
   test("SQLite 保存失败时回收本次上传原件", async ({ request }) => {
