@@ -20,6 +20,8 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
     task?.background.collaborationScope ?? "unknown",
   );
   const [noticeText, setNoticeText] = useState(task?.noticeSource.originalText ?? "");
+  const [sourceMode, setSourceMode] = useState<"text" | "webpage">("text");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -31,12 +33,22 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
       const response = await fetch(task ? `/api/tasks/${task.id}` : "/api/tasks", {
         method: task ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          description,
-          background: { projectType, projectStage, collaborationScope },
-          noticeText,
-        }),
+        body: JSON.stringify(
+          !task && sourceMode === "webpage"
+            ? {
+                sourceType: "webpage",
+                sourceUrl,
+                name,
+                description,
+                background: { projectType, projectStage, collaborationScope },
+              }
+            : {
+                name,
+                description,
+                background: { projectType, projectStage, collaborationScope },
+                noticeText,
+              },
+        ),
       });
       const result: unknown = await response.json();
       if (!response.ok || typeof result !== "object" || result === null || !("task" in result)) {
@@ -130,22 +142,65 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
       <section className="space-y-3" aria-labelledby="notice-heading">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="notice-heading" className="text-sm font-semibold">
-            通知或要求原文
+            {sourceMode === "webpage" && !task ? "公开网页来源" : "通知或要求原文"}
           </h2>
-          <span className="text-xs text-muted-foreground">
-            {noticeText.length.toLocaleString()} / 200,000 字符
-          </span>
+          {sourceMode === "text" || task ? (
+            <span className="text-xs text-muted-foreground">
+              {noticeText.length.toLocaleString()} / 200,000 字符
+            </span>
+          ) : null}
         </div>
-        <textarea
-          id="notice-text"
-          aria-labelledby="notice-heading"
-          className={`${fieldClassName} min-h-[320px] resize-y font-mono leading-7`}
-          value={noticeText}
-          maxLength={200000}
-          required
-          onChange={(event) => setNoticeText(event.target.value)}
-          placeholder="粘贴本次通知、指南或项目要求。原文会按段落保存，并可查看字符位置与历史版本。"
-        />
+        {!task ? (
+          <div className="inline-flex border border-border" role="group" aria-label="要求来源方式">
+            <button
+              type="button"
+              aria-pressed={sourceMode === "text"}
+              onClick={() => setSourceMode("text")}
+              className={`h-9 px-3 text-xs ${sourceMode === "text" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+            >
+              粘贴文本
+            </button>
+            <button
+              type="button"
+              aria-pressed={sourceMode === "webpage"}
+              onClick={() => setSourceMode("webpage")}
+              className={`h-9 border-l border-border px-3 text-xs ${sourceMode === "webpage" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+            >
+              公开网页
+            </button>
+          </div>
+        ) : null}
+        {sourceMode === "webpage" && !task ? (
+          <div>
+            <label className="block text-sm font-medium" htmlFor="source-url">
+              网页 URL
+            </label>
+            <input
+              id="source-url"
+              type="url"
+              required
+              maxLength={2048}
+              value={sourceUrl}
+              onChange={(event) => setSourceUrl(event.target.value)}
+              placeholder="https://example.org/notice"
+              className={fieldClassName}
+            />
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              仅读取可公开访问的网页正文；登录受限或无法读取时，可返回并粘贴文本。
+            </p>
+          </div>
+        ) : (
+          <textarea
+            id="notice-text"
+            aria-labelledby="notice-heading"
+            className={`${fieldClassName} min-h-[320px] resize-y font-mono leading-7`}
+            value={noticeText}
+            maxLength={200000}
+            required
+            onChange={(event) => setNoticeText(event.target.value)}
+            placeholder="粘贴本次通知、指南或项目要求。原文会按段落保存，并可查看字符位置与历史版本。"
+          />
+        )}
         <p className="text-xs leading-5 text-muted-foreground">
           在此粘贴通知原文。创建任务后可上传 PDF、DOCX、TXT、XLSX、CSV、JPG 与 PNG
           材料；图片和扫描件尚未进行 OCR。
@@ -159,10 +214,21 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
       <div className="flex flex-wrap items-center gap-3 border-t border-border pt-5">
         <button
           type="submit"
-          disabled={isSaving || noticeText.trim().length === 0}
+          disabled={
+            isSaving ||
+            (sourceMode === "text" || task
+              ? noticeText.trim().length === 0
+              : sourceUrl.trim().length === 0)
+          }
           className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
         >
-          {isSaving ? "正在保存…" : task ? "保存修改" : "创建审查任务"}
+          {isSaving
+            ? "正在保存…"
+            : task
+              ? "保存修改"
+              : sourceMode === "webpage"
+                ? "读取网页并创建任务"
+                : "创建审查任务"}
         </button>
         {task ? (
           <span className="text-xs text-muted-foreground">

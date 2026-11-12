@@ -28,8 +28,10 @@ export interface RequirementSourceSegment {
 export interface RequirementSourceVersion {
   id: string;
   version: number;
-  inputType: "text";
+  inputType: "text" | "webpage";
   displayName: string;
+  sourceUrl?: string;
+  fetchedAt?: string;
   originalText: string;
   parseStatus: "text_extracted";
   segments: RequirementSourceSegment[];

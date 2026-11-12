@@ -24,7 +24,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 9;
+const DATABASE_SCHEMA_VERSION = 10;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -40,6 +40,10 @@ interface CreateReviewTaskInput {
   description: string;
   background: ReviewTaskBackground;
   noticeText: string;
+  sourceType?: "text" | "webpage";
+  sourceUrl?: string;
+  sourceFetchedAt?: string;
+  sourceTitle?: string;
 }
 
 interface UpdateReviewTaskInput extends CreateReviewTaskInput {
@@ -68,6 +72,8 @@ interface DatabaseTaskDetailsRow extends DatabaseTaskSummaryRow {
   source_text: string;
   source_parse_status: string;
   source_created_at: string;
+  source_url: string | null;
+  source_fetched_at: string | null;
 }
 
 interface DatabaseSourceSegmentRow {
@@ -82,6 +88,8 @@ interface DatabaseSourceVersionRow {
   original_text: string;
   parse_status: string;
   created_at: string;
+  source_url: string | null;
+  source_fetched_at: string | null;
 }
 
 interface DatabaseRuleSetRow {
@@ -578,6 +586,16 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
       })();
     }
 
+    if (database.pragma("user_version", { simple: true }) === 9) {
+      database.transaction(() => {
+        database.exec(`
+          ALTER TABLE requirement_sources ADD COLUMN source_url TEXT;
+          ALTER TABLE requirement_sources ADD COLUMN source_fetched_at TEXT;
+          PRAGMA user_version = 10;
+        `);
+      })();
+    }
+
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
     if (finalSchemaVersion !== DATABASE_SCHEMA_VERSION) {
       throw new Error("The local review database migration did not complete");
@@ -630,10 +648,24 @@ class ReviewStore {
         .prepare(
           `
           INSERT INTO requirement_sources (id, task_id, source_role, input_type, display_name, created_at)
-          VALUES (?, ?, 'notice', 'text', '通知原文', ?)
+          VALUES (?, ?, 'notice', ?, ?, ?)
         `,
         )
-        .run(sourceId, taskId, createdAt);
+        .run(
+          sourceId,
+          taskId,
+          input.sourceType ?? "text",
+          input.sourceType === "webpage"
+            ? `${input.sourceTitle?.trim() || "公开网页"} · ${input.sourceUrl}`
+            : "通知原文",
+          createdAt,
+        );
+      if (input.sourceType === "webpage")
+        this.database
+          .prepare(
+            "UPDATE requirement_sources SET source_url = ?, source_fetched_at = ? WHERE id = ?",
+          )
+          .run(input.sourceUrl ?? null, input.sourceFetchedAt ?? createdAt, sourceId);
 
       saveSourceVersion(this.database, sourceId, 1, input.noticeText, createdAt);
     });
@@ -788,7 +820,9 @@ class ReviewStore {
                notice.display_name AS source_display_name,
                source_version.original_text AS source_text,
                source_version.parse_status AS source_parse_status,
-               source_version.created_at AS source_created_at
+               source_version.created_at AS source_created_at,
+               notice.source_url AS source_url,
+               notice.source_fetched_at AS source_fetched_at
         FROM review_tasks AS task
         LEFT JOIN requirement_sources AS all_sources ON all_sources.task_id = task.id
         LEFT JOIN requirement_sources AS notice
@@ -815,15 +849,20 @@ class ReviewStore {
       throw new Error("Saved task is missing its notice source");
     }
 
-    if (row.source_input_type !== "text" || row.source_parse_status !== "text_extracted") {
+    if (
+      !(row.source_input_type === "text" || row.source_input_type === "webpage") ||
+      row.source_parse_status !== "text_extracted"
+    ) {
       throw new Error("Saved task has an unsupported notice input state");
     }
 
     const noticeSource: RequirementSourceVersion = {
       id: row.source_id,
       version: row.source_version,
-      inputType: "text",
+      inputType: row.source_input_type,
       displayName: row.source_display_name,
+      sourceUrl: row.source_url ?? undefined,
+      fetchedAt: row.source_fetched_at ?? undefined,
       originalText: row.source_text ?? "",
       parseStatus: "text_extracted",
       segments: readSourceSegments(this.database, row.source_id, row.source_version),
@@ -853,23 +892,21 @@ class ReviewStore {
 
   private readNoticeHistory(
     sourceId: string,
-    inputType: string,
+    inputType: "text" | "webpage",
     displayName: string,
   ): RequirementSourceVersion[] {
     const rows = this.database
       .prepare<[string], DatabaseSourceVersionRow>(
         `
-        SELECT version, original_text, parse_status, created_at
-        FROM requirement_source_versions
-        WHERE source_id = ?
-        ORDER BY version DESC
+        SELECT version.version, version.original_text, version.parse_status, version.created_at,
+               source.source_url, source.source_fetched_at
+        FROM requirement_source_versions AS version
+        JOIN requirement_sources AS source ON source.id = version.source_id
+        WHERE version.source_id = ?
+        ORDER BY version.version DESC
       `,
       )
       .all(sourceId);
-
-    if (inputType !== "text") {
-      throw new Error("Saved notice has an unsupported input type");
-    }
 
     return rows.map((versionRow) => {
       if (versionRow.parse_status !== "text_extracted") {
@@ -879,8 +916,10 @@ class ReviewStore {
       return {
         id: sourceId,
         version: versionRow.version,
-        inputType: "text",
+        inputType,
         displayName,
+        sourceUrl: versionRow.source_url ?? undefined,
+        fetchedAt: versionRow.source_fetched_at ?? undefined,
         originalText: versionRow.original_text,
         parseStatus: "text_extracted",
         segments: readSourceSegments(this.database, sourceId, versionRow.version),

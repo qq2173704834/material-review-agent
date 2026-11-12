@@ -1012,6 +1012,15 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(refreshed.execution.results[0]?.reason).not.toContain("背景不足");
   });
 
+  test("公开网页来源拒绝访问本机网络地址并保留粘贴替代入口", async ({ page }) => {
+    await page.goto("/tasks/new");
+    await page.getByRole("button", { name: "公开网页" }).click();
+    await page.getByLabel("网页 URL").fill("http://127.0.0.1/api/health");
+    await page.getByRole("button", { name: "读取网页并创建任务" }).click();
+    await expect(page.locator('p[role="alert"]')).toContainText("非公开网络");
+    await expect(page.getByRole("button", { name: "粘贴文本" })).toBeVisible();
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {
