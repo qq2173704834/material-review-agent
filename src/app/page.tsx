@@ -42,17 +42,33 @@ export default function TasksPage(): ReactElement {
         : undefined;
       return [
         task.id,
-        !latest
-          ? "尚未开始审查"
-          : latest.validity === "needs_recheck"
-            ? "待复检"
-            : latest.status === "running"
-              ? "正在审查"
-              : latest.status === "completed"
-                ? "已有审查结果"
-                : latest.status === "cancelled"
-                  ? "上次已取消"
-                  : "检查中断",
+        {
+          status: !latest
+            ? "尚未开始审查"
+            : latest.validity === "needs_recheck"
+              ? "待复检"
+              : latest.status === "running"
+                ? "正在审查"
+                : latest.status === "completed"
+                  ? "已有审查结果"
+                  : latest.status === "cancelled"
+                    ? "上次已取消"
+                    : "检查中断",
+          verdicts: latest
+            ? latest.results.reduce(
+                (counts, result) => ({ ...counts, [result.verdict]: counts[result.verdict] + 1 }),
+                {
+                  passed: 0,
+                  failed: 0,
+                  needs_confirmation: 0,
+                  unable_to_check: 0,
+                  not_applicable: 0,
+                },
+              )
+            : null,
+          total: latest?.results.length ?? 0,
+          unexecuted: latest?.unexecutedCount ?? 0,
+        },
       ];
     }),
   );
@@ -104,7 +120,16 @@ export default function TasksPage(): ReactElement {
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                    <span>{taskStatuses.get(task.id)}</span>
+                    <span>{taskStatuses.get(task.id)?.status}</span>
+                    {taskStatuses.get(task.id)?.verdicts ? (
+                      <span>
+                        通过 {taskStatuses.get(task.id)?.verdicts?.passed} · 未通过{" "}
+                        {taskStatuses.get(task.id)?.verdicts?.failed} · 待确认{" "}
+                        {taskStatuses.get(task.id)?.verdicts?.needs_confirmation} · 无法检查{" "}
+                        {taskStatuses.get(task.id)?.verdicts?.unable_to_check} · 未执行{" "}
+                        {taskStatuses.get(task.id)?.unexecuted}
+                      </span>
+                    ) : null}
                     <span>通知 v{task.noticeSourceVersion}</span>
                     <time dateTime={task.latestUpdatedAt}>
                       {new Date(task.latestUpdatedAt).toLocaleString("zh-CN", {

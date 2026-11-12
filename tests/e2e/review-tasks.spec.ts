@@ -555,6 +555,9 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       ]),
     );
 
+    await page.goto("/");
+    await expect(page.getByText(/通过 3 · 未通过 0 · 待确认 0/)).toBeVisible();
+
     await page.goto(`/tasks/${task.id}`);
     await expect(page.getByRole("heading", { name: "确定性检查", exact: true })).toBeVisible();
     await expect(page.getByText("通过 3", { exact: true })).toBeVisible();
