@@ -590,12 +590,29 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     );
 
     await page.goto("/");
-    await expect(page.getByText(/通过 3 · 未通过 0 · 待确认 0/)).toBeVisible();
+    await expect(page.getByRole("link", { name: /确定性检查合成任务/ }).first()).toContainText(
+      "通过 3 · 未通过 0 · 待确认 0",
+    );
 
     await page.goto(`/tasks/${task.id}`);
     await expect(page.getByRole("heading", { name: "确定性检查", exact: true })).toBeVisible();
-    await expect(page.getByText("通过 3", { exact: true })).toBeVisible();
-    await expect(page.getByText("无法检查 1", { exact: true })).toBeVisible();
+    const checkPanel = page.getByRole("region", { name: "确定性检查" });
+    await expect(checkPanel.getByText("通过 3", { exact: true })).toBeVisible();
+    await expect(checkPanel.getByText("无法检查 1", { exact: true })).toBeVisible();
+    await checkPanel.getByLabel("按判定筛选").selectOption("passed");
+    await expect(
+      checkPanel.getByRole("heading", { name: "R-001 · 必须提交 PDF 格式文件" }),
+    ).toBeVisible();
+    await expect(checkPanel.getByText("当前筛选没有匹配的检查项。")).toHaveCount(0);
+    await checkPanel.getByLabel("按要求强度筛选").selectOption("recommended");
+    await expect(checkPanel.getByText("当前筛选没有匹配的检查项。", { exact: true })).toBeVisible();
+    await checkPanel.getByLabel("按判定筛选").selectOption("all");
+    await checkPanel.getByLabel("按要求强度筛选").selectOption("all");
+    await checkPanel.getByLabel("按材料筛选").selectOption({ label: "proposal.pdf · v1" });
+    await expect(
+      checkPanel.getByRole("heading", { name: "R-001 · 必须提交 PDF 格式文件" }),
+    ).toBeVisible();
+    await checkPanel.getByLabel("按材料筛选").selectOption("all");
     await page.getByRole("button", { name: "运行检查" }).click();
     await expect(page.getByText("已保留 3 次检查快照。", { exact: true })).toBeVisible();
 

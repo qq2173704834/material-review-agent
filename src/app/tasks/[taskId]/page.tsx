@@ -101,7 +101,11 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
           (ruleSet) => ruleSet.sourceVersion === task.noticeSource.version,
         )}
         mode={runtimeStatus.mode}
-        materials={task.materials.map(({ id, version }) => ({ id, version }))}
+        materials={task.materials.map(({ id, version, originalFileName }) => ({
+          id,
+          version,
+          originalFileName,
+        }))}
       />
       <section
         aria-labelledby="notice-history-heading"

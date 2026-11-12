@@ -12,7 +12,7 @@ interface ReviewExecutionProps {
   initialExecutions: ReviewExecution[];
   hasCurrentRuleSet: boolean;
   mode: "mock" | "live" | "invalid";
-  materials: Array<{ id: string; version: number }>;
+  materials: Array<{ id: string; version: number; originalFileName: string }>;
 }
 
 const verdictLabels: Record<ReviewVerdict, string> = {
@@ -54,6 +54,9 @@ export function ReviewExecutionPanel({
   const abortController = useRef<AbortController | null>(null);
   const [selectedId, setSelectedId] = useState("");
   const [activeRuleCode, setActiveRuleCode] = useState("");
+  const [verdictFilter, setVerdictFilter] = useState<"all" | ReviewVerdict>("all");
+  const [strengthFilter, setStrengthFilter] = useState("all");
+  const [materialFilter, setMaterialFilter] = useState("all");
   useEffect(
     () => () => {
       abortController.current?.abort();
@@ -70,6 +73,16 @@ export function ReviewExecutionPanel({
   const counts = new Map<ReviewVerdict, number>();
   currentExecution?.results.forEach((result) => {
     counts.set(result.verdict, (counts.get(result.verdict) ?? 0) + 1);
+  });
+  const visibleResults = (currentExecution?.results ?? []).filter((result) => {
+    if (verdictFilter !== "all" && result.verdict !== verdictFilter) return false;
+    if (strengthFilter !== "all" && result.strength !== strengthFilter) return false;
+    if (
+      materialFilter !== "all" &&
+      !result.evidence.some((evidence) => evidence.materialId === materialFilter)
+    )
+      return false;
+    return true;
   });
 
   function upsertExecution(execution: ReviewExecution): void {
@@ -357,8 +370,57 @@ export function ReviewExecutionPanel({
               token（仅已报告用量）
             </p>
           ) : null}
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <label className="text-xs font-medium text-muted-foreground">
+              按判定筛选
+              <select
+                aria-label="按判定筛选"
+                value={verdictFilter}
+                onChange={(event) => setVerdictFilter(event.target.value as "all" | ReviewVerdict)}
+                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+              >
+                <option value="all">全部判定</option>
+                {verdictOrder.map((verdict) => (
+                  <option key={verdict} value={verdict}>
+                    {verdictLabels[verdict]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-muted-foreground">
+              按要求强度筛选
+              <select
+                aria-label="按要求强度筛选"
+                value={strengthFilter}
+                onChange={(event) => setStrengthFilter(event.target.value)}
+                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+              >
+                <option value="all">全部强度</option>
+                <option value="required">必须</option>
+                <option value="recommended">建议</option>
+                <option value="optional">可选</option>
+                <option value="unknown">待确认强度</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-muted-foreground">
+              按材料筛选
+              <select
+                aria-label="按材料筛选"
+                value={materialFilter}
+                onChange={(event) => setMaterialFilter(event.target.value)}
+                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+              >
+                <option value="all">全部材料</option>
+                {materials.map((material) => (
+                  <option key={material.id} value={material.id}>
+                    {material.originalFileName} · v{material.version}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <ol className="mt-4 divide-y divide-border border-y border-border">
-            {currentExecution.results.map((result) => (
+            {visibleResults.map((result) => (
               <li key={result.ruleId} className="py-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="text-sm font-medium">
@@ -435,6 +497,9 @@ export function ReviewExecutionPanel({
               </li>
             ))}
           </ol>
+          {visibleResults.length === 0 ? (
+            <p className="py-5 text-sm text-muted-foreground">当前筛选没有匹配的检查项。</p>
+          ) : null}
           {executions.length > 1 ? (
             <p className="mt-3 text-xs text-muted-foreground">
               已保留 {executions.length} 次检查快照。
