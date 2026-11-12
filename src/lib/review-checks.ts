@@ -6,6 +6,7 @@ import type {
   ReviewTaskBackground,
 } from "@/domain/review";
 import type { ReviewRule, ReviewRuleSet } from "@/domain/review-rule";
+import { findGregorianDates } from "@/lib/calendar-dates";
 
 const EXTENSION_NAMES: Record<string, string> = {
   PDF: "pdf",
@@ -26,6 +27,37 @@ function materialEvidence(material: ReviewMaterialSummary): ReviewCheckEvidence 
       material.extractedText.slice(0, 240) ||
       `${material.originalFileName}（${material.fileSizeBytes} 字节）`,
     location: material.segments[0]?.location ?? "文件属性",
+  };
+}
+
+function dateRange(description: string): { minimum: number; maximum: number } | undefined {
+  const dates = findGregorianDates(description);
+  if (dates.length < 2) return undefined;
+  for (let index = 0; index < dates.length - 1; index += 1) {
+    const start = dates[index];
+    const end = dates[index + 1];
+    if (!start || !end) continue;
+    const separator = description.slice(start.endIndex, end.startIndex);
+    if (!/^[\s至到\-—~～]+$/u.test(separator) || start.timestamp > end.timestamp) continue;
+    return { minimum: start.timestamp, maximum: end.timestamp };
+  }
+  return undefined;
+}
+
+function materialDateEvidence(
+  material: ReviewMaterialSummary,
+  matchedDateText: string,
+): ReviewCheckEvidence {
+  const segmentIndex = material.segments.findIndex((segment) =>
+    segment.text.includes(matchedDateText),
+  );
+  const segment = material.segments[segmentIndex];
+  return {
+    materialId: material.id,
+    materialVersion: material.version,
+    quotedText: segment?.text ?? matchedDateText,
+    location: segment?.location ?? "已提取全文",
+    ...(segmentIndex >= 0 ? { segmentIndex } : {}),
   };
 }
 
@@ -71,6 +103,85 @@ function compareRule(
 ): Pick<ReviewCheckResult, "verdict" | "reason" | "recommendation" | "evidence"> {
   const description = rule.description;
   const evidence = materials.map(materialEvidence);
+  const requiredDateRange = dateRange(description);
+  if (requiredDateRange || /日期|有效期|期限/.test(description)) {
+    if (!requiredDateRange)
+      return {
+        verdict: "unable_to_check",
+        reason: "识别到日期要求，但当前无法将其解析为明确且有效的起止日期。",
+        recommendation: "人工核对通知中的日期范围。",
+        evidence,
+      };
+    if (!materials.length)
+      return {
+        verdict: "needs_confirmation",
+        reason: "尚无材料可核对其日期。",
+        recommendation: "上传日期信息完整且可提取的材料后重新检查。",
+        evidence: [],
+      };
+    if (materials.some((material) => material.parseStatus !== "text_extracted"))
+      return {
+        verdict: "unable_to_check",
+        reason: "至少一份材料未能完整提取文本，无法可靠核对材料日期。",
+        recommendation: "替换为可完整解析的材料后重新检查。",
+        evidence,
+      };
+
+    const datedMaterials = materials.map((material) => {
+      const uniqueDates = new Map(
+        findGregorianDates(material.extractedText).map((date) => [date.timestamp, date]),
+      );
+      return { material, dates: [...uniqueDates.values()] };
+    });
+    if (datedMaterials.some(({ dates }) => dates.length === 0))
+      return {
+        verdict: "unable_to_check",
+        reason: "至少一份材料中没有识别到明确的公历日期。",
+        recommendation: "人工确认材料日期后再判断是否符合范围。",
+        evidence,
+      };
+    if (datedMaterials.some(({ dates }) => dates.length > 1))
+      return {
+        verdict: "needs_confirmation",
+        reason: "材料中出现多个日期，当前无法判断哪一个是本项要求对应的日期。",
+        recommendation: "人工指定需要核对的材料日期后重新检查。",
+        evidence,
+      };
+
+    const outsideRange = datedMaterials.filter(({ dates }) => {
+      const date = dates[0];
+      return (
+        !date ||
+        date.timestamp < requiredDateRange.minimum ||
+        date.timestamp > requiredDateRange.maximum
+      );
+    });
+    const formatDate = (timestamp: number): string =>
+      new Date(timestamp).toISOString().slice(0, 10);
+    const rangeLabel = `${formatDate(requiredDateRange.minimum)} 至 ${formatDate(requiredDateRange.maximum)}`;
+    return outsideRange.length
+      ? {
+          verdict: "failed",
+          reason: `以下材料日期超出要求范围 ${rangeLabel}：${outsideRange
+            .map(
+              ({ material, dates }) =>
+                `${material.originalFileName}（${dates[0]?.text ?? "日期未知"}）`,
+            )
+            .join("、")}。`,
+          recommendation: "核对日期并替换为符合要求的材料。",
+          evidence: outsideRange.flatMap(({ material, dates }) =>
+            dates[0] ? [materialDateEvidence(material, dates[0].text)] : [],
+          ),
+        }
+      : {
+          verdict: "passed",
+          reason: `所有 ${materials.length} 份材料的唯一可识别日期均在要求范围 ${rangeLabel} 内。`,
+          recommendation: "",
+          evidence: datedMaterials.flatMap(({ material, dates }) =>
+            dates[0] ? [materialDateEvidence(material, dates[0].text)] : [],
+          ),
+        };
+  }
   const characterLimit = description.match(
     /(?:不超过|至多|最多|≤|<=)\s*(\d+)\s*(?:个)?(?:汉字|字|字符)|(?:不少于|至少|≥|>=)\s*(\d+)\s*(?:个)?(?:汉字|字|字符)/,
   );

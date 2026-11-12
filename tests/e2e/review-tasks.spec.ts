@@ -1603,6 +1603,50 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(failing.execution.results[0]?.reason).toContain("3 页");
   });
 
+  test("材料唯一日期超出要求区间失败，修订到区间内后通过并引用日期", async ({ request }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "材料日期范围",
+        noticeText: "项目说明日期应在2025年1月1日至2025年12月31日之间。",
+      },
+    });
+    const { task } = await created.json();
+    const rulesResponse = await request.post(`/api/tasks/${task.id}/rules`);
+    const { ruleSet } = await rulesResponse.json();
+    expect(ruleSet.rules).toHaveLength(1);
+
+    const outsideUpload = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "项目说明.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("项目说明形成日期：2026年1月1日。"),
+        },
+      },
+    });
+    expect(outsideUpload.status()).toBe(201);
+    const outside = await runCheckStream(request, task.id);
+    expect(outside.execution.results[0]).toMatchObject({ verdict: "failed" });
+    expect(outside.execution.results[0]?.evidence[0]).toMatchObject({
+      quotedText: "项目说明形成日期：2026年1月1日。",
+      location: "行 1",
+    });
+
+    const insideUpload = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "项目说明.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("项目说明形成日期：2025年6月1日。"),
+        },
+      },
+    });
+    expect(insideUpload.status()).toBe(201);
+    const inside = await runCheckStream(request, task.id);
+    expect(inside.execution.results[0]).toMatchObject({ verdict: "passed" });
+    expect(inside.execution.results[0]?.evidence[0]?.quotedText).toContain("2025年6月1日");
+  });
+
   test("SQLite 保存失败时回收本次上传原件", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: { name: "文件回收故障注入", noticeText: "用于验证保存失败清理。" },

@@ -10,7 +10,7 @@ import type {
 const RULE_HINT_PATTERN =
   /必须|须|应(?:当)?(?:提交|提供|上传|符合|达到|满足|完成|为|在)|需要|提交|提供|上传|截止|期限|日期|报名时间|申报时间|格式|页|字|大小|不超过|不得|至少|至多|数量|命名|文件名|禁止|建议|推荐|可选|可以/;
 const DETERMINISTIC_PATTERN =
-  /格式|大小|不超过|至少|至多|页数|页|字数|字符|数量|份|个|命名|文件|PDF|DOCX|TXT|XLSX|CSV|JPG|PNG/i;
+  /格式|大小|不超过|至少|至多|页数|页|字数|字符|数量|份|个|命名|文件|PDF|DOCX|TXT|XLSX|CSV|JPG|PNG|(?:日期|期限).*(?:至|到)|从.*(?:日期|期限)/i;
 const TEAM_SCOPE_PATTERN = /团队|小组|成员|多人/;
 const INDIVIDUAL_SCOPE_PATTERN = /个人|单人/;
 const CONDITIONAL_PATTERN = /如|若|如果|仅限|适用于|针对|当.*时|阶段|类别/;

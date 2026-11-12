@@ -1,4 +1,5 @@
 import type { ReviewRule, RuleExtractionWarning } from "@/domain/review-rule";
+import { findGregorianDates } from "@/lib/calendar-dates";
 
 interface NumericConstraint {
   unit: string;
@@ -42,34 +43,16 @@ function numericConstraints(description: string): NumericConstraint[] {
 
 function explicitDeadlines(description: string): ExplicitDeadline[] {
   const deadlines: ExplicitDeadline[] = [];
-  const datePattern =
-    /(?:(\d{4})年(\d{1,2})月(\d{1,2})日?|\b(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})\b)/g;
-
-  for (const match of description.matchAll(datePattern)) {
-    const dateIndex = match.index;
-    const dateText = match[0];
-    if (dateIndex === undefined || !dateText) continue;
-    const prefix = description.slice(Math.max(0, dateIndex - 16), dateIndex);
-    const suffix = description.slice(dateIndex + dateText.length, dateIndex + dateText.length + 8);
+  for (const date of findGregorianDates(description)) {
+    const prefix = description.slice(Math.max(0, date.startIndex - 16), date.startIndex);
+    const suffix = description.slice(date.endIndex, date.endIndex + 8);
     if (
       !/(?:截止|提交|报名|申报|期限|最晚|不晚于)/.test(prefix) &&
       !/^(?:前提交|前截止|截止)/.test(suffix)
     ) {
       continue;
     }
-
-    const year = Number(match[1] ?? match[4]);
-    const month = Number(match[2] ?? match[5]);
-    const day = Number(match[3] ?? match[6]);
-    const date = new Date(Date.UTC(year, month - 1, day));
-    if (
-      date.getUTCFullYear() !== year ||
-      date.getUTCMonth() !== month - 1 ||
-      date.getUTCDate() !== day
-    ) {
-      continue;
-    }
-    deadlines.push({ timestamp: date.getTime() });
+    deadlines.push({ timestamp: date.timestamp });
   }
 
   return deadlines;
