@@ -128,6 +128,7 @@ export function extractMockRules(input: RuleExtractionInput): {
       applicabilityScope: scope.scope,
       applicabilityCondition: scope.condition,
       parameters: detectParameters(fragment.text),
+      materialIds: [],
       checkability,
       generationMethod: "mock",
       uncertainty: [uncertainty, scopeUncertainty].filter(Boolean).join(" "),

@@ -22,7 +22,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 6;
+const DATABASE_SCHEMA_VERSION = 7;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -105,6 +105,7 @@ interface DatabaseRuleRow {
   applicability_scope: string;
   applicability_condition: string;
   parameters_json: string;
+  material_ids_json: string;
   checkability: string;
   generation_method: string;
   uncertainty: string;
@@ -529,6 +530,15 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
       })();
     }
 
+    if (database.pragma("user_version", { simple: true }) === 6) {
+      database.transaction(() => {
+        database.exec(`
+          ALTER TABLE requirement_rules ADD COLUMN material_ids_json TEXT NOT NULL DEFAULT '[]';
+          PRAGMA user_version = 7;
+        `);
+      })();
+    }
+
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
     if (finalSchemaVersion !== DATABASE_SCHEMA_VERSION) {
       throw new Error("The local review database migration did not complete");
@@ -891,8 +901,9 @@ class ReviewStore {
         INSERT INTO requirement_rules (
           id, rule_set_id, ordinal, code, description, target, strength, applicability_scope,
           applicability_condition, parameters_json, checkability, generation_method,
-          uncertainty, source_id, source_version, paragraph_index, quoted_text, start_offset, end_offset
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            uncertainty, source_id, source_version, paragraph_index, quoted_text, start_offset, end_offset,
+            material_ids_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       parsedRuleSet.rules.forEach((rule, ordinal) => {
@@ -916,6 +927,7 @@ class ReviewStore {
           rule.source.quotedText,
           rule.source.startOffset,
           rule.source.endOffset,
+          JSON.stringify(rule.materialIds),
         );
       });
     });
@@ -944,6 +956,7 @@ class ReviewStore {
           SELECT id, code, description, target, strength, applicability_scope, applicability_condition,
                  parameters_json, checkability, generation_method, uncertainty, source_id,
                  source_version, paragraph_index, quoted_text, start_offset, end_offset
+                 , material_ids_json
           FROM requirement_rules
           WHERE rule_set_id = ?
           ORDER BY ordinal ASC
@@ -972,6 +985,7 @@ class ReviewStore {
           applicabilityScope: ruleRow.applicability_scope,
           applicabilityCondition: ruleRow.applicability_condition,
           parameters: JSON.parse(ruleRow.parameters_json) as unknown,
+          materialIds: JSON.parse(ruleRow.material_ids_json) as unknown,
           checkability: ruleRow.checkability,
           generationMethod: ruleRow.generation_method,
           uncertainty: ruleRow.uncertainty,

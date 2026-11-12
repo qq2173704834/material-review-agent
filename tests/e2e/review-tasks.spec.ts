@@ -850,6 +850,62 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(ruleSets[1].rules).toHaveLength(previousCount);
   });
 
+  test("人工匹配将选中的材料绑定到新规则版本并限制检查范围", async ({ page, request }) => {
+    const created = await request.post("/api/tasks", {
+      data: { name: "材料匹配任务", noticeText: "必须提交项目说明。" },
+    });
+    const { task } = await created.json();
+    const extraction = await request.post(`/api/tasks/${task.id}/rules`);
+    const { ruleSet } = await extraction.json();
+    const upload = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "正确材料.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("项目说明：实际内容"),
+        },
+      },
+    });
+    const uploaded = await upload.json();
+    const selected = uploaded.materials[0];
+    const unrelatedResponse = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: { name: "无关材料.txt", mimeType: "text/plain", buffer: Buffer.from("其他信息") },
+      },
+    });
+    const unrelated = (await unrelatedResponse.json()).materials[0];
+
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByRole("button", { name: "人工纠正" }).first().click();
+    await page.getByLabel("正确材料.txt · v1").check();
+    await page.getByRole("button", { name: "保存为新版本" }).click();
+
+    const { ruleSets } = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
+    expect(ruleSets[0].rules[0].materialIds).toEqual([selected.id]);
+    const checked = await runCheckStream(request, task.id);
+    const semanticResult = checked.execution.results.find(
+      (result: { ruleCode: string }) => result.ruleCode === ruleSet.rules[0].code,
+    );
+    expect(
+      semanticResult?.evidence.map((evidence: { materialId: string }) => evidence.materialId),
+    ).not.toContain(unrelated.id);
+
+    const crossTask = await request.post("/api/tasks", {
+      data: { name: "其他任务", noticeText: "必须提交项目材料。" },
+    });
+    const { task: otherTask } = await crossTask.json();
+    const otherRules = await (await request.post(`/api/tasks/${otherTask.id}/rules`)).json();
+    const forged = await request.patch(`/api/tasks/${otherTask.id}/rules`, {
+      data: {
+        rules: otherRules.ruleSet.rules.map((rule: object) => ({
+          ...rule,
+          materialIds: [selected.id],
+        })),
+      },
+    });
+    expect(forged.status()).toBe(422);
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {

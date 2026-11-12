@@ -91,6 +91,11 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         currentNoticeVersion={task.noticeSource.version}
         noticeText={task.noticeSource.originalText}
         noticeSegments={task.noticeSource.segments}
+        materials={task.materials.map(({ id, version, originalFileName }) => ({
+          id,
+          version,
+          originalFileName,
+        }))}
         initialRuleSets={ruleSets}
         mode={runtimeStatus.mode}
       />

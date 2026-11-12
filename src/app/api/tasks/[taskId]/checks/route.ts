@@ -135,11 +135,14 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
               totalCount: ruleSet.rules.length,
             });
             let result: ReviewCheckResult;
+            const ruleMaterials = rule.materialIds.length
+              ? task.materials.filter((material) => rule.materialIds.includes(material.id))
+              : task.materials;
             try {
               if (mode === "live") {
                 const reviewed = await reviewLiveRule({
                   rule,
-                  materials: task.materials,
+                  materials: ruleMaterials,
                   background: task.background,
                   signal,
                   canCallModel:
@@ -149,7 +152,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
                 if (reviewed.call) metadata.modelCalls.push(reviewed.call);
               } else
                 result = {
-                  ...executeReviewRule(rule, task.materials, task.background),
+                  ...executeReviewRule(rule, ruleMaterials, task.background),
                   method: "deterministic",
                 };
             } catch (error) {

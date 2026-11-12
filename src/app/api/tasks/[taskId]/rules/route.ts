@@ -166,6 +166,16 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Ne
           { status: 422 },
         );
       }
+      if (
+        rule.materialIds.some(
+          (materialId) => !task.materials.some((material) => material.id === materialId),
+        )
+      ) {
+        return NextResponse.json(
+          { error: "规则只能指定当前任务中已存在的材料。" },
+          { status: 422 },
+        );
+      }
       ruleIds.add(rule.id);
     }
     const editedRuleSet = reviewRuleSetSchema.parse({

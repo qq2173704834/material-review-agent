@@ -25,6 +25,7 @@ export const reviewRuleSchema = z.object({
   applicabilityScope: z.enum(["individual", "team", "unknown"]),
   applicabilityCondition: z.string().max(500),
   parameters: z.array(z.string().min(1).max(200)).max(20),
+  materialIds: z.array(z.string().uuid()).max(50).default([]),
   checkability: ruleCheckabilitySchema,
   generationMethod: ruleGenerationMethodSchema,
   uncertainty: z.string().max(1_000),

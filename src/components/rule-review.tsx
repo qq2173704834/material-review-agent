@@ -16,6 +16,7 @@ interface RuleReviewProps {
     startOffset: number;
     endOffset: number;
   }>;
+  materials: Array<{ id: string; version: number; originalFileName: string }>;
   initialRuleSets: ReviewRuleSet[];
   mode: "mock" | "live" | "invalid";
 }
@@ -38,6 +39,7 @@ export function RuleReview({
   currentNoticeVersion,
   noticeText,
   noticeSegments,
+  materials,
   initialRuleSets,
   mode,
 }: RuleReviewProps): ReactElement {
@@ -170,6 +172,7 @@ export function RuleReview({
       applicabilityScope: "unknown",
       applicabilityCondition: "",
       parameters: [],
+      materialIds: [],
       checkability: String(form.get("checkability")) as ReviewRule["checkability"],
       generationMethod: "manual",
       uncertainty: "",
@@ -459,6 +462,36 @@ export function RuleReview({
                         }
                       />
                     </label>
+                    <fieldset className="space-y-2">
+                      <legend className="text-xs font-medium">
+                        指定关联材料（留空时由系统匹配）
+                      </legend>
+                      {materials.length ? (
+                        materials.map((material) => (
+                          <label key={material.id} className="flex items-start gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={editingRule.materialIds.includes(material.id)}
+                              onChange={(event) =>
+                                setEditingRule({
+                                  ...editingRule,
+                                  materialIds: event.target.checked
+                                    ? [...editingRule.materialIds, material.id]
+                                    : editingRule.materialIds.filter((id) => id !== material.id),
+                                })
+                              }
+                            />
+                            <span>
+                              {material.originalFileName} · v{material.version}
+                            </span>
+                          </label>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          请先上传材料，再编辑规则匹配。
+                        </p>
+                      )}
+                    </fieldset>
                     <div className="flex gap-2">
                       <button
                         type="submit"
