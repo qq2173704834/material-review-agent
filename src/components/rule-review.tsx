@@ -52,6 +52,19 @@ export function RuleReview({
   );
   const displayedRuleSet = currentRuleSet ?? latestRuleSet;
   const hasCurrentRuleSet = Boolean(currentRuleSet);
+  const materialRequirementGroups = new Map<
+    string,
+    { rules: ReviewRule[]; materialIds: Set<string> }
+  >();
+  displayedRuleSet?.rules.forEach((rule) => {
+    const group = materialRequirementGroups.get(rule.target) ?? {
+      rules: [],
+      materialIds: new Set<string>(),
+    };
+    group.rules.push(rule);
+    rule.materialIds.forEach((materialId) => group.materialIds.add(materialId));
+    materialRequirementGroups.set(rule.target, group);
+  });
 
   async function extractRules(): Promise<void> {
     setError("");
@@ -422,9 +435,96 @@ export function RuleReview({
               {displayedRuleSet.warnings[0]?.message ?? "未识别到规则草稿。"}
             </p>
           ) : null}
+          {displayedRuleSet.rules.length > 0 ? (
+            <section aria-label="材料要求与关联概览" className="mb-5 border-y border-border py-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className="text-xs font-semibold">材料要求与关联概览</h3>
+                <p className="text-xs text-muted-foreground">
+                  {materialRequirementGroups.size} 个提交对象 ·{" "}
+                  {displayedRuleSet.rules.filter((rule) => rule.materialIds.length > 0).length}{" "}
+                  条规则已人工关联
+                </p>
+              </div>
+              <ul className="mt-3 divide-y divide-border">
+                {Array.from(materialRequirementGroups, ([target, group]) => {
+                  const linkedMaterials = materials.filter((material) =>
+                    group.materialIds.has(material.id),
+                  );
+                  const unassignedRules = group.rules.filter((rule) => !rule.materialIds.length);
+
+                  return (
+                    <li key={target} className="py-3">
+                      <p className="break-words text-xs font-medium">{target}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {group.rules.map((rule) => rule.code).join("、")} ·{" "}
+                        {group.rules.map((rule) => strengthLabels[rule.strength]).join("、")}
+                        {group.rules.some((rule) => rule.applicabilityCondition)
+                          ? " · 条件：" +
+                            group.rules
+                              .map((rule) => rule.applicabilityCondition)
+                              .filter(Boolean)
+                              .join("；")
+                          : ""}
+                      </p>
+                      <p className="mt-1 break-words text-xs leading-5">
+                        {linkedMaterials.length
+                          ? "人工关联：" +
+                            linkedMaterials
+                              .map(
+                                (material) => material.originalFileName + " v" + material.version,
+                              )
+                              .join("、")
+                          : "未人工关联材料"}
+                        {unassignedRules.length
+                          ? " · " +
+                            unassignedRules.map((rule) => rule.code).join("、") +
+                            " 由系统检索，尚未人工确认"
+                          : ""}
+                      </p>
+                      {hasCurrentRuleSet ? (
+                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                          {group.rules.map((rule) => (
+                            <button
+                              key={rule.id}
+                              type="button"
+                              onClick={() => {
+                                setEditingRule(rule);
+                                document
+                                  .getElementById("rule-" + rule.id)
+                                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                              }}
+                              className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+                            >
+                              编辑 {rule.code} 关联
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+              {materials.length ? (
+                <p className="mt-3 break-words text-xs leading-5 text-muted-foreground">
+                  未被规则人工关联的文件：
+                  {materials
+                    .filter(
+                      (material) =>
+                        !displayedRuleSet.rules.some((rule) =>
+                          rule.materialIds.includes(material.id),
+                        ),
+                    )
+                    .map((material) => material.originalFileName + " v" + material.version)
+                    .join("、") || "无"}
+                </p>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">尚未上传材料。</p>
+              )}
+            </section>
+          ) : null}
           <ol className="divide-y divide-border border-y border-border">
             {displayedRuleSet.rules.map((rule) => (
-              <li key={rule.id} className="py-5">
+              <li id={"rule-" + rule.id} key={rule.id} className="scroll-mt-6 py-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">
