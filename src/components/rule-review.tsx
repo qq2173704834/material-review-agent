@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { ReviewRuleSet } from "@/domain/review-rule";
-import type { ReactElement } from "react";
+import type { ReviewRule, ReviewRuleSet } from "@/domain/review-rule";
+import type { FormEvent, ReactElement } from "react";
 
 interface RuleReviewProps {
   taskId: string;
@@ -36,6 +36,8 @@ export function RuleReview({
   const [ruleSets, setRuleSets] = useState(initialRuleSets);
   const [error, setError] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
+  const [editingRule, setEditingRule] = useState<ReviewRule | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const currentRuleSet = ruleSets[0];
   const hasCurrentRuleSet = currentRuleSet?.sourceVersion === currentNoticeVersion;
 
@@ -62,6 +64,42 @@ export function RuleReview({
       setError("暂时无法连接本地服务，请稍后重试。");
     } finally {
       setIsExtracting(false);
+    }
+  }
+
+  async function saveRuleEdit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (!editingRule || !currentRuleSet) return;
+    setError("");
+    setIsSaving(true);
+    try {
+      const updatedRules = currentRuleSet.rules.map((rule) =>
+        rule.id === editingRule.id ? editingRule : rule,
+      );
+      const response = await fetch(`/api/tasks/${taskId}/rules`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rules: updatedRules }),
+      });
+      const result: unknown = await response.json();
+      if (!response.ok || typeof result !== "object" || result === null || !("ruleSet" in result)) {
+        setError(
+          typeof result === "object" &&
+            result !== null &&
+            "error" in result &&
+            typeof result.error === "string"
+            ? result.error
+            : "规则修改保存失败。",
+        );
+        return;
+      }
+      setRuleSets((existing) => [result.ruleSet as ReviewRuleSet, ...existing]);
+      setEditingRule(null);
+      router.refresh();
+    } catch {
+      setError("暂时无法连接本地服务，请稍后重试。");
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -136,7 +174,97 @@ export function RuleReview({
                       {checkabilityLabels[rule.checkability]}
                     </p>
                   </div>
+                  {hasCurrentRuleSet ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+                      onClick={() => setEditingRule(rule)}
+                    >
+                      人工纠正
+                    </button>
+                  ) : null}
                 </div>
+                {editingRule?.id === rule.id ? (
+                  <form
+                    onSubmit={saveRuleEdit}
+                    className="mt-4 space-y-3 border-l-2 border-primary/40 pl-4"
+                  >
+                    <label className="block text-xs font-medium">
+                      要求描述
+                      <textarea
+                        className="mt-1 min-h-16 w-full rounded-md border border-border bg-background p-2 text-sm"
+                        maxLength={2000}
+                        required
+                        value={editingRule.description}
+                        onChange={(event) =>
+                          setEditingRule({ ...editingRule, description: event.target.value })
+                        }
+                      />
+                    </label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="text-xs font-medium">
+                        目标材料
+                        <input
+                          className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+                          maxLength={200}
+                          required
+                          value={editingRule.target}
+                          onChange={(event) =>
+                            setEditingRule({ ...editingRule, target: event.target.value })
+                          }
+                        />
+                      </label>
+                      <label className="text-xs font-medium">
+                        要求强度
+                        <select
+                          className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+                          value={editingRule.strength}
+                          onChange={(event) =>
+                            setEditingRule({
+                              ...editingRule,
+                              strength: event.target.value as ReviewRule["strength"],
+                            })
+                          }
+                        >
+                          <option value="required">必须</option>
+                          <option value="recommended">建议</option>
+                          <option value="optional">可选</option>
+                          <option value="unknown">待确认</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label className="block text-xs font-medium">
+                      适用条件
+                      <input
+                        className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+                        maxLength={500}
+                        value={editingRule.applicabilityCondition}
+                        onChange={(event) =>
+                          setEditingRule({
+                            ...editingRule,
+                            applicabilityCondition: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-50"
+                      >
+                        {isSaving ? "保存中…" : "保存为新版本"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingRule(null)}
+                        className="rounded-md border border-border px-3 py-2 text-xs"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
                 {rule.parameters.length > 0 ? (
                   <p className="mt-2 text-xs text-muted-foreground">
                     识别参数：{rule.parameters.join("、")}
