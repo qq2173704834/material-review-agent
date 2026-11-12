@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.90",
+    "@napi-rs/canvas": "1.1.0",
     "@tesseract.js-data/chi_sim": "1.0.0",
     "@tesseract.js-data/eng": "1.0.0",
     "ai": "7.0.169",

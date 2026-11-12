@@ -4,6 +4,7 @@ import { reviewTaskIdSchema } from "@/domain/review-task";
 import { annotateExecutions } from "@/lib/review-history";
 import { createRemediationReport, createReviewReport } from "@/lib/review-report";
 import { getReviewStore } from "@/lib/server/review-store";
+import { reportHtml } from "@/lib/report-html";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,9 @@ export async function GET(
     return NextResponse.json({ error: "任务编号无效。" }, { status: 400 });
   const executionId = new URL(request.url).searchParams.get("executionId");
   const reportType = new URL(request.url).searchParams.get("type");
+  const format = new URL(request.url).searchParams.get("format") ?? "markdown";
+  if (!["markdown", "html"].includes(format))
+    return NextResponse.json({ error: "报告格式无效。" }, { status: 400 });
   if (reportType && reportType !== "remediation")
     return NextResponse.json({ error: "报告类型无效。" }, { status: 400 });
   if (executionId && !reviewTaskIdSchema.safeParse(executionId).success)
@@ -33,10 +37,21 @@ export async function GET(
     return NextResponse.json({ error: "请等待检查结束或取消后再导出报告。" }, { status: 409 });
   const ruleSet = ruleSets.find((candidate) => candidate.id === execution.ruleSetId);
   if (!ruleSet) return NextResponse.json({ error: "没有找到对应的规则快照。" }, { status: 409 });
+  const snapshotTask = { ...task, materials: store.listMaterials(taskId, true) };
   const body =
     reportType === "remediation"
-      ? createRemediationReport(task, execution, ruleSet)
-      : createReviewReport(task, execution, ruleSet, executions[index + 1]);
+      ? createRemediationReport(snapshotTask, execution, ruleSet)
+      : createReviewReport(snapshotTask, execution, ruleSet, executions[index + 1]);
+  if (format === "html")
+    return new Response(reportHtml(body), {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy":
+          "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+      },
+    });
   return new Response(body, {
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",

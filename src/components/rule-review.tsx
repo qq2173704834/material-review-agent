@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 
 import type { ReviewRule, ReviewRuleSet } from "@/domain/review-rule";
 import { hasCurrentRuleSources } from "@/domain/review-rule";
+import { describeBound } from "@/lib/numeric-constraints";
 import type { RequirementSourceVersion } from "@/domain/review";
 import type { FormEvent, ReactElement } from "react";
 
@@ -13,6 +15,8 @@ interface RuleReviewProps {
   currentNoticeVersion: number;
   sources: RequirementSourceVersion[];
   materials: Array<{ id: string; version: number; originalFileName: string }>;
+  candidates?: Record<string, Array<{ materialId: string; quote: string; location: string }>>;
+  applicability?: Record<string, boolean | undefined>;
   initialRuleSets: ReviewRuleSet[];
   mode: "mock" | "live" | "invalid";
 }
@@ -35,6 +39,8 @@ export function RuleReview({
   currentNoticeVersion,
   sources,
   materials,
+  candidates = {},
+  applicability = {},
   initialRuleSets,
   mode,
 }: RuleReviewProps): ReactElement {
@@ -45,6 +51,8 @@ export function RuleReview({
   const [editingRule, setEditingRule] = useState<ReviewRule | null>(null);
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const clearUnsaved = useUnsavedChanges(isDirty && (!!editingRule || isAddingRule));
   const latestRuleSet = ruleSets[0];
   const currentRuleSet = ruleSets.find(
     (ruleSet) =>
@@ -120,6 +128,8 @@ export function RuleReview({
       }
       setRuleSets((existing) => [result.ruleSet as ReviewRuleSet, ...existing]);
       setEditingRule(null);
+      clearUnsaved();
+      setIsDirty(false);
       router.refresh();
     } catch {
       setError("暂时无法连接本地服务，请稍后重试。");
@@ -277,6 +287,8 @@ export function RuleReview({
       }
       setRuleSets((existing) => [result.ruleSet as ReviewRuleSet, ...existing]);
       setIsAddingRule(false);
+      clearUnsaved();
+      setIsDirty(false);
       formElement.reset();
       router.refresh();
     } catch {
@@ -321,7 +333,11 @@ export function RuleReview({
         ) : null}
       </div>
       {isAddingRule && currentRuleSet ? (
-        <form onSubmit={addManualRule} className="mt-5 space-y-3 border-l-2 border-primary/40 pl-4">
+        <form
+          onSubmit={addManualRule}
+          onChangeCapture={() => setIsDirty(true)}
+          className="mt-5 space-y-3 border-l-2 border-primary/40 pl-4"
+        >
           <label className="block text-xs font-medium">
             要求描述
             <textarea
@@ -451,10 +467,47 @@ export function RuleReview({
                     group.materialIds.has(material.id),
                   );
                   const unassignedRules = group.rules.filter((rule) => !rule.materialIds.length);
+                  const contentCandidates = candidates[target] ?? [];
+                  const groupState = group.rules.every((rule) => applicability[rule.id] === false)
+                    ? "不适用"
+                    : group.rules.some(
+                          (rule) =>
+                            rule.applicabilityCondition && applicability[rule.id] === undefined,
+                        )
+                      ? "适用条件待确认"
+                      : linkedMaterials.length
+                        ? "已人工匹配"
+                        : contentCandidates.length
+                          ? "候选待核对"
+                          : group.rules.every((rule) => rule.strength === "optional")
+                            ? "未提供（选交）"
+                            : "未确认匹配";
 
                   return (
                     <li key={target} className="py-3">
                       <p className="break-words text-xs font-medium">{target}</p>
+                      <p className="mt-1 text-xs">匹配状态：{groupState}（独立于审查判定）</p>
+                      {contentCandidates.length > 0 && (
+                        <ul className="mt-2 space-y-1 text-xs">
+                          {contentCandidates.map((candidate) => (
+                            <li key={candidate.materialId}>
+                              内容候选：
+                              {
+                                materials.find((material) => material.id === candidate.materialId)
+                                  ?.originalFileName
+                              }{" "}
+                              · {candidate.location} · {candidate.quote}。请核对后在规则中保存关联。
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {group.rules.some((rule) =>
+                        /二选一|至少一项|任意一项|或/.test(rule.description),
+                      ) && (
+                        <p className="mt-1 text-xs text-amber-800">
+                          组合要求需按来源整体判断；关联多份文件不等于组合条件已满足。
+                        </p>
+                      )}
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
                         {group.rules.map((rule) => rule.code).join("、")} ·{" "}
                         {group.rules.map((rule) => strengthLabels[rule.strength]).join("、")}
@@ -557,6 +610,7 @@ export function RuleReview({
                 </div>
                 {editingRule?.id === rule.id ? (
                   <form
+                    onChangeCapture={() => setIsDirty(true)}
                     onSubmit={saveRuleEdit}
                     className="mt-4 space-y-3 border-l-2 border-primary/40 pl-4"
                   >
@@ -688,6 +742,24 @@ export function RuleReview({
                   <p className="mt-2 text-xs text-muted-foreground">
                     识别参数：{rule.parameters.join("、")}
                   </p>
+                ) : null}
+                {rule.numericConstraints?.length ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    结构化数值约束：{rule.numericConstraints.map(describeBound).join("；")}
+                  </p>
+                ) : null}
+                {rule.additionalSources?.length ? (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs text-primary">
+                      等价要求的其他来源（{rule.additionalSources.length}）
+                    </summary>
+                    {rule.additionalSources.map((source, index) => (
+                      <blockquote key={index} className="mt-2 border-l-2 pl-3 text-xs">
+                        {source.displayName} v{source.sourceVersion} · 段落{" "}
+                        {source.paragraphIndex + 1}：{source.quotedText}
+                      </blockquote>
+                    ))}
+                  </details>
                 ) : null}
                 {rule.applicabilityCondition ? (
                   <p className="mt-2 text-xs text-amber-800">

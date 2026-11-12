@@ -6,6 +6,7 @@ import { reviewTaskIdSchema } from "@/domain/review-task";
 import { hasCurrentRuleSources, reviewRuleSchema, reviewRuleSetSchema } from "@/domain/review-rule";
 import { extractMockRules } from "@/lib/rule-extractor";
 import { findRuleConflicts } from "@/lib/rule-conflicts";
+import { normalizeRules } from "@/lib/rule-normalization";
 import { findMissingAttachmentWarnings } from "@/lib/attachment-dependencies";
 import { getReviewStore } from "@/lib/server/review-store";
 import { extractLiveRules } from "@/lib/server/live-rule-extractor";
@@ -89,6 +90,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
               modelCalls: [],
             };
           })();
+    extractedRules.rules = normalizeRules(extractedRules.rules);
     const createdAt = new Date().toISOString();
     const ruleSet = reviewRuleSetSchema.parse({
       id: randomUUID(),
@@ -145,7 +147,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
     if (error instanceof ModelServiceError) {
       const failure = modelErrorResponse(error);
       return NextResponse.json(
-        { error: failure.error, code: failure.code },
+        { error: failure.error, code: failure.code, call: error.call },
         { status: failure.status },
       );
     }
@@ -198,6 +200,29 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Ne
     const ruleIds = new Set<string>();
     for (const rule of rules) {
       if (
+        (rule.additionalSources ?? []).some(
+          (citation) =>
+            !sources.some(
+              (source) =>
+                source.id === citation.sourceId &&
+                source.version === citation.sourceVersion &&
+                source.segments.some(
+                  (segment) =>
+                    segment.paragraphIndex === citation.paragraphIndex &&
+                    citation.startOffset >= segment.startOffset &&
+                    citation.endOffset <= segment.endOffset,
+                ) &&
+                source.originalText.slice(citation.startOffset, citation.endOffset) ===
+                  citation.quotedText,
+            ),
+        )
+      ) {
+        return NextResponse.json(
+          { error: "合并规则的补充引用必须来自本任务有效原文。" },
+          { status: 422 },
+        );
+      }
+      if (
         !sources.some(
           (source) =>
             source.id === rule.source.sourceId && source.version === rule.source.sourceVersion,
@@ -234,12 +259,14 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Ne
       }
       ruleIds.add(rule.id);
     }
-    const editedRules = rules.map((rule, index) => ({
-      ...rule,
-      id: randomUUID(),
-      code: `R-${String(index + 1).padStart(3, "0")}`,
-      generationMethod: "manual" as const,
-    }));
+    const editedRules = normalizeRules(
+      rules.map((rule, index) => ({
+        ...rule,
+        id: randomUUID(),
+        code: `R-${String(index + 1).padStart(3, "0")}`,
+        generationMethod: "manual" as const,
+      })),
+    );
     const editedRuleSet = reviewRuleSetSchema.parse({
       ...currentRuleSet,
       id: randomUUID(),

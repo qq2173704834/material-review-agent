@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { compareExecutions } from "@/lib/review-history";
+import { EvidencePreview } from "@/components/evidence-preview";
+import { SourceEvidencePreview } from "@/components/source-evidence-preview";
+import { ReviewWorkbench } from "@/components/review-workbench";
 
 import {
   getRequirementSourceSegmentId,
@@ -10,6 +13,7 @@ import {
   type RequirementSourceVersion,
   type ReviewExecution,
   type ReviewVerdict,
+  type RecheckPlanItem,
 } from "@/domain/review";
 import type { FormEvent, ReactElement } from "react";
 
@@ -66,17 +70,74 @@ export function ReviewExecutionPanel({
   const [executions, setExecutions] = useState(initialExecutions);
   const [remediationTasks, setRemediationTasks] = useState(initialRemediationTasks);
   const [error, setError] = useState("");
+  const [recheckPlan, setRecheckPlan] = useState<RecheckPlanItem[]>([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch(`/api/tasks/${taskId}/checks`, { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        const payload: unknown = await response.json();
+        if (
+          response.ok &&
+          typeof payload === "object" &&
+          payload !== null &&
+          "plan" in payload &&
+          Array.isArray(payload.plan)
+        )
+          setRecheckPlan(payload.plan as RecheckPlanItem[]);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [taskId]);
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const abortController = useRef<AbortController | null>(null);
-  const [selectedId, setSelectedId] = useState("");
-  const [selectedRuleId, setSelectedRuleId] = useState("");
+  const searchParams = useSearchParams();
+  const requestedExecutionId = searchParams.get("execution");
+  const selectedExecution =
+    executions.find((item) => item.id === requestedExecutionId) ?? executions[0];
+  const selectedId = selectedExecution?.id ?? "";
+  const requestedRuleId = searchParams.get("rule");
+  const selectedRuleId = selectedExecution?.results.some(
+    (result) => result.ruleId === requestedRuleId,
+  )
+    ? (requestedRuleId ?? "")
+    : "";
   const [activeRuleCode, setActiveRuleCode] = useState("");
-  const [verdictFilter, setVerdictFilter] = useState<"all" | ReviewVerdict>("all");
-  const [strengthFilter, setStrengthFilter] = useState("all");
-  const [materialFilter, setMaterialFilter] = useState("all");
-  const [viewStateNotice, setViewStateNotice] = useState("");
-  const hasSyncedViewState = useRef(false);
+  const requestedVerdict = searchParams.get("verdict");
+  const verdictFilter = verdictOrder.find((verdict) => verdict === requestedVerdict) ?? "all";
+  const requestedStrength = searchParams.get("strength");
+  const strengthFilter =
+    ["required", "recommended", "optional", "unknown"].find(
+      (strength) => strength === requestedStrength,
+    ) ?? "all";
+  const requestedMaterial = searchParams.get("material");
+  const materialFilter =
+    materials.find((material) => material.id === requestedMaterial)?.id ?? "all";
+  const viewStateNotice =
+    (requestedExecutionId && requestedExecutionId !== selectedId) ||
+    (requestedRuleId && requestedRuleId !== selectedRuleId) ||
+    (requestedMaterial && materialFilter === "all")
+      ? "之前查看的位置已失效，已回到当前可用结果。"
+      : "";
+  function updateView(values: Record<string, string>): void {
+    const params = new URLSearchParams(window.location.search);
+    if (selectedId) params.set("execution", selectedId);
+    for (const [key, value] of Object.entries(values)) {
+      if (!value || value === "all") params.delete(key);
+      else params.set(key, value);
+    }
+    const query = params.toString();
+    window.history.pushState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+    );
+  }
+  const setSelectedId = (value: string): void => updateView({ execution: value, rule: "" });
+  const setSelectedRuleId = (value: string): void => updateView({ rule: value });
+  const setVerdictFilter = (value: string): void => updateView({ verdict: value });
+  const setStrengthFilter = (value: string): void => updateView({ strength: value });
+  const setMaterialFilter = (value: string): void => updateView({ material: value });
   const [resolutionDrafts, setResolutionDrafts] = useState<
     Record<string, { decision: string; note: string }>
   >({});
@@ -86,82 +147,6 @@ export function ReviewExecutionPanel({
     },
     [],
   );
-  useEffect(() => {
-    function restoreViewState(): void {
-      const params = new URLSearchParams(window.location.search);
-      const executionId = params.get("execution");
-      const execution = executions.find((item) => item.id === executionId);
-      const ruleId = params.get("rule");
-      const verdict = params.get("verdict");
-      const strength = params.get("strength");
-      const materialId = params.get("material");
-      const hasInvalidExecution = Boolean(executionId && !execution);
-      const hasInvalidRule = Boolean(
-        ruleId && !execution?.results.some((result) => result.ruleId === ruleId),
-      );
-      const hasInvalidMaterial = Boolean(
-        materialId && !materials.some((material) => material.id === materialId),
-      );
-
-      setSelectedId(execution?.id ?? "");
-      setSelectedRuleId(
-        execution?.results.some((result) => result.ruleId === ruleId) ? (ruleId ?? "") : "",
-      );
-      setVerdictFilter(
-        verdict === "passed" ||
-          verdict === "failed" ||
-          verdict === "needs_confirmation" ||
-          verdict === "unable_to_check" ||
-          verdict === "not_applicable"
-          ? verdict
-          : "all",
-      );
-      setStrengthFilter(
-        strength === "required" ||
-          strength === "recommended" ||
-          strength === "optional" ||
-          strength === "unknown"
-          ? strength
-          : "all",
-      );
-      setMaterialFilter(
-        materials.some((material) => material.id === materialId) ? materialId! : "all",
-      );
-      setViewStateNotice(
-        hasInvalidExecution || hasInvalidRule || hasInvalidMaterial
-          ? "之前查看的位置已失效，已回到当前可用结果。"
-          : "",
-      );
-    }
-
-    restoreViewState();
-    window.addEventListener("popstate", restoreViewState);
-    return () => window.removeEventListener("popstate", restoreViewState);
-  }, [executions, materials]);
-  useEffect(() => {
-    if (!hasSyncedViewState.current) {
-      hasSyncedViewState.current = true;
-      return;
-    }
-    const params = new URLSearchParams(window.location.search);
-    const nextValues: Array<[string, string]> = [
-      ["execution", selectedId],
-      ["rule", selectedRuleId],
-      ["verdict", verdictFilter],
-      ["strength", strengthFilter],
-      ["material", materialFilter],
-    ];
-    for (const [key, value] of nextValues) {
-      if (!value || value === "all") params.delete(key);
-      else params.set(key, value);
-    }
-    const query = params.toString();
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
-    );
-  }, [selectedId, selectedRuleId, verdictFilter, strengthFilter, materialFilter]);
   const selectedIndex = selectedId
     ? executions.findIndex((execution) => execution.id === selectedId)
     : 0;
@@ -310,7 +295,7 @@ export function ReviewExecutionPanel({
     setIsRunning(false);
   }
 
-  async function runChecks(): Promise<void> {
+  async function runChecks(forceFull = false): Promise<void> {
     setError("");
     setIsRunning(true);
     setSelectedId("");
@@ -319,7 +304,7 @@ export function ReviewExecutionPanel({
     const controller = new AbortController();
     abortController.current = controller;
     try {
-      const response = await fetch(`/api/tasks/${taskId}/checks`, {
+      const response = await fetch(`/api/tasks/${taskId}/checks${forceFull ? "?full=1" : ""}`, {
         method: "POST",
         signal: controller.signal,
       });
@@ -420,7 +405,7 @@ export function ReviewExecutionPanel({
     <section
       id="stage-review"
       aria-labelledby="execution-heading"
-      className="mt-12 max-w-4xl border-t border-border pt-7"
+      className="mt-12 max-w-7xl border-t border-border pt-7"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -445,7 +430,7 @@ export function ReviewExecutionPanel({
           ) : null}
           <button
             type="button"
-            onClick={runChecks}
+            onClick={() => void runChecks()}
             disabled={!hasCurrentRuleSet || isRunning}
             className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-card px-3 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
@@ -455,8 +440,33 @@ export function ReviewExecutionPanel({
                 ? "重新检查"
                 : "运行检查"}
           </button>
+          {executions.length ? (
+            <button
+              type="button"
+              onClick={() => void runChecks(true)}
+              disabled={!hasCurrentRuleSet || isRunning}
+              className="min-h-11 rounded border border-border px-3 text-xs disabled:opacity-40"
+            >
+              全量复检
+            </button>
+          ) : null}
         </div>
       </div>
+      {recheckPlan.length ? (
+        <details className="mt-4 text-xs">
+          <summary className="cursor-pointer">
+            复检影响范围：{recheckPlan.filter((item) => item.action === "check").length} 项需检查，
+            {recheckPlan.filter((item) => item.action === "reuse").length} 项可复用
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {recheckPlan.map((item) => (
+              <li key={item.ruleId}>
+                {item.ruleCode} · {item.action === "check" ? "重新检查" : "复用"} · {item.reason}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
       {!hasCurrentRuleSet ? (
         <p className="mt-4 text-sm text-muted-foreground">请先为当前通知生成规则草稿。</p>
       ) : null}
@@ -534,6 +544,14 @@ export function ReviewExecutionPanel({
                   className="font-medium text-primary underline underline-offset-4"
                 >
                   导出 Markdown 报告
+                </a>
+                <a
+                  href={`/api/tasks/${taskId}/report?executionId=${currentExecution.id}&format=html`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-primary underline underline-offset-4"
+                >
+                  报告预览 / 打印 PDF
                 </a>
                 <a
                   href={`/api/tasks/${taskId}/report?executionId=${currentExecution.id}&type=remediation`}
@@ -626,9 +644,7 @@ export function ReviewExecutionPanel({
               <button
                 type="button"
                 onClick={() => {
-                  setVerdictFilter("all");
-                  setStrengthFilter("all");
-                  setMaterialFilter("all");
+                  updateView({ verdict: "all", strength: "all", material: "all" });
                 }}
                 className="font-medium text-primary underline-offset-4 hover:underline"
               >
@@ -641,6 +657,26 @@ export function ReviewExecutionPanel({
               {viewStateNotice}
             </p>
           ) : null}
+          <div className="py-3">
+            <button
+              className="min-h-11 rounded border border-border px-3 text-xs"
+              onClick={() =>
+                updateView({ workspace: searchParams.get("workspace") === "1" ? "" : "1" })
+              }
+            >
+              {searchParams.get("workspace") === "1" ? "收起联动工作台" : "打开联动工作台"}
+            </button>
+            {searchParams.get("workspace") === "1" && (
+              <ReviewWorkbench
+                taskId={taskId}
+                executionId={currentExecution.id}
+                sourceVersion={currentExecution.sourceVersion}
+                results={visibleResults}
+                selectedRuleId={selectedRuleId}
+                onSelect={setSelectedRuleId}
+              />
+            )}
+          </div>
           <ol className="mt-4 divide-y divide-border border-y border-border">
             {visibleResults.map((result) => {
               const source = sources.find(
@@ -687,6 +723,16 @@ export function ReviewExecutionPanel({
                   <p className="mt-1 text-xs text-muted-foreground">
                     检查方法：{result.method ? methodLabels[result.method] : "未记录"}
                   </p>
+                  {result.reusedFrom ? (
+                    <p className="mt-1 text-xs text-primary">
+                      复用结果 · 原检查时间 {result.reusedFrom.checkedAt} · 原执行{" "}
+                      {result.reusedFrom.executionId.slice(0, 8)}；本轮未重复调用工具或模型。
+                    </p>
+                  ) : result.checkedAt ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      本轮检查 · {result.checkedAt}
+                    </p>
+                  ) : null}
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.reason}</p>
                   {result.recommendation ? (
                     <p className="mt-2 text-xs leading-5 text-primary">
@@ -710,6 +756,12 @@ export function ReviewExecutionPanel({
                       <span>{sourceLabel} · 原文当前不可定位</span>
                     )}
                     ：{result.source.quotedText}
+                    <SourceEvidencePreview
+                      taskId={taskId}
+                      executionId={currentExecution.id}
+                      source={result.source}
+                      sourceVersion={currentExecution.sourceVersion}
+                    />
                   </blockquote>
                   {result.coverage ? (
                     <p className="mt-2 text-xs text-muted-foreground">
@@ -718,6 +770,9 @@ export function ReviewExecutionPanel({
                         ? "已解析文本完整纳入本项上下文"
                         : "片段覆盖或解析存在限制，请人工复核"}
                     </p>
+                  ) : null}
+                  {result.evidence.length ? (
+                    <EvidencePreview taskId={taskId} evidence={result.evidence} />
                   ) : null}
                   {result.evidence.length ? (
                     <ul className="mt-3 space-y-2 text-xs leading-5">
@@ -871,9 +926,7 @@ export function ReviewExecutionPanel({
               <button
                 type="button"
                 onClick={() => {
-                  setVerdictFilter("all");
-                  setStrengthFilter("all");
-                  setMaterialFilter("all");
+                  updateView({ verdict: "all", strength: "all", material: "all" });
                 }}
                 className="ml-2 font-medium text-primary underline underline-offset-4"
               >

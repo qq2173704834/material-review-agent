@@ -97,6 +97,21 @@ export function createReviewReport(
     );
   lines.push("", "## 逐项结果", "");
   for (const result of execution.results) {
+    const mergedSources =
+      ruleSet.rules.find((rule) => rule.id === result.ruleId)?.additionalSources ?? [];
+    if (mergedSources.length)
+      lines.push(
+        ...mergedSources.map(
+          (source) =>
+            `等价要求补充来源：${plain(source.displayName ?? "来源")} v${source.sourceVersion} · 段落 ${source.paragraphIndex + 1} · ${plain(source.quotedText)}`,
+        ),
+        "",
+      );
+    if (result.reusedFrom)
+      lines.push(
+        `复用结果：原执行 ${result.reusedFrom.executionId}，原检查时间 ${result.reusedFrom.checkedAt}；本轮未重复调用。`,
+        "",
+      );
     lines.push(
       `### ${result.ruleCode} · ${verdictLabels[result.verdict]}`,
       "",
@@ -136,7 +151,7 @@ export function createReviewReport(
       (call) =>
         `- ${call.operation} · ${plain(call.provider)}/${plain(call.model)} · ${call.startedAt}—${call.completedAt} · ${call.status}${call.errorCode ? `（${plain(call.errorCode)}）` : ""}`,
     ),
-    "- 未实施图像 OCR、签章真实性验证和官方提交。有限检索未命中不能证明全文不存在。",
+    "- OCR 只用于提取文字，不验证表格结构、签章真实性或官方提交结果。有限检索未命中不能证明全文不存在。",
     ...(execution.metadata?.limitations ?? []).map((limitation) => `- ${plain(limitation)}`),
     "",
   );

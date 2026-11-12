@@ -7,8 +7,12 @@ import mammoth from "mammoth";
 import JSZip from "jszip";
 import sharp from "sharp";
 
-import type { MaterialContentSegment, MaterialParseStatus } from "@/domain/review";
-import type * as PdfJs from "pdfjs-dist";
+import type {
+  MaterialContentSegment,
+  MaterialParseStatus,
+  MaterialPageCoverage,
+} from "@/domain/review";
+import { parsePdfMaterial } from "@/lib/server/pdf-parser";
 import { recognizeImageText } from "@/lib/server/image-ocr";
 
 const MAXIMUM_ARCHIVE_EXPANDED_BYTES = 100 * 1024 * 1024;
@@ -26,6 +30,7 @@ export interface ParsedMaterial {
   pageCount: number | null;
   sheetNames: string[];
   parseMessage: string;
+  pageCoverage?: MaterialPageCoverage[];
 }
 
 function createSegments(blocks: Array<{ text: string; location: string }>): {
@@ -83,6 +88,7 @@ function assertUtf8(buffer: Buffer): string {
 export async function parseMaterial(
   buffer: Buffer,
   originalFileName: string,
+  signal?: AbortSignal,
 ): Promise<ParsedMaterial> {
   const extension = originalFileName.split(".").pop()?.toLowerCase() ?? "";
   const signature = await fileTypeFromBuffer(buffer);
@@ -117,29 +123,7 @@ export async function parseMaterial(
 
   if (extension === "pdf") {
     if (signature?.mime !== "application/pdf") throw new Error("扩展名与 PDF 文件签名不匹配。");
-    const pdfjs = (await import("pdfjs-dist/legacy/build/pdf.mjs")) as typeof PdfJs;
-    const document = await pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true })
-      .promise;
-    const blocks: Array<{ text: string; location: string }> = [];
-    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-      const page = await document.getPage(pageNumber);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((item) => ("str" in item ? item.str : "")).join(" ");
-      blocks.push({ text: pageText, location: `第 ${pageNumber} 页` });
-    }
-    const result = createSegments(blocks);
-    const status = result.text ? "text_extracted" : "partial";
-    return {
-      mediaType: "application/pdf",
-      extension,
-      parseStatus: status,
-      parserName: "pdfjs-dist",
-      extractedText: result.text,
-      segments: result.segments,
-      pageCount: document.numPages,
-      sheetNames: [],
-      parseMessage: result.text ? "" : "PDF 页面存在，但未提取到文本；可能是扫描件，需要 OCR。",
-    };
+    return parsePdfMaterial(buffer, undefined, signal);
   }
 
   if (extension === "docx") {

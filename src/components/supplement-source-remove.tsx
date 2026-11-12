@@ -22,7 +22,12 @@ export function SupplementSourceRemove({
   const [isRemoving, setIsRemoving] = useState(false);
 
   async function removeSource(): Promise<void> {
-    if (!window.confirm(`删除补充来源“${displayName}”？该来源文本与定位将被永久删除。`)) return;
+    if (
+      !window.confirm(
+        `删除补充来源“${displayName}”？当前来源将被删除；已有执行中保存的证据快照继续保留，删除整个任务时一并清除。`,
+      )
+    )
+      return;
     setError("");
     setIsRemoving(true);
     try {

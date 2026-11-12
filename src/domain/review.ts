@@ -1,4 +1,5 @@
 import type { ModelCall } from "@/domain/model-call";
+import type { MaterialClassification } from "@/lib/material-classification";
 
 /** 判定、执行和结果有效性各自独立，不能把待复检当成新判定。 */
 export type ReviewVerdict =
@@ -68,6 +69,14 @@ export interface ReviewTaskDetails extends ReviewTaskSummary {
 
 export type MaterialParseStatus = "text_extracted" | "partial" | "failed" | "ocr_required";
 
+export interface MaterialPageCoverage {
+  pageNumber: number;
+  method: "text" | "ocr" | "none";
+  status: "read" | "partial" | "failed" | "skipped";
+  confidence?: number;
+  message: string;
+}
+
 export interface MaterialContentSegment {
   segmentIndex: number;
   text: string;
@@ -91,7 +100,30 @@ export interface ReviewMaterialSummary {
   pageCount: number | null;
   sheetNames: string[];
   parseMessage: string;
+  pageCoverage?: MaterialPageCoverage[];
+  revision?: MaterialRevision;
+  classification?: MaterialClassification;
   createdAt: string;
+}
+
+export interface MaterialRevision {
+  kind: "correction" | "restore" | "retry" | "classification";
+  baseVersion: number;
+  note: string;
+  pageNumber?: number;
+}
+
+export interface MaterialVersionPreview {
+  id: string;
+  version: number;
+  originalFileName: string;
+  extension: string;
+  parseStatus: MaterialParseStatus;
+  parseMessage: string;
+  pageCount: number | null;
+  totalSegments: number;
+  offset: number;
+  segments: MaterialContentSegment[];
 }
 
 export type ReviewExecutionStatus = "running" | "completed" | "cancelled" | "failed";
@@ -116,6 +148,17 @@ export interface ReviewCheckResult {
   evidence: ReviewCheckEvidence[];
   method?: "deterministic" | "model" | "unavailable";
   coverage?: { examinedSegments: number; totalSegments: number; isComplete: boolean };
+  dependencyKey?: string;
+  comparisonKey?: string;
+  checkedAt?: string;
+  reusedFrom?: { executionId: string; checkedAt: string };
+}
+
+export interface RecheckPlanItem {
+  ruleId: string;
+  ruleCode: string;
+  action: "check" | "reuse";
+  reason: string;
 }
 
 export interface ReviewExecution {

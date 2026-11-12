@@ -52,6 +52,7 @@ export default defineConfig([
     },
   },
   globalIgnores([
+    ".local-data/**",
     ".next/**",
     "out/**",
     "next-env.d.ts",

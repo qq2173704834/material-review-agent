@@ -28,6 +28,7 @@ export interface FetchedWebpage {
   title: string;
   text: string;
   fetchedAt: string;
+  attachments: Array<{ url: string; name: string }>;
 }
 
 interface HtmlNode {
@@ -177,7 +178,10 @@ function collectText(root: HtmlNode, output: string[]): void {
   if (["p", "li", "tr", "section", "article"].includes(root.tagName ?? "")) output.push("\n");
 }
 
-function htmlToText(source: string): { title: string; text: string } {
+export function extractWebpageContent(
+  source: string,
+  baseUrl: string,
+): { title: string; text: string; attachments: FetchedWebpage["attachments"] } {
   const document = parse(source) as unknown as HtmlNode;
   const titleNode = findElement(document, "title");
   const titleParts: string[] = [];
@@ -185,8 +189,36 @@ function htmlToText(source: string): { title: string; text: string } {
   const body = findElement(document, "body") ?? document;
   const contentParts: string[] = [];
   collectText(body, contentParts);
+  const attachments: FetchedWebpage["attachments"] = [];
+  function findAttachments(node: HtmlNode): void {
+    if (node.tagName === "a" && attachments.length < 20) {
+      const href = node.attrs?.find((attribute) => attribute.name === "href")?.value;
+      try {
+        const target = validateUrl(new URL(href ?? "", baseUrl).toString());
+        if (
+          href &&
+          /\.(pdf|docx|txt)$/i.test(target.pathname) &&
+          !attachments.some((item) => item.url === target.toString())
+        ) {
+          const parts: string[] = [];
+          collectText(node, parts);
+          attachments.push({
+            url: target.toString(),
+            name:
+              parts.join(" ").trim().slice(0, 200) ||
+              decodeURIComponent(target.pathname.split("/").pop() ?? "附件"),
+          });
+        }
+      } catch {
+        /* Invalid or private attachment links are excluded. */
+      }
+    }
+    for (const child of node.childNodes ?? []) findAttachments(child);
+  }
+  findAttachments(body);
   return {
     title: titleParts.join(" ").replace(/\s+/g, " ").trim().slice(0, 300),
+    attachments,
     text: contentParts
       .join(" ")
       .replace(/[ \t]+/g, " ")
@@ -195,21 +227,24 @@ function htmlToText(source: string): { title: string; text: string } {
   };
 }
 
-export async function fetchPublicWebpage(rawUrl: string): Promise<FetchedWebpage> {
+export async function fetchPublicResource(
+  rawUrl: string,
+): Promise<{ url: string; bytes: Uint8Array; contentType: string }> {
   let url = validateUrl(rawUrl);
   const dispatcher = createPublicOnlyAgent();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     let response: UndiciResponse | undefined;
     for (let redirects = 0; redirects <= MAXIMUM_REDIRECTS; redirects += 1) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
       try {
         response = await undiciFetch(url, {
           dispatcher,
           redirect: "manual",
           signal: controller.signal,
           headers: {
-            Accept: "text/html,application/xhtml+xml",
+            Accept:
+              "text/html,application/xhtml+xml,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain",
             "User-Agent": "MaterialReviewWorkbench/0.1 (+public webpage import)",
           },
         });
@@ -223,12 +258,11 @@ export async function fetchPublicWebpage(rawUrl: string): Promise<FetchedWebpage
             cause: error,
           },
         );
-      } finally {
-        clearTimeout(timeout);
       }
       if (!response) throw new Error("网页请求失败。");
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers.get("location");
+        await response.body?.cancel();
         if (!location || redirects === MAXIMUM_REDIRECTS)
           throw new Error("网页重定向次数超出限制或目标无效。");
         url = validateUrl(new URL(location, url).toString());
@@ -241,13 +275,22 @@ export async function fetchPublicWebpage(rawUrl: string): Promise<FetchedWebpage
       throw new Error("网页需要登录、授权或代理认证，未尝试绕过访问限制。");
     if (!response.ok) throw new Error(`网页返回 HTTP ${response.status}。`);
     const contentType = response.headers.get("content-type") ?? "";
-    if (!/^(text\/html|application\/xhtml\+xml)(?:;|$)/i.test(contentType))
-      throw new Error("该地址未返回 HTML 网页内容。");
-    const { title, text } = htmlToText(decodeHtml(await readLimitedBody(response), contentType));
-    if (text.length < 40) throw new Error("网页正文过短或无法提取；可改为粘贴原文。");
-    if (text.length > 200_000) throw new Error("提取正文超过 200,000 字符限制。");
-    return { url: url.toString(), title, text, fetchedAt: new Date().toISOString() };
+    return { url: url.toString(), bytes: await readLimitedBody(response), contentType };
   } finally {
-    await dispatcher.close();
+    clearTimeout(timeout);
+    await dispatcher.destroy();
   }
+}
+
+export async function fetchPublicWebpage(rawUrl: string): Promise<FetchedWebpage> {
+  const resource = await fetchPublicResource(rawUrl);
+  if (!/^(text\/html|application\/xhtml\+xml)(?:;|$)/i.test(resource.contentType))
+    throw new Error("该地址未返回 HTML 网页内容。");
+  const { title, text, attachments } = extractWebpageContent(
+    decodeHtml(resource.bytes, resource.contentType),
+    resource.url,
+  );
+  if (text.length < 40) throw new Error("网页正文过短或无法提取；可改为粘贴原文。");
+  if (text.length > 200_000) throw new Error("提取正文超过 200,000 字符限制。");
+  return { url: resource.url, title, text, attachments, fetchedAt: new Date().toISOString() };
 }

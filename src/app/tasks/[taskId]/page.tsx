@@ -19,6 +19,11 @@ import { TaskCloneControl } from "@/components/task-clone-control";
 import { ClarificationPanel } from "@/components/clarification-panel";
 import { SupplementSourceUpload } from "@/components/supplement-source-upload";
 import { SupplementSourceRemove } from "@/components/supplement-source-remove";
+import { SourceAttachments } from "@/components/source-attachments";
+import { DemoControls } from "@/components/demo-controls";
+import { SourceEditor } from "@/components/source-editor";
+import { targetCandidates } from "@/lib/material-classification";
+import { applicableRule } from "@/lib/review-checks";
 import { getRequirementSourceSegmentId } from "@/domain/review";
 
 import type { Metadata } from "next";
@@ -212,6 +217,11 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
                   sourceId={source.id}
                   displayName={source.displayName}
                 />
+                <SourceEditor
+                  key={`${source.id}:${source.version}`}
+                  taskId={task.id}
+                  source={source}
+                />
                 {source.segments.map((segment) => (
                   <p
                     key={`${source.id}-${segment.paragraphIndex}`}
@@ -232,9 +242,32 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         </section>
       ) : null}
       <SupplementSourceUpload taskId={task.id} />
+      {task.description.startsWith("[合成演示:competition]") ? (
+        <DemoControls taskId={task.id} domain="competition" />
+      ) : task.description.startsWith("[合成演示:grant]") ? (
+        <DemoControls taskId={task.id} domain="grant" />
+      ) : null}
+      <SourceAttachments
+        taskId={task.id}
+        sources={currentSources
+          .filter((source) => source.inputType === "webpage")
+          .map(({ id, displayName }) => ({ id, displayName }))}
+      />
       <ClarificationPanel task={task} currentRuleSet={currentRuleSet} />
       <div id="stage-prepare" className="scroll-mt-6">
         <RuleReview
+          candidates={Object.fromEntries(
+            (currentRuleSet?.rules ?? []).map((rule) => [
+              rule.target,
+              targetCandidates(rule.target, task.materials),
+            ]),
+          )}
+          applicability={Object.fromEntries(
+            (currentRuleSet?.rules ?? []).map((rule) => [
+              rule.id,
+              applicableRule(rule, task.background),
+            ]),
+          )}
           key={`rules-${ruleSets[0]?.id ?? "none"}`}
           taskId={task.id}
           currentNoticeVersion={task.noticeSource.version}
@@ -247,7 +280,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
           initialRuleSets={ruleSets}
           mode={runtimeStatus.mode}
         />
-        <MaterialUpload taskId={task.id} initialMaterials={task.materials} />
+        <MaterialUpload key={task.id} taskId={task.id} initialMaterials={task.materials} />
       </div>
       <ReviewExecutionPanel
         key={`execution-${latestExecution?.id ?? "none"}-${contextKey}`}

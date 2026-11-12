@@ -11,6 +11,9 @@ import type {
   RequirementSourceVersion,
   MaterialContentSegment,
   MaterialParseStatus,
+  MaterialPageCoverage,
+  MaterialRevision,
+  MaterialVersionPreview,
   ReviewMaterialSummary,
   ReviewExecution,
   HumanResolution,
@@ -20,11 +23,13 @@ import type {
   ReviewTaskSummary,
 } from "@/domain/review";
 import { reviewRuleSetSchema } from "@/domain/review-rule";
+import { classifyMaterial } from "@/lib/material-classification";
+import type { MaterialClassification } from "@/lib/material-classification";
 
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 13;
+const DATABASE_SCHEMA_VERSION = 18;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -122,6 +127,7 @@ interface DatabaseRuleSetRow {
 }
 
 interface DatabaseRuleRow {
+  metadata_json: string;
   id: string;
   code: string;
   description: string;
@@ -157,6 +163,9 @@ interface DatabaseMaterialRow {
   page_count: number | null;
   sheet_names_json: string;
   parse_message: string;
+  page_coverage_json: string;
+  revision_json: string;
+  classification_json: string;
   created_at: string;
 }
 
@@ -199,6 +208,9 @@ export interface SaveMaterialVersionInput {
   pageCount: number | null;
   sheetNames: string[];
   parseMessage: string;
+  pageCoverage?: MaterialPageCoverage[];
+  revision?: MaterialRevision;
+  classification?: MaterialClassification;
   createdAt: string;
 }
 
@@ -734,6 +746,44 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
       })();
     }
 
+    if (database.pragma("user_version", { simple: true }) === 13) {
+      database.transaction(() => {
+        database.exec(
+          "ALTER TABLE review_material_versions ADD COLUMN page_coverage_json TEXT NOT NULL DEFAULT '[]'; PRAGMA user_version = 14;",
+        );
+      })();
+    }
+    if (database.pragma("user_version", { simple: true }) === 14) {
+      database.transaction(() => {
+        database.exec(`CREATE TABLE execution_source_snapshots (
+          execution_id TEXT NOT NULL REFERENCES review_executions(id) ON DELETE CASCADE,
+          source_id TEXT NOT NULL, version INTEGER NOT NULL, display_name TEXT NOT NULL,
+          source_url TEXT, segments_json TEXT NOT NULL,
+          PRIMARY KEY (execution_id, source_id, version)
+        ); PRAGMA user_version = 15;`);
+      })();
+    }
+    if (database.pragma("user_version", { simple: true }) === 15) {
+      database.transaction(() => {
+        database.exec(
+          "ALTER TABLE review_material_versions ADD COLUMN revision_json TEXT NOT NULL DEFAULT 'null'; PRAGMA user_version = 16;",
+        );
+      })();
+    }
+    if (database.pragma("user_version", { simple: true }) === 16) {
+      database.transaction(() => {
+        database.exec(
+          "ALTER TABLE requirement_rules ADD COLUMN metadata_json TEXT NOT NULL DEFAULT '{}'; PRAGMA user_version = 17;",
+        );
+      })();
+    }
+    if (database.pragma("user_version", { simple: true }) === 17) {
+      database.transaction(() => {
+        database.exec(
+          "ALTER TABLE review_material_versions ADD COLUMN classification_json TEXT NOT NULL DEFAULT 'null'; PRAGMA user_version = 18;",
+        );
+      })();
+    }
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
     if (finalSchemaVersion !== DATABASE_SCHEMA_VERSION) {
       throw new Error("The local review database migration did not complete");
@@ -769,7 +819,7 @@ class ReviewStore {
            VALUES (?, ?, 'supplement', ?, ?, ?)`,
         )
         .run(sourceId, input.taskId, input.sourceType, input.displayName, createdAt);
-      if (input.sourceType === "webpage")
+      if (input.sourceUrl)
         this.database
           .prepare(
             "UPDATE requirement_sources SET source_url = ?, source_fetched_at = ? WHERE id = ?",
@@ -802,6 +852,40 @@ class ReviewStore {
         .prepare("UPDATE review_tasks SET updated_at = ? WHERE id = ?")
         .run(new Date().toISOString(), taskId);
     return deleted > 0;
+  }
+
+  reviseSupplementSource(
+    taskId: string,
+    sourceId: string,
+    version: number,
+    text: string,
+    note: string,
+    confirmedComplete: boolean,
+  ): RequirementSourceVersion | undefined {
+    const source = this.getTask(taskId)?.supplementalSources.find((item) => item.id === sourceId);
+    if (!source) return undefined;
+    if (source.version !== version) throw new Error("Source version changed");
+    const now = new Date().toISOString();
+    const segments = [...text.matchAll(/[^\r\n]+/g)].map((match, paragraphIndex) => ({
+      paragraphIndex,
+      text: match[0],
+      startOffset: match.index,
+      endOffset: match.index + match[0].length,
+      location: `人工修订段落 ${paragraphIndex + 1} · 依据：${note}`,
+    }));
+    this.database.transaction(() => {
+      saveSourceVersion(
+        this.database,
+        sourceId,
+        version + 1,
+        text,
+        now,
+        confirmedComplete ? "text_extracted" : source.parseStatus,
+        segments,
+      );
+      this.database.prepare("UPDATE review_tasks SET updated_at = ? WHERE id = ?").run(now, taskId);
+    })();
+    return this.readSource(sourceId);
   }
 
   private readSource(sourceId: string): RequirementSourceVersion | undefined {
@@ -1216,24 +1300,26 @@ class ReviewStore {
       displayName,
     }));
     for (const rule of parsedRuleSet.rules) {
-      const source = currentSources.find((candidate) => candidate.id === rule.source.sourceId);
-      const segment = source?.segments.find(
-        (candidate) => candidate.paragraphIndex === rule.source.paragraphIndex,
-      );
-      if (
-        !source ||
-        source.version !== rule.source.sourceVersion ||
-        !sourceVersions.some(
-          (candidate) => candidate.sourceId === source.id && candidate.version === source.version,
-        ) ||
-        !segment ||
-        rule.source.startOffset < segment.startOffset ||
-        rule.source.endOffset > segment.endOffset ||
-        source.originalText.slice(rule.source.startOffset, rule.source.endOffset) !==
-          rule.source.quotedText
-      )
-        throw new Error("Rule citation must match a current source position");
-      rule.source.displayName = source.displayName;
+      for (const citation of [rule.source, ...(rule.additionalSources ?? [])]) {
+        const source = currentSources.find((candidate) => candidate.id === citation.sourceId);
+        const segment = source?.segments.find(
+          (candidate) => candidate.paragraphIndex === citation.paragraphIndex,
+        );
+        if (
+          !source ||
+          source.version !== citation.sourceVersion ||
+          !sourceVersions.some(
+            (candidate) => candidate.sourceId === source.id && candidate.version === source.version,
+          ) ||
+          !segment ||
+          citation.startOffset < segment.startOffset ||
+          citation.endOffset > segment.endOffset ||
+          source.originalText.slice(citation.startOffset, citation.endOffset) !==
+            citation.quotedText
+        )
+          throw new Error("Rule citation must match a current source position");
+        citation.displayName = source.displayName;
+      }
     }
 
     const insertRuleSet = this.database.transaction(() => {
@@ -1276,8 +1362,8 @@ class ReviewStore {
           id, rule_set_id, ordinal, code, description, target, strength, applicability_scope,
           applicability_condition, parameters_json, checkability, generation_method,
             uncertainty, source_id, source_version, paragraph_index, quoted_text, start_offset, end_offset,
-            source_display_name, material_ids_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            source_display_name, material_ids_json, metadata_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       parsedRuleSet.rules.forEach((rule, ordinal) => {
@@ -1303,6 +1389,10 @@ class ReviewStore {
           rule.source.endOffset,
           rule.source.displayName,
           JSON.stringify(rule.materialIds),
+          JSON.stringify({
+            additionalSources: rule.additionalSources,
+            numericConstraints: rule.numericConstraints,
+          }),
         );
       });
     });
@@ -1330,7 +1420,7 @@ class ReviewStore {
         .prepare<[string], DatabaseRuleRow>(
           `
           SELECT id, code, description, target, strength, applicability_scope, applicability_condition,
-                 parameters_json, checkability, generation_method, uncertainty, source_id,
+                 parameters_json, checkability, generation_method, uncertainty, source_id, metadata_json,
                  source_version, source_display_name, paragraph_index, quoted_text, start_offset, end_offset
                  , material_ids_json
           FROM requirement_rules
@@ -1354,6 +1444,7 @@ class ReviewStore {
         modelCalls: JSON.parse(row.model_calls_json) as unknown,
         createdAt: row.created_at,
         rules: rules.map((ruleRow) => ({
+          ...(JSON.parse(ruleRow.metadata_json) as Record<string, unknown>),
           id: ruleRow.id,
           code: ruleRow.code,
           description: ruleRow.description,
@@ -1420,8 +1511,8 @@ class ReviewStore {
           INSERT INTO review_material_versions (
             material_id, version, original_file_name, media_type, extension, file_size_bytes,
             sha256, storage_key, parse_status, parser_name, extracted_text, page_count,
-            sheet_names_json, parse_message, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            sheet_names_json, parse_message, created_at, page_coverage_json, revision_json, classification_json
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         )
         .run(
@@ -1440,6 +1531,9 @@ class ReviewStore {
           JSON.stringify(input.sheetNames),
           input.parseMessage,
           input.createdAt,
+          JSON.stringify(input.pageCoverage ?? []),
+          JSON.stringify(input.revision ?? null),
+          JSON.stringify(input.classification ?? classifyMaterial(input.segments) ?? null),
         );
 
       const insertSegment = this.database.prepare(`
@@ -1468,9 +1562,86 @@ class ReviewStore {
     return savedMaterial;
   }
 
-  listMaterials(taskId: string): ReviewMaterialSummary[] {
+  getMaterialVersionPreview(
+    taskId: string,
+    materialId: string,
+    version: number,
+    offset = 0,
+  ): MaterialVersionPreview | undefined {
+    const row = this.database
+      .prepare<[string, string, number], DatabaseMaterialRow>(
+        `
+      SELECT material.id, version.* FROM review_materials AS material
+      JOIN review_material_versions AS version ON version.material_id = material.id
+      WHERE material.task_id = ? AND material.id = ? AND version.version = ?
+    `,
+      )
+      .get(taskId, materialId, version);
+    if (!row || !isMaterialParseStatus(row.parse_status)) return undefined;
+    const total =
+      this.database
+        .prepare<[string, number], { count: number }>(
+          "SELECT COUNT(*) AS count FROM review_material_segments WHERE material_id = ? AND material_version = ?",
+        )
+        .get(materialId, version)?.count ?? 0;
+    const segments = this.database
+      .prepare<[string, number, number], DatabaseMaterialSegmentRow>(
+        `
+      SELECT segment_index, substr(text, 1, 16000) AS text, start_offset, end_offset, location
+      FROM review_material_segments WHERE material_id = ? AND material_version = ?
+      ORDER BY segment_index LIMIT 5 OFFSET ?
+    `,
+      )
+      .all(materialId, version, offset);
+    return {
+      id: materialId,
+      version,
+      originalFileName: row.original_file_name,
+      extension: row.extension,
+      parseStatus: row.parse_status,
+      parseMessage: row.parse_message,
+      pageCount: row.page_count,
+      totalSegments: total,
+      offset,
+      segments: segments.map((segment) => ({
+        segmentIndex: segment.segment_index,
+        text: segment.text,
+        startOffset: segment.start_offset,
+        endOffset: segment.end_offset,
+        location: segment.location,
+      })),
+    };
+  }
+
+  getMaterialFile(
+    taskId: string,
+    materialId: string,
+    version: number,
+  ): { storageKey: string; mediaType: string; originalFileName: string } | undefined {
+    const row = this.database
+      .prepare<
+        [string, string, number],
+        { storage_key: string; media_type: string; original_file_name: string }
+      >(
+        `
+      SELECT version.storage_key, version.media_type, version.original_file_name
+      FROM review_materials AS material JOIN review_material_versions AS version ON version.material_id = material.id
+      WHERE material.task_id = ? AND material.id = ? AND version.version = ?
+    `,
+      )
+      .get(taskId, materialId, version);
+    return row
+      ? {
+          storageKey: row.storage_key,
+          mediaType: row.media_type,
+          originalFileName: row.original_file_name,
+        }
+      : undefined;
+  }
+
+  listMaterials(taskId: string, includeHistory = false): ReviewMaterialSummary[] {
     const rows = this.database
-      .prepare<[string], DatabaseMaterialRow>(
+      .prepare<[number, string], DatabaseMaterialRow>(
         `
         SELECT material.id,
                material_version.version,
@@ -1485,6 +1656,9 @@ class ReviewStore {
                material_version.page_count,
                material_version.sheet_names_json,
                material_version.parse_message,
+               material_version.page_coverage_json,
+               material_version.revision_json,
+               material_version.classification_json,
                material_version.created_at
         FROM review_materials AS material
         JOIN (
@@ -1493,12 +1667,12 @@ class ReviewStore {
           GROUP BY material_id
         ) AS latest ON latest.material_id = material.id
         JOIN review_material_versions AS material_version
-          ON material_version.material_id = material.id AND material_version.version = latest.version
+          ON material_version.material_id = material.id AND (? = 1 OR material_version.version = latest.version)
         WHERE material.task_id = ?
         ORDER BY material.created_at DESC, material.id
       `,
       )
-      .all(taskId);
+      .all(includeHistory ? 1 : 0, taskId);
 
     return rows.map((row) => {
       if (!isMaterialParseStatus(row.parse_status)) {
@@ -1536,6 +1710,10 @@ class ReviewStore {
         pageCount: row.page_count,
         sheetNames: parseJsonStringArray(row.sheet_names_json),
         parseMessage: row.parse_message,
+        pageCoverage: JSON.parse(row.page_coverage_json) as MaterialPageCoverage[],
+        revision: (JSON.parse(row.revision_json) as MaterialRevision | null) ?? undefined,
+        classification:
+          (JSON.parse(row.classification_json) as MaterialClassification | null) ?? undefined,
         createdAt: row.created_at,
       };
     });
@@ -1557,29 +1735,113 @@ class ReviewStore {
     if (JSON.stringify(currentMaterials) !== JSON.stringify(execution.materialSnapshot)) {
       throw new Error("Review execution material snapshot is stale");
     }
-    this.database
-      .prepare(
-        `
+    const sourceTask = this.getTask(execution.taskId);
+    const saveSnapshot = this.database.transaction(() => {
+      this.database
+        .prepare(
+          `
       INSERT INTO review_executions (
         id, task_id, rule_set_id, source_version, status, unexecuted_count,
         material_snapshot_json, results_json, created_at, completed_at, metadata_json
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
-      )
-      .run(
-        execution.id,
-        execution.taskId,
-        execution.ruleSetId,
-        execution.sourceVersion,
-        execution.status,
-        execution.unexecutedCount,
-        JSON.stringify(execution.materialSnapshot),
-        JSON.stringify(execution.results),
-        execution.createdAt,
-        execution.completedAt,
-        JSON.stringify(execution.metadata ?? {}),
-      );
+        )
+        .run(
+          execution.id,
+          execution.taskId,
+          execution.ruleSetId,
+          execution.sourceVersion,
+          execution.status,
+          execution.unexecutedCount,
+          JSON.stringify(execution.materialSnapshot),
+          JSON.stringify(execution.results),
+          execution.createdAt,
+          execution.completedAt,
+          JSON.stringify(execution.metadata ?? {}),
+        );
+      if (sourceTask) {
+        const insertSource = this.database.prepare(
+          "INSERT INTO execution_source_snapshots (execution_id, source_id, version, display_name, source_url, segments_json) VALUES (?, ?, ?, ?, ?, ?)",
+        );
+        for (const source of [sourceTask.noticeSource, ...sourceTask.supplementalSources]) {
+          insertSource.run(
+            execution.id,
+            source.id,
+            source.version,
+            source.displayName,
+            source.sourceUrl ?? null,
+            JSON.stringify(source.segments),
+          );
+        }
+      }
+    });
+    saveSnapshot();
     return execution;
+  }
+
+  getExecutionSource(
+    taskId: string,
+    executionId: string,
+    sourceId: string,
+    version: number,
+    offset: number,
+  ):
+    | {
+        displayName: string;
+        sourceUrl: string | null;
+        version: number;
+        totalSegments: number;
+        segments: RequirementSourceSegment[];
+      }
+    | undefined {
+    const row = this.database
+      .prepare<
+        [string, string, string, number],
+        { display_name: string; source_url: string | null; segments_json: string }
+      >(
+        `
+      SELECT snapshot.display_name, snapshot.source_url, snapshot.segments_json
+      FROM execution_source_snapshots AS snapshot JOIN review_executions AS execution ON execution.id = snapshot.execution_id
+      WHERE execution.task_id = ? AND execution.id = ? AND snapshot.source_id = ? AND snapshot.version = ?
+    `,
+      )
+      .get(taskId, executionId, sourceId, version);
+    if (row) {
+      const segments = JSON.parse(row.segments_json) as RequirementSourceSegment[];
+      return {
+        displayName: row.display_name,
+        sourceUrl: row.source_url,
+        version,
+        totalSegments: segments.length,
+        segments: segments
+          .slice(offset, offset + 5)
+          .map((segment) => ({ ...segment, text: segment.text.slice(0, 16000) })),
+      };
+    }
+    // Older executions can still use an available source, but only if the rule snapshot references it.
+    const execution = this.listReviewExecutions(taskId).find((item) => item.id === executionId);
+    const rules = this.listRuleSets(taskId).find((item) => item.id === execution?.ruleSetId);
+    if (
+      !rules?.rules.some(
+        (rule) => rule.source.sourceId === sourceId && rule.source.sourceVersion === version,
+      )
+    )
+      return undefined;
+    const task = this.getTask(taskId);
+    const source = [...(task?.noticeHistory ?? []), ...(task?.supplementalSources ?? [])].find(
+      (item) => item.id === sourceId && item.version === version,
+    );
+    return source
+      ? {
+          displayName: source.displayName,
+          sourceUrl: source.sourceUrl ?? null,
+          version,
+          totalSegments: source.segments.length,
+          segments: source.segments
+            .slice(offset, offset + 5)
+            .map((segment) => ({ ...segment, text: segment.text.slice(0, 16000) })),
+        }
+      : undefined;
   }
 
   appendReviewExecutionResult(

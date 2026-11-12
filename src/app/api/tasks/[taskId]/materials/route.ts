@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { reviewTaskIdSchema } from "@/domain/review-task";
 import { getReviewStore } from "@/lib/server/review-store";
 import { parseMaterial } from "@/lib/server/material-parser";
+import { readLimitedFormData, MultipartSizeLimitError } from "@/lib/server/limited-form-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,8 +37,10 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
 
   let formData: FormData;
   try {
-    formData = await request.formData();
-  } catch {
+    formData = await readLimitedFormData(request, MAXIMUM_BATCH_SIZE_BYTES);
+  } catch (error) {
+    if (error instanceof MultipartSizeLimitError)
+      return NextResponse.json({ error: "上传请求超过批次大小上限。" }, { status: 413 });
     return NextResponse.json({ error: "上传请求无法读取。" }, { status: 400 });
   }
   const files = formData.getAll("files").filter((value): value is File => value instanceof File);
@@ -63,6 +66,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
   const storageDirectory = resolve(baseDirectory, "materials", taskId);
   const results = [];
   for (const file of files) {
+    if (request.signal.aborted) break;
     const originalFileName =
       Array.from(file.name, (character) => {
         const codePoint = character.codePointAt(0) ?? 0;
@@ -71,15 +75,35 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         .join("")
         .slice(0, 180) || "unnamed-file";
     const buffer = Buffer.from(await file.arrayBuffer());
+    const sha256 = createHash("sha256").update(buffer).digest("hex");
     const id = randomUUID();
     const previous = store
       .listMaterials(taskId)
       .find((material) => material.originalFileName === originalFileName);
     const version = (previous?.version ?? 0) + 1;
+    if (previous?.sha256 === sha256 && previous.parseStatus === "text_extracted") {
+      results.push({
+        id: previous.id,
+        version: previous.version,
+        originalFileName,
+        parseStatus: previous.parseStatus,
+        parseMessage: "相同文件已存在，沿用当前版本与已保存解析，不重复创建版本。",
+      });
+      continue;
+    }
+    const cached = store
+      .listMaterials(taskId)
+      .find(
+        (material) =>
+          material.sha256 === sha256 &&
+          material.extension === originalFileName.split(".").pop()?.toLowerCase() &&
+          material.parseStatus === "text_extracted" &&
+          !material.revision,
+      );
     const key = `${id}-v${version}`;
     let parsed;
     try {
-      parsed = await parseMaterial(buffer, originalFileName);
+      parsed = cached ?? (await parseMaterial(buffer, originalFileName, request.signal));
     } catch (error) {
       const parseMessage = error instanceof Error ? error.message : "文件解析失败。";
       parsed = {
@@ -107,7 +131,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         mediaType: parsed.mediaType,
         extension: parsed.extension,
         fileSizeBytes: buffer.byteLength,
-        sha256: createHash("sha256").update(buffer).digest("hex"),
+        sha256,
         storageKey,
         parseStatus: parsed.parseStatus,
         parserName: parsed.parserName,
@@ -116,6 +140,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         pageCount: parsed.pageCount,
         sheetNames: parsed.sheetNames,
         parseMessage: parsed.parseMessage,
+        pageCoverage: "pageCoverage" in parsed ? parsed.pageCoverage : [],
         createdAt: new Date().toISOString(),
       });
     } catch {
@@ -127,7 +152,9 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       version: saved.version,
       originalFileName,
       parseStatus: saved.parseStatus,
-      parseMessage: saved.parseMessage,
+      parseMessage: cached
+        ? `内容与 ${cached.originalFileName} 相同，复用原始解析；仍作为独立材料保存，请核对是否重复提交。`
+        : saved.parseMessage,
     });
   }
   return NextResponse.json(

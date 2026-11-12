@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 
 import type { ReviewRuleSet } from "@/domain/review-rule";
 import type { ReviewTaskDetails } from "@/domain/review";
@@ -23,6 +24,12 @@ export function ClarificationPanel({
   const [projectType, setProjectType] = useState(task.background.projectType);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const clearUnsaved = useUnsavedChanges(
+    !dismissed &&
+      (scope !== task.background.collaborationScope ||
+        projectStage !== task.background.projectStage ||
+        projectType !== task.background.projectType),
+  );
   if (!currentRuleSet || dismissed) return null;
 
   const scopeRules = currentRuleSet.rules.filter(
@@ -66,6 +73,7 @@ export function ClarificationPanel({
         );
         return;
       }
+      clearUnsaved();
       router.refresh();
     } catch {
       setError("暂时无法连接本地服务，请稍后重试。");

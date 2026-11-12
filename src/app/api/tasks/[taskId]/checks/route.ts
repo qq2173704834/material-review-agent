@@ -15,6 +15,7 @@ import {
   modelErrorResponse,
 } from "@/lib/server/model-client";
 import { reviewLiveRule } from "@/lib/server/semantic-review";
+import { createRecheckPlan } from "@/lib/server/recheck-plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,8 +35,25 @@ export async function GET(_request: Request, context: RouteContext): Promise<Nex
   const store = getReviewStore();
   const task = store.getTask(taskId);
   if (!task) return NextResponse.json({ error: "没有找到该任务。" }, { status: 404 });
+  const ruleSets = store.listRuleSets(taskId);
+  const executions = store.listReviewExecutions(taskId);
+  const rules = ruleSets.find((item) =>
+    hasCurrentRuleSources(item, [task.noticeSource, ...task.supplementalSources]),
+  );
+  let plan: ReturnType<typeof createRecheckPlan> = [];
+  try {
+    if (rules) plan = createRecheckPlan(task, rules, executions[0]);
+  } catch {
+    /* Configuration errors are surfaced when starting a check. */
+  }
   return NextResponse.json(
     {
+      plan: plan.map(({ ruleId, ruleCode, action, reason }) => ({
+        ruleId,
+        ruleCode,
+        action,
+        reason,
+      })),
       executions: annotateExecutions(
         task,
         store.listRuleSets(taskId),
@@ -73,6 +91,12 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
       return NextResponse.json({ error: "该任务正在检查，请等待结束或先取消。" }, { status: 409 });
     const mode = getAiMode();
     const configuration = mode === "live" ? getModelConfiguration() : null;
+    const plan = createRecheckPlan(
+      task,
+      ruleSet,
+      store.listReviewExecutions(taskId)[0],
+      new URL(request.url).searchParams.get("full") === "1",
+    );
     activeReviewTasks.add(taskId);
     acquired = true;
     const createdAt = new Date().toISOString();
@@ -143,6 +167,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
               totalCount: ruleSet.rules.length,
             });
             let result: ReviewCheckResult;
+            const planned = plan.find((item) => item.ruleId === rule.id)!;
             const ruleMaterials = rule.materialIds.length
               ? task.materials.filter((material) => rule.materialIds.includes(material.id))
               : task.materials;
@@ -152,7 +177,9 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
                 warning.relatedRuleIds?.includes(rule.id),
             );
             try {
-              if (unresolvedConflict) {
+              if (planned.reusableResult) {
+                result = planned.reusableResult;
+              } else if (unresolvedConflict) {
                 result = {
                   ruleId: rule.id,
                   ruleCode: rule.code,
@@ -219,6 +246,11 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
                 method: "unavailable",
               };
             }
+            result = {
+              ...result,
+              dependencyKey: planned.dependencyKey,
+              checkedAt: result.checkedAt ?? new Date().toISOString(),
+            };
             store.appendReviewExecutionResult(execution.id, result, metadata);
             results.push(result);
             send({

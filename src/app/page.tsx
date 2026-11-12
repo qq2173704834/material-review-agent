@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getReviewStore } from "@/lib/server/review-store";
 import { annotateExecutions } from "@/lib/review-history";
+import { DemoControls } from "@/components/demo-controls";
 
 import type { ReactElement } from "react";
 
@@ -94,6 +95,7 @@ export default function TasksPage(): ReactElement {
         </div>
       </div>
 
+      <DemoControls />
       {tasks.length > 0 ? (
         <section
           aria-labelledby="task-list-heading"

@@ -7,7 +7,7 @@
   --primary: #5b57d6;
   --primary-foreground: #ffffff;
   --muted: #eef0f6;
-  --muted-foreground: #687386;
+  --muted-foreground: #5d687b;
   --border: #e5e8ef;
   --ring: #7773e0;
 }
@@ -43,10 +43,19 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  a:focus-visible {
+  :is(a, button, input, select, textarea, summary):focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 4px;
     border-radius: 4px;
+  }
+
+  @media (max-width: 640px) {
+    button,
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    summary {
+      min-height: 44px;
+    }
   }
 
   ::selection {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { MaterialRevisionEditor } from "./material-revision";
 
 import type { ReviewMaterialSummary } from "@/domain/review";
 import type { ReactElement, ChangeEvent } from "react";
@@ -35,10 +36,15 @@ function formatBytes(fileSizeBytes: number): string {
 export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps): ReactElement {
   const router = useRouter();
   const [materials, setMaterials] = useState(initialMaterials);
+  const [previousInitialMaterials, setPreviousInitialMaterials] = useState(initialMaterials);
   const [uploadResults, setUploadResults] = useState<MaterialUploadResult[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  if (initialMaterials !== previousInitialMaterials) {
+    setPreviousInitialMaterials(initialMaterials);
+    setMaterials(initialMaterials);
+  }
 
   function selectFiles(event: ChangeEvent<HTMLInputElement>): void {
     setSelectedFiles(Array.from(event.currentTarget.files ?? []));
@@ -207,6 +213,69 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
               </div>
               {material.parseMessage ? (
                 <p className="mt-2 text-xs leading-5 text-amber-800">{material.parseMessage}</p>
+              ) : null}
+              {material.classification ? (
+                <p className="mt-2 text-xs">
+                  材料类型：{material.classification.label} ·{" "}
+                  {material.classification.method === "manual" ? "人工指定" : "内容线索，待核对"} ·{" "}
+                  {material.classification.location}：{material.classification.quote}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  材料类型待确认，可展开文字核对后纠正。
+                </p>
+              )}
+              {material.revision && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  解析修订：
+                  {material.revision.kind === "correction"
+                    ? "人工修订"
+                    : material.revision.kind === "restore"
+                      ? "恢复原始文字"
+                      : material.revision.kind === "classification"
+                        ? "人工分类"
+                        : "单页重试"}{" "}
+                  · 基于 v{material.revision.baseVersion} · {material.createdAt} ·{" "}
+                  {material.revision.note}
+                </p>
+              )}
+              <MaterialRevisionEditor
+                key={`${material.id}-${material.version}`}
+                taskId={taskId}
+                material={material}
+                onSaved={(saved) => {
+                  setMaterials((current) =>
+                    current.map((item) => (item.id === saved.id ? saved : item)),
+                  );
+                  router.refresh();
+                }}
+              />
+              {material.pageCoverage?.length ? (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-xs text-primary">逐页读取范围</summary>
+                  <ul className="mt-2 space-y-2 text-xs leading-5">
+                    {material.pageCoverage.map((page) => (
+                      <li key={page.pageNumber}>
+                        第 {page.pageNumber} 页 ·{" "}
+                        {{ text: "文本层", ocr: "OCR", none: "未读取" }[page.method]}
+                        {" · "}
+                        {
+                          {
+                            read: "已读取",
+                            partial: "部分读取",
+                            failed: "失败",
+                            skipped: "未处理",
+                          }[page.status]
+                        }
+                        {page.confidence === undefined
+                          ? ""
+                          : ` · OCR 分数 ${Math.round(page.confidence)}`}
+                        {" · "}
+                        {page.message}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               ) : null}
               {material.segments.length ? (
                 <details className="mt-3">

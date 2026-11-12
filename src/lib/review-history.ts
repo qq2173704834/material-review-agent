@@ -55,6 +55,7 @@ export interface RecheckComparison {
 }
 
 function resultKey(result: ReviewCheckResult): string {
+  if (result.comparisonKey) return result.comparisonKey;
   return JSON.stringify([
     result.source.sourceId,
     result.requirement,
@@ -77,7 +78,9 @@ export function compareExecutions(
   if (
     !previous ||
     current.sourceVersion !== previous.sourceVersion ||
-    current.ruleSetId !== previous.ruleSetId
+    (current.ruleSetId !== previous.ruleSetId &&
+      (!current.results.every((result) => result.comparisonKey) ||
+        !previous.results.every((result) => result.comparisonKey)))
   )
     return comparison;
   comparison.canCompare = true;
@@ -85,7 +88,11 @@ export function compareExecutions(
   const currentResults = new Map(current.results.map((result) => [resultKey(result), result]));
   for (const result of current.results) {
     const before = previousResults.get(resultKey(result));
-    if (!before) continue;
+    if (!before) {
+      if (result.verdict === "failed") comparison.newIssues.push(result.ruleCode);
+      else comparison.unconfirmed.push(result.ruleCode);
+      continue;
+    }
     if (result.verdict === "failed") {
       if (before.verdict === "failed") comparison.remaining.push(result.ruleCode);
       else if (before.verdict === "passed") comparison.newIssues.push(result.ruleCode);

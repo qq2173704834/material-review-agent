@@ -1,5 +1,6 @@
 import type { ReviewRule, RuleExtractionWarning } from "@/domain/review-rule";
 import { findGregorianDates } from "@/lib/calendar-dates";
+import { extractNumericBounds, incompatibleBounds } from "./numeric-constraints";
 
 interface NumericConstraint {
   unit: string;
@@ -114,7 +115,32 @@ export function findRuleConflicts(rules: ReviewRule[]): RuleExtractionWarning[] 
             first.materialTarget === second.materialTarget && first.format !== second.format,
         ),
       );
-      const conflict = numericConflict || deadlineConflict || formatConflict;
+      const units: Record<string, number> = {
+        B: 1,
+        字节: 1,
+        KB: 1000,
+        KIB: 1024,
+        MB: 1_000_000,
+        MIB: 1_048_576,
+        GB: 1_000_000_000,
+        GIB: 1_073_741_824,
+      };
+      const firstBounds = extractNumericBounds(firstRule.description).map((bound) => ({
+        ...bound,
+        value: bound.value * (units[bound.unit] ?? 1),
+        unit: bound.unit in units ? "bytes" : bound.unit,
+      }));
+      const secondBounds = extractNumericBounds(secondRule.description).map((bound) => ({
+        ...bound,
+        value: bound.value * (units[bound.unit] ?? 1),
+        unit: bound.unit in units ? "bytes" : bound.unit,
+      }));
+      const extendedConflict = firstBounds.some((first) =>
+        secondBounds.some(
+          (second) => first.unit === second.unit && incompatibleBounds([first, second]),
+        ),
+      );
+      const conflict = numericConflict || extendedConflict || deadlineConflict || formatConflict;
       if (!conflict) continue;
       warnings.push({
         code: "conflicting_constraints",

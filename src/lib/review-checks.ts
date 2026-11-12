@@ -7,6 +7,8 @@ import type {
 } from "@/domain/review";
 import type { ReviewRule, ReviewRuleSet } from "@/domain/review-rule";
 import { findGregorianDates } from "@/lib/calendar-dates";
+import { compareExtendedNumericRule } from "@/lib/numeric-review";
+import { compareBudgetTotal } from "@/lib/budget-review";
 
 const EXTENSION_NAMES: Record<string, string> = {
   PDF: "pdf",
@@ -149,6 +151,10 @@ function compareRule(
   materials: ReviewMaterialSummary[],
 ): Pick<ReviewCheckResult, "verdict" | "reason" | "recommendation" | "evidence"> {
   const description = rule.description;
+  const budget = compareBudgetTotal(description, materials);
+  if (budget) return budget;
+  const extendedNumeric = compareExtendedNumericRule(description, materials);
+  if (extendedNumeric) return extendedNumeric;
   const evidence = materials.map(materialEvidence);
   const requiredDateRange = dateRange(description);
   if (requiredDateRange || /日期|有效期|期限/.test(description)) {
@@ -472,7 +478,9 @@ function compareRule(
         evidence,
       };
     }
-    const pageLimit = description.match(/(?:不超过|至多|最多|≤|<=)\s*(\d+)\s*页/);
+    const pageLimit = description.match(
+      /(?:不得超过|不超过|不大于|至多|最多|最大|≤|<=)\s*(\d+)\s*页/,
+    );
     if (!pageLimit)
       return {
         verdict: "needs_confirmation",
@@ -520,6 +528,60 @@ function compareRule(
       description.match(/(?:命名|文件名).{0,12}?[“"「『]([^”"」』]{1,180})[”"」』]/)?.[1] ??
       description.match(/按[“"「『]([^”"」』]{1,180})[”"」』].{0,8}命名/)?.[1];
     if (fixedName) {
+      if (/[{｛]/.test(fixedName)) {
+        const placeholders = [...fixedName.matchAll(/[{｛]([^}｝]+)[}｝]/g)].map(
+          (match) => match[1]!,
+        );
+        const supported = [...CONSISTENCY_FIELDS, "姓名", "编号"];
+        if (!placeholders.length || placeholders.some((field) => !supported.includes(field)))
+          return {
+            verdict: "needs_confirmation",
+            reason: "命名模板包含无法确定取值的字段。",
+            recommendation: "使用明确的项目名称、负责人、项目编号或姓名字段，并在材料中填写其值。",
+            evidence,
+          };
+        if (!materials.length)
+          return {
+            verdict: "failed",
+            reason: "尚未上传适用命名模板的材料。",
+            recommendation: "上传对应材料后核验命名。",
+            evidence,
+          };
+        const expectedNames: Array<{ material: ReviewMaterialSummary; expected: string }> = [];
+        for (const material of materials) {
+          let expected = fixedName;
+          for (const field of placeholders) {
+            const values = fieldValues(material, field);
+            if (values.length !== 1 || material.parseStatus !== "text_extracted")
+              return {
+                verdict: "needs_confirmation",
+                reason: `${material.originalFileName} 的“${field}”缺失、多值或解析不完整，无法可靠生成应有文件名。`,
+                recommendation: "核对字段和材料匹配后复检。",
+                evidence,
+              };
+            expected = expected
+              .replaceAll(`{${field}}`, values[0]!)
+              .replaceAll(`｛${field}｝`, values[0]!);
+          }
+          expectedNames.push({ material, expected });
+        }
+        const failures = expectedNames.filter(
+          ({ material, expected }) =>
+            material.originalFileName.normalize("NFC") !== expected.normalize("NFC"),
+        );
+        return {
+          verdict: failures.length ? "failed" : "passed",
+          reason: expectedNames
+            .map(({ material, expected }) => `${material.originalFileName} → 应为 ${expected}`)
+            .join("；"),
+          recommendation: failures.length ? "按材料中核对过的真实字段重命名并重新上传。" : "",
+          evidence: expectedNames.flatMap(({ material }) =>
+            placeholders.flatMap((field) =>
+              fieldValues(material, field).map((value) => fieldEvidence(material, field, value)),
+            ),
+          ),
+        };
+      }
       if (!materials.length) {
         return {
           verdict: "failed",
@@ -635,6 +697,18 @@ export function executeReviewRule(
   return {
     ruleId: rule.id,
     ruleCode: rule.code,
+    comparisonKey: JSON.stringify([
+      rule.description,
+      rule.target,
+      rule.strength,
+      rule.applicabilityScope,
+      rule.applicabilityCondition,
+      rule.parameters,
+      [...rule.materialIds].sort(),
+      rule.checkability,
+      rule.source.sourceId,
+      rule.source.quotedText,
+    ]),
     requirement: rule.description,
     strength: rule.strength,
     ...comparison,

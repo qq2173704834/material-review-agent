@@ -31,6 +31,17 @@ export const reviewRuleSchema = z.object({
   generationMethod: ruleGenerationMethodSchema,
   uncertainty: z.string().max(1_000),
   source: ruleSourcePositionSchema,
+  additionalSources: z.array(ruleSourcePositionSchema).max(50).optional(),
+  numericConstraints: z
+    .array(
+      z.object({
+        operator: z.enum(["lt", "lte", "eq", "gte", "gt"]),
+        value: z.number().finite().nonnegative(),
+        unit: z.string().min(1).max(20),
+      }),
+    )
+    .max(40)
+    .optional(),
 });
 
 export const ruleExtractionWarningSchema = z.object({

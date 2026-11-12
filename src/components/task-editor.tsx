@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 
 import type { CollaborationScope, ReviewTaskDetails } from "@/domain/review";
 import type { FormEvent, ReactElement } from "react";
@@ -25,6 +26,8 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const clearUnsaved = useUnsavedChanges(isDirty);
 
   async function submitTask(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -77,6 +80,8 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
         return;
       }
       const savedTask = result.task as ReviewTaskDetails;
+      clearUnsaved();
+      setIsDirty(false);
       router.push(`/tasks/${savedTask.id}`);
       router.refresh();
     } catch {
@@ -90,7 +95,11 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
     "mt-2 min-h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return (
-    <form onSubmit={submitTask} className="max-w-4xl space-y-8">
+    <form
+      onSubmit={submitTask}
+      onChangeCapture={() => setIsDirty(true)}
+      className="max-w-4xl space-y-8"
+    >
       <section
         className="space-y-5 border-y border-border py-6"
         aria-labelledby="task-info-heading"
