@@ -1489,6 +1489,31 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       deadlineChecks.execution.results.map((result: { verdict: string }) => result.verdict),
     ).toEqual(["needs_confirmation", "needs_confirmation"]);
 
+    const formatTask = await request.post("/api/tasks", {
+      data: {
+        name: "格式冲突样例",
+        noticeText: "项目说明只能采用PDF格式。\n项目说明只能采用DOCX格式。",
+      },
+    });
+    const { task: formatConflictTask } = await formatTask.json();
+    const formatRules = await request.post(`/api/tasks/${formatConflictTask.id}/rules`);
+    const { ruleSet: formatRuleSet } = await formatRules.json();
+    expect(formatRuleSet.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "conflicting_constraints",
+          sources: expect.arrayContaining([
+            expect.objectContaining({ quotedText: "项目说明只能采用PDF格式" }),
+            expect.objectContaining({ quotedText: "项目说明只能采用DOCX格式" }),
+          ]),
+        }),
+      ]),
+    );
+    const formatChecks = await runCheckStream(request, formatConflictTask.id);
+    expect(
+      formatChecks.execution.results.map((result: { verdict: string }) => result.verdict),
+    ).toEqual(["needs_confirmation", "needs_confirmation"]);
+
     await page.goto(`/tasks/${task.id}`);
     await page.getByText(/需要人工留意的信息/).click();
     await expect(page.getByText("项目说明至少12页", { exact: true })).toBeVisible();

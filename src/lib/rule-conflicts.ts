@@ -10,6 +10,13 @@ interface ExplicitDeadline {
   timestamp: number;
 }
 
+interface ExclusiveFormat {
+  materialTarget: string;
+  format: string;
+}
+
+const MATERIAL_TARGET_PATTERN = /项目计划书|项目说明|申请书|申报书|预算表|作品集|简历|证明材料/g;
+
 function numericConstraints(description: string): NumericConstraint[] {
   const constraints: NumericConstraint[] = [];
   const patterns: Array<{ expression: RegExp; bound: "lower" | "upper" }> = [
@@ -68,6 +75,23 @@ function explicitDeadlines(description: string): ExplicitDeadline[] {
   return deadlines;
 }
 
+function exclusiveFormats(description: string): ExclusiveFormat[] {
+  const materialTargets = [...description.matchAll(MATERIAL_TARGET_PATTERN)].map(
+    (match) => match[0],
+  );
+  const materialTarget = materialTargets[0];
+  if (!materialTarget) return [];
+
+  const formats: ExclusiveFormat[] = [];
+  const formatPattern =
+    /(?:仅限|只能|仅可|仅采用|只能采用|仅为|只能为|仅提交为|只能提交为)\s*(PDF|DOCX|TXT|XLSX|CSV|JPG|PNG)\s*格式?/gi;
+  for (const match of description.matchAll(formatPattern)) {
+    const format = match[1]?.toUpperCase();
+    if (format) formats.push({ materialTarget, format });
+  }
+  return formats;
+}
+
 export function findRuleConflicts(rules: ReviewRule[]): RuleExtractionWarning[] {
   const warnings: RuleExtractionWarning[] = [];
   for (let firstIndex = 0; firstIndex < rules.length; firstIndex += 1) {
@@ -75,7 +99,13 @@ export function findRuleConflicts(rules: ReviewRule[]): RuleExtractionWarning[] 
     if (!firstRule) continue;
     for (let secondIndex = firstIndex + 1; secondIndex < rules.length; secondIndex += 1) {
       const secondRule = rules[secondIndex];
-      if (!secondRule || firstRule.target !== secondRule.target) continue;
+      if (!secondRule) continue;
+      const firstFormats = exclusiveFormats(firstRule.description);
+      const secondFormats = exclusiveFormats(secondRule.description);
+      const formatScopeMatch = firstFormats.some((first) =>
+        secondFormats.some((second) => first.materialTarget === second.materialTarget),
+      );
+      if (firstRule.target !== secondRule.target && !formatScopeMatch) continue;
       const firstConstraints = numericConstraints(firstRule.description);
       const secondConstraints = numericConstraints(secondRule.description);
       const numericConflict = firstConstraints.some((first) =>
@@ -95,7 +125,13 @@ export function findRuleConflicts(rules: ReviewRule[]): RuleExtractionWarning[] 
       const deadlineConflict = firstDeadlines.some((first) =>
         secondDeadlines.some((second) => first.timestamp !== second.timestamp),
       );
-      const conflict = numericConflict || deadlineConflict;
+      const formatConflict = firstFormats.some((first) =>
+        secondFormats.some(
+          (second) =>
+            first.materialTarget === second.materialTarget && first.format !== second.format,
+        ),
+      );
+      const conflict = numericConflict || deadlineConflict || formatConflict;
       if (!conflict) continue;
       warnings.push({
         code: "conflicting_constraints",
