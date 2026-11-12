@@ -6,6 +6,7 @@ import { reviewTaskIdSchema } from "@/domain/review-task";
 import { reviewRuleSchema, reviewRuleSetSchema } from "@/domain/review-rule";
 import { extractMockRules } from "@/lib/rule-extractor";
 import { findRuleConflicts } from "@/lib/rule-conflicts";
+import { findMissingAttachmentWarnings } from "@/lib/attachment-dependencies";
 import { getReviewStore } from "@/lib/server/review-store";
 import { extractLiveRules } from "@/lib/server/live-rule-extractor";
 import {
@@ -77,7 +78,11 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       status: "completed",
       createdAt,
       ...extractedRules,
-      warnings: [...extractedRules.warnings, ...findRuleConflicts(extractedRules.rules)],
+      warnings: [
+        ...extractedRules.warnings,
+        ...findRuleConflicts(extractedRules.rules),
+        ...findMissingAttachmentWarnings(task.noticeSource),
+      ],
     }) satisfies ReviewRuleSet;
 
     for (const rule of ruleSet.rules) {

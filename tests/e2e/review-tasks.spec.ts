@@ -1080,6 +1080,29 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await expect(page.getByLabel("要求文件")).toHaveAttribute("accept", /\.pdf/);
   });
 
+  test("通知提及附件但未导入时显示可定位的完整性提醒", async ({ request }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "附件依赖合成通知",
+        description: "",
+        background: { projectType: "", projectStage: "", collaborationScope: "unknown" },
+        noticeText: "申报材料要求\n具体格式和预算限制详见附件《材料清单》。",
+      },
+    });
+    const { task } = await created.json();
+    const generated = await request.post(`/api/tasks/${task.id}/rules`);
+    expect(generated.status()).toBe(201);
+    const { ruleSet } = await generated.json();
+    expect(ruleSet.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "attachment_dependency",
+          source: expect.objectContaining({ quotedText: "详见附件" }),
+        }),
+      ]),
+    );
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {

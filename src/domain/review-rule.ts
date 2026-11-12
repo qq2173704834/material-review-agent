@@ -39,6 +39,7 @@ export const ruleExtractionWarningSchema = z.object({
     "content_requires_evidence",
     "unsupported_input",
     "conflicting_constraints",
+    "attachment_dependency",
   ]),
   message: z.string().min(1).max(500),
   source: ruleSourcePositionSchema.optional(),
