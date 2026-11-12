@@ -603,6 +603,12 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const checkPanel = page.getByRole("region", { name: "确定性检查" });
     await expect(checkPanel.getByText("通过 3", { exact: true })).toBeVisible();
     await expect(checkPanel.getByText("无法检查 1", { exact: true })).toBeVisible();
+    await expect(
+      checkPanel
+        .locator("li")
+        .filter({ hasText: "R-001 · 必须提交 PDF 格式文件" })
+        .getByText("检查方法：程序核验"),
+    ).toBeVisible();
     await checkPanel.getByLabel("按判定筛选").selectOption("passed");
     await expect(
       checkPanel.getByRole("heading", { name: "R-001 · 必须提交 PDF 格式文件" }),
