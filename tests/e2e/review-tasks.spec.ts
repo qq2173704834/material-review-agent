@@ -804,6 +804,34 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     ).toHaveLength(0);
   });
 
+  test("仅对通知给出固定文件名的规则执行精确名称检查", async ({ request }) => {
+    const created = await request.post("/api/tasks", {
+      data: { name: "固定命名规则", noticeText: "文件名必须为“申请书.pdf”。" },
+    });
+    const { task } = await created.json();
+    const rules = await request.post(`/api/tasks/${task.id}/rules`);
+    expect((await rules.json()).ruleSet.rules).toHaveLength(1);
+
+    const missing = await runCheckStream(request, task.id);
+    expect(missing.execution.results[0]).toMatchObject({ verdict: "failed" });
+
+    const upload = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "申请书.pdf",
+          mimeType: "application/pdf",
+          buffer: createSyntheticPdf(),
+        },
+      },
+    });
+    expect(upload.status()).toBe(201);
+    const valid = await runCheckStream(request, task.id);
+    expect(valid.execution.results[0]).toMatchObject({
+      verdict: "passed",
+      reason: expect.stringContaining("固定名称"),
+    });
+  });
+
   test("不存在的页面提供可用返回入口", async ({ page }) => {
     const response = await page.goto("/missing-page");
     expect(response?.status()).toBe(404);

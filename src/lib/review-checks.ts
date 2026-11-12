@@ -215,6 +215,45 @@ function compareRule(
   }
 
   if (/命名|文件名/.test(description)) {
+    const fixedName =
+      rule.parameters
+        .find((parameter) => parameter.startsWith("filename_exact:"))
+        ?.slice("filename_exact:".length) ??
+      description.match(/(?:命名|文件名).{0,12}?[“"「『]([^”"」』]{1,180})[”"」』]/)?.[1] ??
+      description.match(/按[“"「『]([^”"」』]{1,180})[”"」』].{0,8}命名/)?.[1];
+    if (fixedName) {
+      if (!materials.length) {
+        return {
+          verdict: "failed",
+          reason: `尚未上传固定文件名为“${fixedName}”的材料。`,
+          recommendation: `上传并确认文件名为“${fixedName}”的材料。`,
+          evidence: [],
+        };
+      }
+      if (materials.length !== 1) {
+        return {
+          verdict: "needs_confirmation",
+          reason: `当前有 ${materials.length} 份材料，无法确认哪份材料适用固定文件名“${fixedName}”。`,
+          recommendation: "人工指定需要核对名称的材料，或分开执行检查。",
+          evidence,
+        };
+      }
+      const material = materials[0];
+      const passed = material?.originalFileName.normalize("NFC") === fixedName.normalize("NFC");
+      return passed
+        ? {
+            verdict: "passed",
+            reason: `文件名与通知中的固定名称“${fixedName}”一致。`,
+            recommendation: "",
+            evidence,
+          }
+        : {
+            verdict: "failed",
+            reason: `当前文件名为“${material?.originalFileName ?? "未知"}”，与要求的“${fixedName}”不一致。`,
+            recommendation: `将文件准确命名为“${fixedName}”后重新上传。`,
+            evidence,
+          };
+    }
     return {
       verdict: "unable_to_check",
       reason: "规则草稿没有提取出可执行的命名模式，无法可靠比较文件名。",
