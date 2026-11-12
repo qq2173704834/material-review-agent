@@ -1,3 +1,5 @@
+import type { ModelCall } from "@/domain/model-call";
+
 /** 判定、执行和结果有效性各自独立，不能把待复检当成新判定。 */
 export type ReviewVerdict =
   "passed" | "failed" | "needs_confirmation" | "unable_to_check" | "not_applicable";
@@ -87,6 +89,7 @@ export interface ReviewCheckEvidence {
   materialVersion: number;
   quotedText: string;
   location: string;
+  segmentIndex?: number;
 }
 
 export interface ReviewCheckResult {
@@ -99,6 +102,8 @@ export interface ReviewCheckResult {
   recommendation: string;
   source: SourcePosition;
   evidence: ReviewCheckEvidence[];
+  method?: "deterministic" | "model" | "unavailable";
+  coverage?: { examinedSegments: number; totalSegments: number; isComplete: boolean };
 }
 
 export interface ReviewExecution {
@@ -112,6 +117,16 @@ export interface ReviewExecution {
   results: ReviewCheckResult[];
   createdAt: string;
   completedAt: string;
+  metadata?: {
+    mode: "mock" | "live";
+    provider: string;
+    model: string;
+    modelCalls: ModelCall[];
+    backgroundSnapshot: ReviewTaskBackground;
+    limitations: string[];
+  };
+  validity?: ResultValidity;
+  invalidationReasons?: string[];
 }
 
 export interface SourcePosition {

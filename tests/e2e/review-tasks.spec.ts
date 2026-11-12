@@ -674,7 +674,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       runtime: {
         mode: "mock",
         hasModelConfiguration: false,
-        modelIntegration: "not_implemented",
+        modelIntegration: "implemented",
         storage: "local_sqlite",
       },
     });

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { modelCallSchema } from "@/domain/model-call";
 
 import type { CollaborationScope } from "@/domain/review";
 
@@ -51,6 +52,7 @@ export const reviewRuleSetSchema = z.object({
   model: z.string().max(120),
   status: z.enum(["completed", "failed"]),
   createdAt: z.string().datetime(),
+  modelCalls: z.array(modelCallSchema).max(10).default([]),
   rules: z.array(reviewRuleSchema).max(500),
   warnings: z.array(ruleExtractionWarningSchema).max(500),
 });

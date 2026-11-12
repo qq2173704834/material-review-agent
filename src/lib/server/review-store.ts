@@ -22,7 +22,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 5;
+const DATABASE_SCHEMA_VERSION = 6;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -92,6 +92,7 @@ interface DatabaseRuleSetRow {
   model: string;
   status: string;
   warnings_json: string;
+  model_calls_json: string;
   created_at: string;
 }
 
@@ -151,6 +152,7 @@ interface DatabaseExecutionRow {
   results_json: string;
   created_at: string;
   completed_at: string;
+  metadata_json: string;
 }
 
 export interface SaveMaterialVersionInput {
@@ -517,6 +519,16 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
       migrateToVersionFive();
     }
 
+    if (database.pragma("user_version", { simple: true }) === 5) {
+      database.transaction(() => {
+        database.exec(`
+          ALTER TABLE requirement_rule_sets ADD COLUMN model_calls_json TEXT NOT NULL DEFAULT '[]';
+          ALTER TABLE review_executions ADD COLUMN metadata_json TEXT NOT NULL DEFAULT '{}';
+          PRAGMA user_version = 6;
+        `);
+      })();
+    }
+
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
     if (finalSchemaVersion !== DATABASE_SCHEMA_VERSION) {
       throw new Error("The local review database migration did not complete");
@@ -853,8 +865,8 @@ class ReviewStore {
         .prepare(
           `
           INSERT INTO requirement_rule_sets (
-            id, task_id, source_id, source_version, mode, provider, model, status, warnings_json, created_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            id, task_id, source_id, source_version, mode, provider, model, status, warnings_json, created_at, model_calls_json
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         )
         .run(
@@ -868,6 +880,7 @@ class ReviewStore {
           parsedRuleSet.status,
           JSON.stringify(parsedRuleSet.warnings),
           parsedRuleSet.createdAt,
+          JSON.stringify(parsedRuleSet.modelCalls),
         );
 
       const insertRule = this.database.prepare(`
@@ -911,7 +924,7 @@ class ReviewStore {
     const ruleSetRows = this.database
       .prepare<[string], DatabaseRuleSetRow>(
         `
-        SELECT id, task_id, source_id, source_version, mode, provider, model, status, warnings_json, created_at
+        SELECT id, task_id, source_id, source_version, mode, provider, model, status, warnings_json, created_at, model_calls_json
         FROM requirement_rule_sets
         WHERE task_id = ?
         ORDER BY created_at DESC
@@ -944,6 +957,7 @@ class ReviewStore {
         model: row.model,
         status: row.status,
         warnings,
+        modelCalls: JSON.parse(row.model_calls_json) as unknown,
         createdAt: row.created_at,
         rules: rules.map((ruleRow) => ({
           id: ruleRow.id,
@@ -1152,8 +1166,8 @@ class ReviewStore {
         `
       INSERT INTO review_executions (
         id, task_id, rule_set_id, source_version, status, unexecuted_count,
-        material_snapshot_json, results_json, created_at, completed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        material_snapshot_json, results_json, created_at, completed_at, metadata_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       )
       .run(
@@ -1167,6 +1181,7 @@ class ReviewStore {
         JSON.stringify(execution.results),
         execution.createdAt,
         execution.completedAt,
+        JSON.stringify(execution.metadata ?? {}),
       );
     return execution;
   }
@@ -1174,6 +1189,7 @@ class ReviewStore {
   appendReviewExecutionResult(
     executionId: string,
     result: ReviewExecution["results"][number],
+    metadata?: ReviewExecution["metadata"],
   ): void {
     const append = this.database.transaction(() => {
       const row = this.database
@@ -1186,9 +1202,9 @@ class ReviewStore {
       results.push(result);
       this.database
         .prepare(
-          "UPDATE review_executions SET results_json = ? WHERE id = ? AND status = 'running'",
+          "UPDATE review_executions SET results_json = ?, unexecuted_count = MAX(0, unexecuted_count - 1), metadata_json = COALESCE(?, metadata_json) WHERE id = ? AND status = 'running'",
         )
-        .run(JSON.stringify(results), executionId);
+        .run(JSON.stringify(results), metadata ? JSON.stringify(metadata) : null, executionId);
     });
     append();
   }
@@ -1198,16 +1214,23 @@ class ReviewStore {
     status: Exclude<ReviewExecution["status"], "running">,
     unexecutedCount: number,
     completedAt: string,
+    metadata?: ReviewExecution["metadata"],
   ): void {
     this.database
       .prepare(
         `
         UPDATE review_executions
-        SET status = ?, unexecuted_count = ?, completed_at = ?
+        SET status = ?, unexecuted_count = ?, completed_at = ?, metadata_json = COALESCE(?, metadata_json)
         WHERE id = ? AND status = 'running'
       `,
       )
-      .run(status, unexecutedCount, completedAt, executionId);
+      .run(
+        status,
+        unexecutedCount,
+        completedAt,
+        metadata ? JSON.stringify(metadata) : null,
+        executionId,
+      );
   }
 
   listReviewExecutions(taskId: string): ReviewExecution[] {
@@ -1215,7 +1238,7 @@ class ReviewStore {
       .prepare<[string], DatabaseExecutionRow>(
         `
         SELECT id, task_id, rule_set_id, source_version, status, unexecuted_count, material_snapshot_json,
-               results_json, created_at, completed_at
+               results_json, created_at, completed_at, metadata_json
         FROM review_executions WHERE task_id = ? ORDER BY created_at DESC
       `,
       )
@@ -1233,6 +1256,10 @@ class ReviewStore {
       results: JSON.parse(row.results_json) as ReviewExecution["results"],
       createdAt: row.created_at,
       completedAt: row.completed_at,
+      metadata:
+        row.metadata_json === "{}"
+          ? undefined
+          : (JSON.parse(row.metadata_json) as ReviewExecution["metadata"]),
     }));
   }
 
@@ -1256,7 +1283,11 @@ export function getReviewStore(): ReviewStore {
   const reviewGlobals = globalThis as ReviewDatabaseGlobal;
   const existingContext = reviewGlobals.__materialReviewDatabase;
 
-  if (existingContext?.databaseDirectory === databaseDirectory && existingContext.database.open) {
+  if (
+    existingContext?.databaseDirectory === databaseDirectory &&
+    existingContext.database.open &&
+    existingContext.database.pragma("user_version", { simple: true }) === DATABASE_SCHEMA_VERSION
+  ) {
     return new ReviewStore(existingContext.database);
   }
 

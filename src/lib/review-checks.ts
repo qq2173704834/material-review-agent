@@ -29,11 +29,19 @@ function materialEvidence(material: ReviewMaterialSummary): ReviewCheckEvidence 
   };
 }
 
-function applicableRule(rule: ReviewRule, background: ReviewTaskBackground): boolean | undefined {
+export function applicableRule(
+  rule: ReviewRule,
+  background: ReviewTaskBackground,
+): boolean | undefined {
   if (rule.applicabilityScope === "team" && background.collaborationScope === "individual")
     return false;
   if (rule.applicabilityScope === "individual" && background.collaborationScope === "team")
     return false;
+  if (
+    rule.applicabilityCondition &&
+    /如|若|阶段|类别|初赛|复赛|决赛|申报|结项/.test(rule.applicabilityCondition)
+  )
+    return undefined;
   if (rule.applicabilityScope !== "unknown" && background.collaborationScope !== "unknown")
     return true;
   if (rule.applicabilityCondition) return undefined;
@@ -129,7 +137,11 @@ function compareRule(
     /(?:最多|至多|不超过)\s*(\d+)\s*(?:份|个|件|项)|(?:至少|不少于)\s*(\d+)\s*(?:份|个|件|项)|(?:恰好|正好)\s*(\d+)\s*(?:份|个|件|项)/,
   );
   if (countMatch) {
-    const maximumCount = countMatch[1] ? Number(countMatch[1]) : null;
+    const maximumCount = countMatch[1]
+      ? Number(countMatch[1])
+      : countMatch[3]
+        ? Number(countMatch[3])
+        : null;
     const minimumCount = countMatch[2]
       ? Number(countMatch[2])
       : countMatch[3]

@@ -6,6 +6,13 @@ import { reviewTaskIdSchema } from "@/domain/review-task";
 import { reviewRuleSetSchema } from "@/domain/review-rule";
 import { extractMockRules } from "@/lib/rule-extractor";
 import { getReviewStore } from "@/lib/server/review-store";
+import { extractLiveRules } from "@/lib/server/live-rule-extractor";
+import {
+  getAiMode,
+  getModelConfiguration,
+  ModelServiceError,
+  modelErrorResponse,
+} from "@/lib/server/model-client";
 
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
@@ -35,7 +42,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Nex
   }
 }
 
-export async function POST(_request: Request, context: RouteContext): Promise<NextResponse> {
+export async function POST(request: Request, context: RouteContext): Promise<NextResponse> {
   const { taskId } = await context.params;
   if (!reviewTaskIdSchema.safeParse(taskId).success) {
     return NextResponse.json({ error: "任务编号无效。" }, { status: 400 });
@@ -46,21 +53,26 @@ export async function POST(_request: Request, context: RouteContext): Promise<Ne
     const task = reviewStore.getTask(taskId);
     if (!task) return NextResponse.json({ error: "没有找到该任务。" }, { status: 404 });
 
-    const extractedRules = extractMockRules({
-      taskId,
-      sourceId: task.noticeSource.id,
-      sourceVersion: task.noticeSource.version,
-      noticeText: task.noticeSource.originalText,
-    });
+    const mode = getAiMode();
+    const configuration = mode === "live" ? getModelConfiguration() : null;
+    const extractedRules =
+      mode === "live"
+        ? await extractLiveRules(task.noticeSource, request.signal)
+        : extractMockRules({
+            taskId,
+            sourceId: task.noticeSource.id,
+            sourceVersion: task.noticeSource.version,
+            noticeText: task.noticeSource.originalText,
+          });
     const createdAt = new Date().toISOString();
     const ruleSet = reviewRuleSetSchema.parse({
       id: randomUUID(),
       taskId,
       sourceId: task.noticeSource.id,
       sourceVersion: task.noticeSource.version,
-      mode: "mock",
-      provider: "",
-      model: "",
+      mode,
+      provider: configuration?.provider ?? "",
+      model: configuration?.model ?? "",
       status: "completed",
       createdAt,
       ...extractedRules,
@@ -89,7 +101,14 @@ export async function POST(_request: Request, context: RouteContext): Promise<Ne
       { ruleSet },
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof ModelServiceError) {
+      const failure = modelErrorResponse(error);
+      return NextResponse.json(
+        { error: failure.error, code: failure.code },
+        { status: failure.status },
+      );
+    }
     return NextResponse.json({ error: "规则草稿未能保存，请稍后重试。" }, { status: 500 });
   }
 }

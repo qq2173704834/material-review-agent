@@ -26,6 +26,7 @@
     "commit:check": "node scripts/validate-commit.mjs"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "3.0.90",
     "ai": "7.0.169",
     "better-sqlite3": "13.0.3",
     "class-variance-authority": "0.7.1",
