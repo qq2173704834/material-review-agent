@@ -14,6 +14,7 @@ import type {
   ReviewMaterialSummary,
   ReviewExecution,
   HumanResolution,
+  RemediationTask,
   ReviewTaskBackground,
   ReviewTaskDetails,
   ReviewTaskSummary,
@@ -23,7 +24,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 8;
+const DATABASE_SCHEMA_VERSION = 9;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -552,6 +553,27 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
             PRIMARY KEY (execution_id, rule_id)
           );
           PRAGMA user_version = 8;
+        `);
+      })();
+    }
+
+    if (database.pragma("user_version", { simple: true }) === 8) {
+      database.transaction(() => {
+        database.exec(`
+          CREATE TABLE review_remediation_tasks (
+            id TEXT PRIMARY KEY NOT NULL,
+            task_id TEXT NOT NULL REFERENCES review_tasks (id) ON DELETE CASCADE,
+            execution_id TEXT NOT NULL REFERENCES review_executions (id) ON DELETE CASCADE,
+            rule_id TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('open', 'in_progress', 'done')),
+            payload_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (execution_id, rule_id)
+          );
+          CREATE INDEX review_remediation_task_idx
+            ON review_remediation_tasks (task_id, updated_at DESC);
+          PRAGMA user_version = 9;
         `);
       })();
     }
@@ -1347,6 +1369,104 @@ class ReviewStore {
       note: input.note,
       updatedAt: input.updatedAt,
     };
+  }
+
+  listRemediationTasks(taskId: string): RemediationTask[] {
+    return this.database
+      .prepare<
+        [string],
+        { payload_json: string; status: RemediationTask["status"]; updated_at: string }
+      >(
+        "SELECT payload_json, status, updated_at FROM review_remediation_tasks WHERE task_id = ? ORDER BY updated_at DESC",
+      )
+      .all(taskId)
+      .map((row) => ({
+        ...(JSON.parse(row.payload_json) as RemediationTask),
+        status: row.status,
+        updatedAt: row.updated_at,
+      }));
+  }
+
+  createRemediationTask(
+    taskId: string,
+    executionId: string,
+    ruleId: string,
+    createdAt: string,
+  ): RemediationTask | undefined {
+    const execution = this.database
+      .prepare<[string, string], { status: string; results_json: string }>(
+        "SELECT status, results_json FROM review_executions WHERE id = ? AND task_id = ?",
+      )
+      .get(executionId, taskId);
+    if (!execution || execution.status === "running") return undefined;
+    const result = (JSON.parse(execution.results_json) as ReviewExecution["results"]).find(
+      (candidate) => candidate.ruleId === ruleId,
+    );
+    if (!result || result.strength !== "required" || result.verdict !== "failed") return undefined;
+    const todo: RemediationTask = {
+      id: randomUUID(),
+      taskId,
+      executionId,
+      ruleId,
+      ruleCode: result.ruleCode,
+      requirement: result.requirement,
+      reason: result.reason,
+      recommendation: result.recommendation,
+      sourceQuote: result.source.quotedText,
+      materialIds: [...new Set(result.evidence.map((evidence) => evidence.materialId))],
+      status: "open",
+      createdAt,
+      updatedAt: createdAt,
+    };
+    this.database
+      .prepare(
+        "INSERT OR IGNORE INTO review_remediation_tasks (id, task_id, execution_id, rule_id, status, payload_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        todo.id,
+        taskId,
+        executionId,
+        ruleId,
+        todo.status,
+        JSON.stringify(todo),
+        createdAt,
+        createdAt,
+      );
+    const row = this.database
+      .prepare<
+        [string, string],
+        { payload_json: string; status: RemediationTask["status"]; updated_at: string }
+      >(
+        "SELECT payload_json, status, updated_at FROM review_remediation_tasks WHERE execution_id = ? AND rule_id = ?",
+      )
+      .get(executionId, ruleId);
+    return row
+      ? {
+          ...(JSON.parse(row.payload_json) as RemediationTask),
+          status: row.status,
+          updatedAt: row.updated_at,
+        }
+      : undefined;
+  }
+
+  updateRemediationStatus(
+    taskId: string,
+    remediationId: string,
+    status: RemediationTask["status"],
+    updatedAt: string,
+  ): RemediationTask | undefined {
+    const row = this.database
+      .prepare<[string, string], { payload_json: string }>(
+        "SELECT payload_json FROM review_remediation_tasks WHERE id = ? AND task_id = ?",
+      )
+      .get(remediationId, taskId);
+    if (!row) return undefined;
+    this.database
+      .prepare(
+        "UPDATE review_remediation_tasks SET status = ?, updated_at = ? WHERE id = ? AND task_id = ?",
+      )
+      .run(status, updatedAt, remediationId, taskId);
+    return { ...(JSON.parse(row.payload_json) as RemediationTask), status, updatedAt };
   }
 
   close(): void {

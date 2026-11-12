@@ -43,6 +43,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
     ruleSets,
     getReviewStore().listReviewExecutions(taskId),
   );
+  const remediationTasks = getReviewStore().listRemediationTasks(taskId);
   const runtimeStatus = getRuntimeStatus(true);
   const latestExecution = executions[0];
   const contextKey = `${ruleSets[0]?.id ?? "none"}:${task.latestUpdatedAt}:${task.materials.map((material) => `${material.id}-${material.version}`).join(",")}`;
@@ -104,6 +105,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         key={`execution-${latestExecution?.id ?? "none"}-${contextKey}`}
         taskId={task.id}
         initialExecutions={executions}
+        initialRemediationTasks={remediationTasks}
         hasCurrentRuleSet={ruleSets.some(
           (ruleSet) => ruleSet.sourceVersion === task.noticeSource.version,
         )}

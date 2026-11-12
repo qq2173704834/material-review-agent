@@ -959,6 +959,35 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(missingNote.status()).toBe(400);
   });
 
+  test("明确失败项可创建整改待办且完成状态不替代复检", async ({ page, request }) => {
+    const created = await request.post("/api/tasks", {
+      data: { name: "整改待办任务", noticeText: "文件名必须为“申请书.pdf”。" },
+    });
+    const { task } = await created.json();
+    await request.post(`/api/tasks/${task.id}/rules`);
+    const checked = await runCheckStream(request, task.id);
+    const failed = checked.execution.results[0];
+    if (!failed) throw new Error("Expected the missing required filename to fail.");
+    expect(failed).toMatchObject({ verdict: "failed", strength: "required" });
+
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByRole("button", { name: "创建整改待办" }).click();
+    const todoStatus = page.getByLabel("R-001 整改待办状态");
+    await expect(todoStatus).toBeVisible();
+    await todoStatus.selectOption("done");
+
+    const todos = await (await request.get(`/api/tasks/${task.id}/remediations`)).json();
+    expect(todos.remediationTasks).toHaveLength(1);
+    expect(todos.remediationTasks[0]).toMatchObject({
+      executionId: checked.execution.id,
+      ruleId: failed.ruleId,
+      ruleCode: "R-001",
+      status: "done",
+    });
+    const history = await (await request.get(`/api/tasks/${task.id}/checks`)).json();
+    expect(history.executions[0].results[0].verdict).toBe("failed");
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {

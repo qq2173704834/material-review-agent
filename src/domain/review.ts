@@ -137,6 +137,22 @@ export interface HumanResolution {
   updatedAt: string;
 }
 
+export interface RemediationTask {
+  id: string;
+  taskId: string;
+  executionId: string;
+  ruleId: string;
+  ruleCode: string;
+  requirement: string;
+  reason: string;
+  recommendation: string;
+  sourceQuote: string;
+  materialIds: string[];
+  status: "open" | "in_progress" | "done";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SourcePosition {
   sourceId: string;
   paragraphIndex: number;

@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { compareExecutions } from "@/lib/review-history";
 
-import type { ReviewExecution, ReviewVerdict } from "@/domain/review";
+import type { RemediationTask, ReviewExecution, ReviewVerdict } from "@/domain/review";
 import type { FormEvent, ReactElement } from "react";
 
 interface ReviewExecutionProps {
   taskId: string;
   initialExecutions: ReviewExecution[];
+  initialRemediationTasks: RemediationTask[];
   hasCurrentRuleSet: boolean;
   mode: "mock" | "live" | "invalid";
   materials: Array<{ id: string; version: number; originalFileName: string }>;
@@ -42,12 +43,14 @@ const verdictOrder: ReviewVerdict[] = [
 export function ReviewExecutionPanel({
   taskId,
   initialExecutions,
+  initialRemediationTasks,
   hasCurrentRuleSet,
   mode,
   materials,
 }: ReviewExecutionProps): ReactElement {
   const router = useRouter();
   const [executions, setExecutions] = useState(initialExecutions);
+  const [remediationTasks, setRemediationTasks] = useState(initialRemediationTasks);
   const [error, setError] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
@@ -133,6 +136,58 @@ export function ReviewExecutionPanel({
         payload.resolution as NonNullable<ReviewExecution["humanResolutions"]>[number],
       ],
     });
+  }
+
+  async function createRemediationTask(executionId: string, ruleId: string): Promise<void> {
+    const response = await fetch(`/api/tasks/${taskId}/remediations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ executionId, ruleId }),
+    });
+    const payload: unknown = await response.json();
+    if (
+      !response.ok ||
+      typeof payload !== "object" ||
+      payload === null ||
+      !("remediationTask" in payload)
+    ) {
+      setError(
+        typeof payload === "object" &&
+          payload !== null &&
+          "error" in payload &&
+          typeof payload.error === "string"
+          ? payload.error
+          : "整改待办创建失败。",
+      );
+      return;
+    }
+    const todo = payload.remediationTask as RemediationTask;
+    setRemediationTasks((items) =>
+      items.some((item) => item.id === todo.id) ? items : [todo, ...items],
+    );
+  }
+
+  async function updateRemediationTask(
+    id: string,
+    status: RemediationTask["status"],
+  ): Promise<void> {
+    const response = await fetch(`/api/tasks/${taskId}/remediations`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status }),
+    });
+    const payload: unknown = await response.json();
+    if (
+      !response.ok ||
+      typeof payload !== "object" ||
+      payload === null ||
+      !("remediationTask" in payload)
+    ) {
+      setError("整改待办状态更新失败。");
+      return;
+    }
+    const todo = payload.remediationTask as RemediationTask;
+    setRemediationTasks((items) => items.map((item) => (item.id === id ? todo : item)));
   }
 
   async function refreshExecutions(): Promise<ReviewExecution[]> {
@@ -471,7 +526,11 @@ export function ReviewExecutionPanel({
           </div>
           <ol className="mt-4 divide-y divide-border border-y border-border">
             {visibleResults.map((result) => (
-              <li key={result.ruleId} className="py-4">
+              <li
+                id={`execution-${currentExecution.id}-result-${result.ruleId}`}
+                key={result.ruleId}
+                className="py-4"
+              >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="text-sm font-medium">
                     {result.ruleCode} · {result.requirement}
@@ -543,6 +602,22 @@ export function ReviewExecutionPanel({
                       </li>
                     ))}
                   </ul>
+                ) : null}
+                {currentExecution.status === "completed" &&
+                result.strength === "required" &&
+                result.verdict === "failed" ? (
+                  remediationTasks.some(
+                    (todo) =>
+                      todo.executionId === currentExecution.id && todo.ruleId === result.ruleId,
+                  ) ? null : (
+                    <button
+                      type="button"
+                      onClick={() => void createRemediationTask(currentExecution.id, result.ruleId)}
+                      className="mt-3 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted"
+                    >
+                      创建整改待办
+                    </button>
+                  )
                 ) : null}
                 {!isRunning &&
                 ["needs_confirmation", "unable_to_check"].includes(result.verdict) ? (
@@ -641,6 +716,59 @@ export function ReviewExecutionPanel({
             <p className="mt-3 text-xs text-muted-foreground">
               已保留 {executions.length} 次检查快照。
             </p>
+          ) : null}
+          {remediationTasks.length ? (
+            <section
+              aria-labelledby="remediation-heading"
+              className="mt-8 border-t border-border pt-5"
+            >
+              <h3 id="remediation-heading" className="text-sm font-semibold">
+                整改待办 · {remediationTasks.length}
+              </h3>
+              <ol className="mt-3 divide-y divide-border border-y border-border">
+                {remediationTasks.map((todo) => (
+                  <li
+                    key={todo.id}
+                    className="flex flex-wrap items-start justify-between gap-3 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">
+                        {todo.ruleCode} · {todo.requirement}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{todo.reason}</p>
+                      {todo.recommendation ? (
+                        <p className="mt-1 text-xs text-primary">建议：{todo.recommendation}</p>
+                      ) : null}
+                      <a
+                        className="mt-1 inline-block text-xs text-primary underline"
+                        href={`/tasks/${taskId}#execution-${todo.executionId}-result-${todo.ruleId}`}
+                      >
+                        来源执行 {todo.executionId.slice(0, 8)} · {todo.materialIds.length}{" "}
+                        份关联材料
+                      </a>
+                    </div>
+                    <select
+                      aria-label={`${todo.ruleCode} 整改待办状态`}
+                      value={todo.status}
+                      onChange={(event) =>
+                        void updateRemediationTask(
+                          todo.id,
+                          event.target.value as RemediationTask["status"],
+                        )
+                      }
+                      className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+                    >
+                      <option value="open">待处理</option>
+                      <option value="in_progress">处理中</option>
+                      <option value="done">已处理</option>
+                    </select>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-xs text-muted-foreground">
+                待办状态只记录人工处理进度，不改变检查结论；完成后需重新检查确认。
+              </p>
+            </section>
           ) : null}
         </div>
       )}
