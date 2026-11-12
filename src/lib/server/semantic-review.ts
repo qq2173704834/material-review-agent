@@ -107,10 +107,13 @@ export async function reviewLiveRule(options: {
 
   const isPropertyRule =
     rule.checkability === "deterministic" ||
-    /文件格式|格式.*(?:PDF|DOCX|TXT|XLSX|CSV)|文件大小|字数|字符数|总页数|文件数量|命名|文件名/.test(
+    /文件格式|格式.*(?:PDF|DOCX|TXT|XLSX|CSV)|文件大小|字数|字符|\d+\s*字|总页数|文件数量|命名|文件名/.test(
       rule.description,
     );
   const isGlobalTarget = /^(全部材料|所有材料|全部文件|所有文件)$/.test(rule.target);
+  const isCharacterCountRule =
+    /(?:不少于|至少|不超过|至多|最多)\s*\d+\s*(?:个)?(?:汉字|字|字符)/.test(rule.description);
+  if (isCharacterCountRule) return { result: { ...baseline, method: "deterministic" } };
   if (isPropertyRule && isGlobalTarget && ["passed", "failed"].includes(baseline.verdict))
     return { result: { ...baseline, method: "deterministic" } };
   if (rule.checkability === "unable_to_check")

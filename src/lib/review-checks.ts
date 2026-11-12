@@ -58,6 +58,13 @@ function compareRule(
     /(?:不超过|至多|最多|≤|<=)\s*(\d+)\s*(?:个)?(?:汉字|字|字符)|(?:不少于|至少|≥|>=)\s*(\d+)\s*(?:个)?(?:汉字|字|字符)/,
   );
   if (characterLimit) {
+    if (/正文|摘要|指定章节|指定范围/.test(description))
+      return {
+        verdict: "unable_to_check",
+        reason: "要求限定的是正文、摘要或指定范围字数，当前只能统计已解析全文字符数。",
+        recommendation: "明确统计范围后人工核验。",
+        evidence,
+      };
     const maximum = characterLimit[1] ? Number(characterLimit[1]) : null;
     const minimum = characterLimit[2] ? Number(characterLimit[2]) : null;
     if (!materials.length)

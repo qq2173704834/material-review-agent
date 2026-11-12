@@ -204,6 +204,24 @@ test("全文字数工具在下限边界失败并在准确边界通过", async ({
   expect(passed.results[0]?.reason).toContain("为 500 字");
 });
 
+test("正文字符数要求不使用全文计数代替", async ({ request }) => {
+  const { task } = await createTask(request, "项目说明正文必须不少于500字。", "字".repeat(600));
+  const taskResponse = await (await request.get(`/api/tasks/${task.id}`)).json();
+  const { executeReviewRule } = await import("../../src/lib/review-checks");
+  const result = executeReviewRule(
+    {
+      ...(await (await request.get(`/api/tasks/${task.id}/rules`)).json()).ruleSets[0].rules[0],
+      description: "项目说明正文必须不少于500字。",
+    },
+    taskResponse.task.materials,
+    taskResponse.task.background,
+  );
+  expect(result).toMatchObject({
+    verdict: "unable_to_check",
+    reason: expect.stringContaining("只能统计已解析全文字符数"),
+  });
+});
+
 test("恰好一份的数量规则拒绝两份材料", async ({ request }) => {
   const response = await request.post("/api/tasks", {
     data: { name: "确定性数量边界", noticeText: "项目说明数量必须恰好1份。" },
