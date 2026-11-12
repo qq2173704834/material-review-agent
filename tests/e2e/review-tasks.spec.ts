@@ -1150,6 +1150,26 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await expect(sourceList).toContainText("补充通知.txt");
   });
 
+  test("要求来源上传在解析 multipart 前限制请求体字节数", async ({ request }) => {
+    const oversizedBuffer = Buffer.alloc(21 * 1024 * 1024 + 1, 0x61);
+    const response = await request.post("/api/tasks", {
+      multipart: {
+        sourceFile: {
+          name: "超大通知.txt",
+          mimeType: "text/plain",
+          buffer: oversizedBuffer,
+        },
+        background: JSON.stringify({
+          projectType: "",
+          projectStage: "",
+          collaborationScope: "unknown",
+        }),
+      },
+    });
+    expect(response.status()).toBe(413);
+    expect(await response.json()).toMatchObject({ error: "上传请求超过允许大小。" });
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {

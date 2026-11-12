@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { reviewTaskInputSchema } from "@/domain/review-task";
 import { parseMaterial } from "@/lib/server/material-parser";
+import { MultipartSizeLimitError, readLimitedFormData } from "@/lib/server/limited-form-data";
 import { getReviewStore } from "@/lib/server/review-store";
 import { fetchPublicWebpage } from "@/lib/server/webpage-fetcher";
 
@@ -24,8 +25,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (request.headers.get("content-type")?.includes("multipart/form-data")) {
     let formData: FormData;
     try {
-      formData = await request.formData();
-    } catch {
+      formData = await readLimitedFormData(request, 20 * 1024 * 1024);
+    } catch (error) {
+      if (error instanceof MultipartSizeLimitError)
+        return NextResponse.json({ error: error.message }, { status: 413 });
       return NextResponse.json({ error: "无法读取上传的要求文件。" }, { status: 400 });
     }
     const sourceFile = formData.get("sourceFile");

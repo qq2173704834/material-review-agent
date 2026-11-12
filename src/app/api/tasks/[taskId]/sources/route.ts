@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { reviewTaskIdSchema } from "@/domain/review-task";
 import { parseMaterial } from "@/lib/server/material-parser";
 import { getReviewStore } from "@/lib/server/review-store";
+import { MultipartSizeLimitError, readLimitedFormData } from "@/lib/server/limited-form-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,8 +30,10 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
 
   let formData: FormData;
   try {
-    formData = await request.formData();
-  } catch {
+    formData = await readLimitedFormData(request, MAXIMUM_SOURCE_BYTES);
+  } catch (error) {
+    if (error instanceof MultipartSizeLimitError)
+      return NextResponse.json({ error: error.message }, { status: 413 });
     return NextResponse.json({ error: "无法读取补充来源文件。" }, { status: 400 });
   }
   const sourceFile = formData.get("sourceFile");
