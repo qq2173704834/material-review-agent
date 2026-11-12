@@ -12,21 +12,24 @@ interface SupplementSourceUploadProps {
 export function SupplementSourceUpload({ taskId }: SupplementSourceUploadProps): ReactElement {
   const router = useRouter();
   const [sourceFile, setSourceFile] = useState<File | null>(null);
+  const [sourceMode, setSourceMode] = useState<"file" | "webpage">("file");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   async function submitSource(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!sourceFile) return;
+    if (sourceMode === "file" && !sourceFile) return;
     const form = event.currentTarget;
     setError("");
     setIsSaving(true);
     const formData = new FormData();
-    formData.set("sourceFile", sourceFile);
+    if (sourceMode === "file" && sourceFile) formData.set("sourceFile", sourceFile);
     try {
       const response = await fetch(`/api/tasks/${taskId}/sources`, {
         method: "POST",
-        body: formData,
+        headers: sourceMode === "webpage" ? { "Content-Type": "application/json" } : undefined,
+        body: sourceMode === "webpage" ? JSON.stringify({ sourceUrl }) : formData,
       });
       const result: unknown = await response.json();
       if (!response.ok) {
@@ -41,6 +44,7 @@ export function SupplementSourceUpload({ taskId }: SupplementSourceUploadProps):
         return;
       }
       setSourceFile(null);
+      setSourceUrl("");
       form.reset();
       router.refresh();
     } catch {
@@ -65,23 +69,61 @@ export function SupplementSourceUpload({ taskId }: SupplementSourceUploadProps):
           </p>
         </div>
         <form onSubmit={submitSource} className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor="supplement-source-file">
-            选择补充来源文件
-          </label>
-          <input
-            id="supplement-source-file"
-            type="file"
-            required
-            accept=".pdf,.docx,.txt"
-            onChange={(event) => setSourceFile(event.target.files?.[0] ?? null)}
-            className="max-w-full text-xs file:mr-2 file:border file:border-border file:bg-background file:px-2 file:py-1"
-          />
+          <div className="inline-flex border border-border" role="group" aria-label="补充来源类型">
+            <button
+              type="button"
+              aria-pressed={sourceMode === "file"}
+              onClick={() => setSourceMode("file")}
+              className={`h-9 px-3 text-xs ${sourceMode === "file" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+            >
+              文件
+            </button>
+            <button
+              type="button"
+              aria-pressed={sourceMode === "webpage"}
+              onClick={() => setSourceMode("webpage")}
+              className={`h-9 border-l border-border px-3 text-xs ${sourceMode === "webpage" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+            >
+              网页
+            </button>
+          </div>
+          {sourceMode === "file" ? (
+            <>
+              <label className="sr-only" htmlFor="supplement-source-file">
+                选择补充来源文件
+              </label>
+              <input
+                id="supplement-source-file"
+                type="file"
+                required
+                accept=".pdf,.docx,.txt"
+                onChange={(event) => setSourceFile(event.target.files?.[0] ?? null)}
+                className="max-w-full text-xs file:mr-2 file:border file:border-border file:bg-background file:px-2 file:py-1"
+              />
+            </>
+          ) : (
+            <>
+              <label className="sr-only" htmlFor="supplement-source-url">
+                补充网页 URL
+              </label>
+              <input
+                id="supplement-source-url"
+                type="url"
+                required
+                maxLength={2048}
+                value={sourceUrl}
+                onChange={(event) => setSourceUrl(event.target.value)}
+                placeholder="https://example.org/attachment"
+                className="h-9 min-w-56 border border-border bg-background px-2 text-xs"
+              />
+            </>
+          )}
           <button
             type="submit"
-            disabled={isSaving || !sourceFile}
+            disabled={isSaving || (sourceMode === "file" ? !sourceFile : !sourceUrl.trim())}
             className="h-9 border border-border px-3 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
-            {isSaving ? "正在解析…" : "添加来源"}
+            {isSaving ? (sourceMode === "webpage" ? "正在读取…" : "正在解析…") : "添加来源"}
           </button>
         </form>
       </div>

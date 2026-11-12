@@ -1154,12 +1154,21 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(sources.supplementalSources[0].id).not.toBe(sources.supplementalSources[1].id);
     expect(sources.supplementalSources[0].originalText).toContain("材料清单");
     expect(sources.supplementalSources[1].originalText).toContain("截止时间");
+    const blockedWebpage = await request.post(`/api/tasks/${task.id}/sources`, {
+      data: { sourceUrl: "http://127.0.0.1/" },
+    });
+    expect(blockedWebpage.status()).toBe(422);
+    expect(
+      (await (await request.get(`/api/tasks/${task.id}`)).json()).task.supplementalSources,
+    ).toHaveLength(2);
 
     await page.goto(`/tasks/${task.id}`);
     await expect(page.getByRole("heading", { name: "补充要求来源" })).toBeVisible();
     const sourceList = page.locator('section[aria-label="已添加的补充来源"]');
     await expect(sourceList).toContainText("材料清单.txt");
     await expect(sourceList).toContainText("补充通知.txt");
+    await page.getByRole("button", { name: "网页", exact: true }).click();
+    await expect(page.getByLabel("补充网页 URL")).toBeVisible();
   });
 
   test("要求来源上传在解析 multipart 前限制请求体字节数", async ({ request }) => {

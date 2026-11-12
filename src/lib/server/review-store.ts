@@ -55,6 +55,9 @@ interface UpdateReviewTaskInput extends CreateReviewTaskInput {
 interface CreateSupplementSourceInput {
   taskId: string;
   displayName: string;
+  sourceType: "file" | "webpage";
+  sourceUrl?: string;
+  sourceFetchedAt?: string;
   text: string;
   segments: RequirementSourceSegment[];
   parseStatus: MaterialParseStatus;
@@ -661,9 +664,15 @@ class ReviewStore {
       this.database
         .prepare(
           `INSERT INTO requirement_sources (id, task_id, source_role, input_type, display_name, created_at)
-           VALUES (?, ?, 'supplement', 'file', ?, ?)`,
+           VALUES (?, ?, 'supplement', ?, ?, ?)`,
         )
-        .run(sourceId, input.taskId, input.displayName, createdAt);
+        .run(sourceId, input.taskId, input.sourceType, input.displayName, createdAt);
+      if (input.sourceType === "webpage")
+        this.database
+          .prepare(
+            "UPDATE requirement_sources SET source_url = ?, source_fetched_at = ? WHERE id = ?",
+          )
+          .run(input.sourceUrl ?? null, input.sourceFetchedAt ?? createdAt, sourceId);
       saveSourceVersion(
         this.database,
         sourceId,
