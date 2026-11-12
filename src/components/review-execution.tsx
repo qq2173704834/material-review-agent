@@ -75,6 +75,7 @@ export function ReviewExecutionPanel({
   const [verdictFilter, setVerdictFilter] = useState<"all" | ReviewVerdict>("all");
   const [strengthFilter, setStrengthFilter] = useState("all");
   const [materialFilter, setMaterialFilter] = useState("all");
+  const [viewStateNotice, setViewStateNotice] = useState("");
   const hasSyncedViewState = useRef(false);
   const [resolutionDrafts, setResolutionDrafts] = useState<
     Record<string, { decision: string; note: string }>
@@ -94,6 +95,13 @@ export function ReviewExecutionPanel({
       const verdict = params.get("verdict");
       const strength = params.get("strength");
       const materialId = params.get("material");
+      const hasInvalidExecution = Boolean(executionId && !execution);
+      const hasInvalidRule = Boolean(
+        ruleId && !execution?.results.some((result) => result.ruleId === ruleId),
+      );
+      const hasInvalidMaterial = Boolean(
+        materialId && !materials.some((material) => material.id === materialId),
+      );
 
       setSelectedId(execution?.id ?? "");
       setSelectedRuleId(
@@ -118,6 +126,11 @@ export function ReviewExecutionPanel({
       );
       setMaterialFilter(
         materials.some((material) => material.id === materialId) ? materialId! : "all",
+      );
+      setViewStateNotice(
+        hasInvalidExecution || hasInvalidRule || hasInvalidMaterial
+          ? "之前查看的位置已失效，已回到当前可用结果。"
+          : "",
       );
     }
 
@@ -623,6 +636,11 @@ export function ReviewExecutionPanel({
               </button>
             ) : null}
           </div>
+          {viewStateNotice ? (
+            <p role="status" className="mt-2 text-xs text-amber-800">
+              {viewStateNotice}
+            </p>
+          ) : null}
           <ol className="mt-4 divide-y divide-border border-y border-border">
             {visibleResults.map((result) => {
               const source = sources.find(
@@ -849,7 +867,7 @@ export function ReviewExecutionPanel({
           </ol>
           {visibleResults.length === 0 ? (
             <p className="py-5 text-sm text-muted-foreground">
-              当前筛选没有匹配的检查项。
+              <span>当前筛选没有匹配的检查项。</span>
               <button
                 type="button"
                 onClick={() => {

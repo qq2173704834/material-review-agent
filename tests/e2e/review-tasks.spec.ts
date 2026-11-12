@@ -616,7 +616,22 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await expect(
       checkPanel.getByRole("heading", { name: "R-001 · 必须提交 PDF 格式文件" }),
     ).toBeVisible();
-    await checkPanel.getByLabel("按材料筛选").selectOption("all");
+    await expect(checkPanel.getByText(/当前显示 \d+ 项，共 \d+ 项检查结果/)).toBeVisible();
+    await page.reload();
+    const restoredCheckPanel = page.getByRole("region", { name: "确定性检查" });
+    await expect(restoredCheckPanel.getByLabel("按材料筛选")).not.toHaveValue("all");
+    await expect(
+      restoredCheckPanel.getByRole("heading", { name: "R-001 · 必须提交 PDF 格式文件" }),
+    ).toBeVisible();
+    await page.goto("/tasks/" + task.id + "?material=missing-material-id");
+    await expect(
+      page.getByRole("status").filter({ hasText: "之前查看的位置已失效" }),
+    ).toBeVisible();
+    await page.goto("/tasks/" + task.id);
+    const cleanCheckPanel = page.getByRole("region", { name: "确定性检查" });
+    await cleanCheckPanel.getByLabel("按材料筛选").selectOption({ label: "proposal.pdf · v1" });
+    await cleanCheckPanel.getByLabel("按材料筛选").selectOption("all");
+    await expect(cleanCheckPanel.getByRole("button", { name: "清除筛选" })).toHaveCount(0);
     await page.getByRole("button", { name: "运行检查" }).click();
     await expect(page.getByText("已保留 3 次检查快照。", { exact: true })).toBeVisible();
 
