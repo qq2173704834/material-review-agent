@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { compareExecutions } from "@/lib/review-history";
 
 import type { ReviewExecution, ReviewVerdict } from "@/domain/review";
-import type { ReactElement } from "react";
+import type { FormEvent, ReactElement } from "react";
 
 interface ReviewExecutionProps {
   taskId: string;
@@ -57,6 +57,9 @@ export function ReviewExecutionPanel({
   const [verdictFilter, setVerdictFilter] = useState<"all" | ReviewVerdict>("all");
   const [strengthFilter, setStrengthFilter] = useState("all");
   const [materialFilter, setMaterialFilter] = useState("all");
+  const [resolutionDrafts, setResolutionDrafts] = useState<
+    Record<string, { decision: string; note: string }>
+  >({});
   useEffect(
     () => () => {
       abortController.current?.abort();
@@ -90,6 +93,45 @@ export function ReviewExecutionPanel({
       const existingIndex = current.findIndex((item) => item.id === execution.id);
       if (existingIndex < 0) return [execution, ...current];
       return current.map((item, index) => (index === existingIndex ? execution : item));
+    });
+  }
+
+  async function saveHumanResolution(
+    event: FormEvent<HTMLFormElement>,
+    ruleId: string,
+  ): Promise<void> {
+    event.preventDefault();
+    if (!currentExecution) return;
+    const draft = resolutionDrafts[ruleId] ?? { decision: "deferred", note: "" };
+    setError("");
+    const response = await fetch(`/api/tasks/${taskId}/checks/resolutions`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ executionId: currentExecution.id, ruleId, ...draft }),
+    });
+    const payload: unknown = await response.json();
+    if (
+      !response.ok ||
+      typeof payload !== "object" ||
+      payload === null ||
+      !("resolution" in payload)
+    ) {
+      setError(
+        typeof payload === "object" &&
+          payload !== null &&
+          "error" in payload &&
+          typeof payload.error === "string"
+          ? payload.error
+          : "人工意见未能保存。",
+      );
+      return;
+    }
+    upsertExecution({
+      ...currentExecution,
+      humanResolutions: [
+        ...(currentExecution.humanResolutions ?? []).filter((item) => item.ruleId !== ruleId),
+        payload.resolution as NonNullable<ReviewExecution["humanResolutions"]>[number],
+      ],
     });
   }
 
@@ -501,6 +543,93 @@ export function ReviewExecutionPanel({
                       </li>
                     ))}
                   </ul>
+                ) : null}
+                {!isRunning &&
+                ["needs_confirmation", "unable_to_check"].includes(result.verdict) ? (
+                  <form
+                    onSubmit={(event) => void saveHumanResolution(event, result.ruleId)}
+                    className="mt-4 border-l-2 border-border pl-3"
+                  >
+                    <p className="text-xs font-medium">人工复核意见（独立记录，不改变系统判定）</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr_auto]">
+                      <select
+                        aria-label={`${result.ruleCode} 人工复核意见`}
+                        value={
+                          resolutionDrafts[result.ruleId]?.decision ??
+                          currentExecution.humanResolutions?.find(
+                            (item) => item.ruleId === result.ruleId,
+                          )?.decision ??
+                          "deferred"
+                        }
+                        onChange={(event) =>
+                          setResolutionDrafts((drafts) => ({
+                            ...drafts,
+                            [result.ruleId]: {
+                              ...(drafts[result.ruleId] ?? { note: "" }),
+                              decision: event.target.value,
+                            },
+                          }))
+                        }
+                        className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+                      >
+                        <option value="confirmed">人工认为符合</option>
+                        <option value="rejected">人工认为不符合</option>
+                        <option value="deferred">暂不确认</option>
+                      </select>
+                      <input
+                        aria-label={`${result.ruleCode} 复核依据`}
+                        maxLength={2_000}
+                        placeholder="填写复核依据"
+                        value={
+                          resolutionDrafts[result.ruleId]?.note ??
+                          currentExecution.humanResolutions?.find(
+                            (item) => item.ruleId === result.ruleId,
+                          )?.note ??
+                          ""
+                        }
+                        onChange={(event) =>
+                          setResolutionDrafts((drafts) => ({
+                            ...drafts,
+                            [result.ruleId]: {
+                              ...(drafts[result.ruleId] ?? { decision: "deferred" }),
+                              note: event.target.value,
+                            },
+                          }))
+                        }
+                        className="h-9 min-w-0 rounded-md border border-border bg-background px-2 text-xs"
+                      />
+                      <button
+                        type="submit"
+                        className="h-9 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                      >
+                        保存意见
+                      </button>
+                    </div>
+                    {currentExecution.humanResolutions?.find(
+                      (item) => item.ruleId === result.ruleId,
+                    ) ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        已保存人工意见：
+                        {
+                          (
+                            {
+                              confirmed: "认为符合",
+                              rejected: "认为不符合",
+                              deferred: "暂不确认",
+                            } as const
+                          )[
+                            currentExecution.humanResolutions.find(
+                              (item) => item.ruleId === result.ruleId,
+                            )!.decision
+                          ]
+                        }{" "}
+                        ·{" "}
+                        {currentExecution.humanResolutions.find(
+                          (item) => item.ruleId === result.ruleId,
+                        )!.note || "未填写依据"}
+                      </p>
+                    ) : null}
+                  </form>
                 ) : null}
               </li>
             ))}

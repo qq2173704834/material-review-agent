@@ -906,6 +906,51 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(forged.status()).toBe(422);
   });
 
+  test("人工复核意见独立保存，不覆盖系统判定", async ({ page, request }) => {
+    const created = await request.post("/api/tasks", {
+      data: { name: "人工复核记录", noticeText: "提交的PDF总页数不超过2页。" },
+    });
+    const { task } = await created.json();
+    await request.post(`/api/tasks/${task.id}/rules`);
+    await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: { name: "说明.txt", mimeType: "text/plain", buffer: Buffer.from("项目说明概要") },
+      },
+    });
+    const checked = await runCheckStream(request, task.id);
+    const target = checked.execution.results.find(
+      (result: { verdict: string }) => result.verdict === "needs_confirmation",
+    );
+    if (!target) throw new Error("Expected a result that requires human confirmation.");
+
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByLabel(`${target.ruleCode} 人工复核意见`).selectOption("confirmed");
+    await page.getByLabel(`${target.ruleCode} 复核依据`).fill("人工对照原文及材料后确认");
+    await page.getByRole("button", { name: "保存意见" }).click();
+    await expect(
+      page.getByText("已保存人工意见：认为符合 · 人工对照原文及材料后确认"),
+    ).toBeVisible();
+
+    const history = await (await request.get(`/api/tasks/${task.id}/checks`)).json();
+    const persisted = history.executions[0];
+    expect(
+      persisted.results.find((result: { ruleId: string }) => result.ruleId === target.ruleId)
+        .verdict,
+    ).toBe("needs_confirmation");
+    expect(persisted.humanResolutions).toEqual([
+      expect.objectContaining({
+        ruleId: target.ruleId,
+        decision: "confirmed",
+        note: "人工对照原文及材料后确认",
+      }),
+    ]);
+
+    const missingNote = await request.patch(`/api/tasks/${task.id}/checks/resolutions`, {
+      data: { executionId: checked.execution.id, ruleId: target.ruleId, decision: "rejected" },
+    });
+    expect(missingNote.status()).toBe(400);
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {

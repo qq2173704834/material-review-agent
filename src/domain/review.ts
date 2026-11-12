@@ -125,8 +125,16 @@ export interface ReviewExecution {
     backgroundSnapshot: ReviewTaskBackground;
     limitations: string[];
   };
+  humanResolutions?: HumanResolution[];
   validity?: ResultValidity;
   invalidationReasons?: string[];
+}
+
+export interface HumanResolution {
+  ruleId: string;
+  decision: "confirmed" | "rejected" | "deferred";
+  note: string;
+  updatedAt: string;
 }
 
 export interface SourcePosition {

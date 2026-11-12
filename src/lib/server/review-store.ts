@@ -13,6 +13,7 @@ import type {
   MaterialParseStatus,
   ReviewMaterialSummary,
   ReviewExecution,
+  HumanResolution,
   ReviewTaskBackground,
   ReviewTaskDetails,
   ReviewTaskSummary,
@@ -22,7 +23,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 7;
+const DATABASE_SCHEMA_VERSION = 8;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -535,6 +536,22 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
         database.exec(`
           ALTER TABLE requirement_rules ADD COLUMN material_ids_json TEXT NOT NULL DEFAULT '[]';
           PRAGMA user_version = 7;
+        `);
+      })();
+    }
+
+    if (database.pragma("user_version", { simple: true }) === 7) {
+      database.transaction(() => {
+        database.exec(`
+          CREATE TABLE review_human_resolutions (
+            execution_id TEXT NOT NULL REFERENCES review_executions (id) ON DELETE CASCADE,
+            rule_id TEXT NOT NULL,
+            decision TEXT NOT NULL CHECK (decision IN ('confirmed', 'rejected', 'deferred')),
+            note TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (execution_id, rule_id)
+          );
+          PRAGMA user_version = 8;
         `);
       })();
     }
@@ -1261,6 +1278,17 @@ class ReviewStore {
       `,
       )
       .all(taskId);
+    const listResolutions = this.database.prepare<
+      [string],
+      {
+        rule_id: string;
+        decision: HumanResolution["decision"];
+        note: string;
+        updated_at: string;
+      }
+    >(
+      "SELECT rule_id, decision, note, updated_at FROM review_human_resolutions WHERE execution_id = ?",
+    );
     return rows.map((row) => ({
       id: row.id,
       taskId: row.task_id,
@@ -1278,7 +1306,47 @@ class ReviewStore {
         row.metadata_json === "{}"
           ? undefined
           : (JSON.parse(row.metadata_json) as ReviewExecution["metadata"]),
+      humanResolutions: listResolutions.all(row.id).map((resolution) => ({
+        ruleId: resolution.rule_id,
+        decision: resolution.decision,
+        note: resolution.note,
+        updatedAt: resolution.updated_at,
+      })),
     }));
+  }
+
+  saveHumanResolution(input: {
+    taskId: string;
+    executionId: string;
+    ruleId: string;
+    decision: HumanResolution["decision"];
+    note: string;
+    updatedAt: string;
+  }): HumanResolution | undefined {
+    const execution = this.database
+      .prepare<[string, string], { results_json: string; status: string }>(
+        "SELECT results_json, status FROM review_executions WHERE id = ? AND task_id = ?",
+      )
+      .get(input.executionId, input.taskId);
+    if (!execution || execution.status === "running") return undefined;
+    const results = JSON.parse(execution.results_json) as ReviewExecution["results"];
+    if (!results.some((result) => result.ruleId === input.ruleId)) return undefined;
+    this.database
+      .prepare(
+        `
+      INSERT INTO review_human_resolutions (execution_id, rule_id, decision, note, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT (execution_id, rule_id) DO UPDATE SET
+        decision = excluded.decision, note = excluded.note, updated_at = excluded.updated_at
+    `,
+      )
+      .run(input.executionId, input.ruleId, input.decision, input.note, input.updatedAt);
+    return {
+      ruleId: input.ruleId,
+      decision: input.decision,
+      note: input.note,
+      updatedAt: input.updatedAt,
+    };
   }
 
   close(): void {
