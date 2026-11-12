@@ -706,7 +706,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect((await request.get(`/api/tasks/${secondTask.id}`)).status()).toBe(200);
   });
 
-  test("人工纠正规则会生成新版本并使旧检查待复检", async ({ request }) => {
+  test("人工纠正规则会生成新版本并使旧检查待复检", async ({ page, request }) => {
     const created = await request.post("/api/tasks", {
       data: { name: "规则纠正任务", noticeText: "必须提交项目说明。" },
     });
@@ -716,27 +716,26 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const check = await runCheckStream(request, task.id);
     expect(check.status).toBe(200);
 
-    const changedRules = ruleSet.rules.map((rule: { description: string }) => ({
-      ...rule,
-      description: "人工核对后的项目说明要求",
-    }));
-    const saved = await request.patch(`/api/tasks/${task.id}/rules`, {
-      data: { rules: changedRules },
-    });
-    expect(saved.status()).toBe(201);
-    const savedBody = await saved.json();
-    expect(savedBody.ruleSet.rules[0]).toMatchObject({
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByRole("button", { name: "人工纠正" }).first().click();
+    await page.getByLabel("要求描述").fill("人工核对后的项目说明要求");
+    await page.getByRole("button", { name: "保存为新版本" }).click();
+    await expect(page.getByText("人工核对后的项目说明要求", { exact: true })).toBeVisible();
+
+    const savedBody = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
+    const editedRuleSet = savedBody.ruleSets[0];
+    expect(editedRuleSet.rules[0]).toMatchObject({
       description: "人工核对后的项目说明要求",
       generationMethod: "manual",
       source: ruleSet.rules[0].source,
     });
-    expect(savedBody.ruleSet.id).not.toBe(ruleSet.id);
+    expect(editedRuleSet.id).not.toBe(ruleSet.id);
 
     const checks = await (await request.get(`/api/tasks/${task.id}/checks`)).json();
     expect(checks.executions[0].validity).toBe("needs_recheck");
     expect(checks.executions[0].invalidationReasons).toContain("规则草稿已经更新");
 
-    const forgedRules = savedBody.ruleSet.rules.map((rule: { source: { quotedText: string } }) => ({
+    const forgedRules = editedRuleSet.rules.map((rule: { source: { quotedText: string } }) => ({
       ...rule,
       source: { ...rule.source, quotedText: "不存在于通知的引用" },
     }));
