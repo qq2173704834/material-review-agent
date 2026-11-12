@@ -96,6 +96,12 @@ export function createReviewReport(
       );
     if (!result.evidence.length)
       lines.push("- 材料证据：无；请结合原因判断缺失、能力限制或适用性。");
+    const resolution = execution.humanResolutions?.find((item) => item.ruleId === result.ruleId);
+    if (resolution)
+      lines.push(
+        `- 人工复核意见：${{ confirmed: "认为符合", rejected: "认为不符合", deferred: "暂不确认" }[resolution.decision]} · ${plain(resolution.note) || "未填写依据"} · ${resolution.updatedAt}`,
+        "- 人工意见独立于上方系统判定，不代表自动复检结果。",
+      );
     lines.push("");
   }
   const calls = [...ruleSet.modelCalls, ...(execution.metadata?.modelCalls ?? [])];
@@ -153,6 +159,12 @@ export function createRemediationReport(
               `- 材料证据：${evidence.materialId} · v${evidence.materialVersion} · ${plain(evidence.location)} · ${plain(evidence.quotedText)}`,
           )
         : ["- 材料证据：无"]),
+      ...(
+        execution.humanResolutions?.filter((item) => item.ruleId === result.ruleId) ?? []
+      ).flatMap((resolution) => [
+        `- 人工复核意见：${{ confirmed: "认为符合", rejected: "认为不符合", deferred: "暂不确认" }[resolution.decision]} · ${plain(resolution.note) || "未填写依据"} · ${resolution.updatedAt}`,
+        "- 人工意见独立于系统判定，不代表复检通过。",
+      ]),
       "",
     );
   }

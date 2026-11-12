@@ -944,6 +944,14 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
         note: "人工对照原文及材料后确认",
       }),
     ]);
+    const report = await request.get(
+      `/api/tasks/${task.id}/report?executionId=${checked.execution.id}`,
+    );
+    expect(await report.text()).toContain("人工复核意见：认为符合 · 人工对照原文及材料后确认");
+    const remediation = await request.get(
+      `/api/tasks/${task.id}/report?executionId=${checked.execution.id}&type=remediation`,
+    );
+    expect(await remediation.text()).toContain("人工意见独立于系统判定");
 
     const missingNote = await request.patch(`/api/tasks/${task.id}/checks/resolutions`, {
       data: { executionId: checked.execution.id, ruleId: target.ruleId, decision: "rejected" },
