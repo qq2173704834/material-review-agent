@@ -689,6 +689,19 @@ class ReviewStore {
     return this.readSource(sourceId);
   }
 
+  deleteSupplementSource(taskId: string, sourceId: string): boolean {
+    const deleted = this.database
+      .prepare(
+        "DELETE FROM requirement_sources WHERE id = ? AND task_id = ? AND source_role = 'supplement'",
+      )
+      .run(sourceId, taskId).changes;
+    if (deleted > 0)
+      this.database
+        .prepare("UPDATE review_tasks SET updated_at = ? WHERE id = ?")
+        .run(new Date().toISOString(), taskId);
+    return deleted > 0;
+  }
+
   private readSource(sourceId: string): RequirementSourceVersion | undefined {
     const row = this.database
       .prepare<[string], DatabaseSourceVersionRow & { input_type: string; display_name: string }>(

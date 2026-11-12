@@ -17,6 +17,7 @@ import { TaskDeleteControl } from "@/components/task-delete-control";
 import { TaskCloneControl } from "@/components/task-clone-control";
 import { ClarificationPanel } from "@/components/clarification-panel";
 import { SupplementSourceUpload } from "@/components/supplement-source-upload";
+import { SupplementSourceRemove } from "@/components/supplement-source-remove";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -121,6 +122,26 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
               >
                 <span className="break-all">{source.displayName}</span>
                 <span className="text-muted-foreground">{source.parseStatus}</span>
+                {source.sourceUrl ? (
+                  <a
+                    href={source.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all text-primary underline"
+                  >
+                    {source.sourceUrl}
+                  </a>
+                ) : null}
+                {source.fetchedAt ? (
+                  <time dateTime={source.fetchedAt} className="text-muted-foreground">
+                    获取于 {source.fetchedAt}
+                  </time>
+                ) : null}
+                <SupplementSourceRemove
+                  taskId={task.id}
+                  sourceId={source.id}
+                  displayName={source.displayName}
+                />
                 {source.segments.map((segment) => (
                   <p
                     key={`${source.id}-${segment.paragraphIndex}`}

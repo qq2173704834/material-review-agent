@@ -1169,6 +1169,32 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await expect(sourceList).toContainText("补充通知.txt");
     await page.getByRole("button", { name: "网页", exact: true }).click();
     await expect(page.getByLabel("补充网页 URL")).toBeVisible();
+    const mainDeletion = await request.delete(
+      `/api/tasks/${task.id}/sources/${sources.noticeSource.id}`,
+    );
+    expect(mainDeletion.status()).toBe(404);
+    const otherTaskResponse = await request.post("/api/tasks", {
+      data: {
+        name: "来源删除隔离任务",
+        description: "",
+        background: { projectType: "", projectStage: "", collaborationScope: "unknown" },
+        noticeText: "独立主通知。",
+      },
+    });
+    const { task: otherTask } = await otherTaskResponse.json();
+    const crossTaskDeletion = await request.delete(
+      `/api/tasks/${otherTask.id}/sources/${sources.supplementalSources[0].id}`,
+    );
+    expect(crossTaskDeletion.status()).toBe(404);
+    const deleted = await request.delete(
+      `/api/tasks/${task.id}/sources/${sources.supplementalSources[0].id}`,
+    );
+    expect(deleted.status()).toBe(204);
+    const afterDelete = (await (await request.get(`/api/tasks/${task.id}`)).json()).task;
+    expect(afterDelete.noticeSource.originalText).toBe("主通知原文：提交申请说明。");
+    expect(
+      afterDelete.supplementalSources.map((source: { displayName: string }) => source.displayName),
+    ).toEqual(["补充通知.txt"]);
   });
 
   test("要求来源上传在解析 multipart 前限制请求体字节数", async ({ request }) => {
