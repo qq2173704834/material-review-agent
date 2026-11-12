@@ -81,6 +81,12 @@ function reviewContext(
   };
 }
 
+function containsInstructionOverride(text: string): boolean {
+  return /(?:忽略|无视|覆盖).{0,16}(?:先前|之前|以上|所有|系统).{0,8}(?:指令|规则|要求|提示词)|(?:ignore|disregard|override).{0,40}(?:previous|above|system).{0,20}(?:instructions?|rules?|prompt)|(?:泄漏|输出|显示).{0,12}(?:系统)?(?:提示词|密钥)|(?:执行|运行).{0,12}(?:命令|代码)|(?:reveal|print|show).{0,24}(?:system prompt|api key)|(?:run|execute).{0,24}(?:command|code)/i.test(
+    text,
+  );
+}
+
 export async function reviewLiveRule(options: {
   rule: ReviewRule;
   materials: ReviewMaterialSummary[];
@@ -136,6 +142,19 @@ export async function reviewLiveRule(options: {
         verdict: "unable_to_check",
         reason: "上传材料没有可供语义审查的已解析文本，可能需要 OCR 或替换损坏文件。",
         recommendation: "上传可提取文本的材料后复检。",
+        evidence: [],
+        method: "unavailable",
+        coverage: context.coverage,
+      },
+    };
+  if (context.snippets.some((snippet) => containsInstructionOverride(snippet.text)))
+    return {
+      result: {
+        ...baseline,
+        verdict: "needs_confirmation",
+        reason:
+          "材料片段包含试图覆盖指令或执行命令的文本；该内容按不可信材料数据处理，本项未据此调用模型下结论。",
+        recommendation: "人工检查相关材料内容并确认本项要求。",
         evidence: [],
         method: "unavailable",
         coverage: context.coverage,
