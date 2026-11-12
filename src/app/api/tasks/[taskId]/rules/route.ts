@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { reviewTaskIdSchema } from "@/domain/review-task";
 import { reviewRuleSchema, reviewRuleSetSchema } from "@/domain/review-rule";
 import { extractMockRules } from "@/lib/rule-extractor";
+import { findRuleConflicts } from "@/lib/rule-conflicts";
 import { getReviewStore } from "@/lib/server/review-store";
 import { extractLiveRules } from "@/lib/server/live-rule-extractor";
 import {
@@ -76,6 +77,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       status: "completed",
       createdAt,
       ...extractedRules,
+      warnings: [...extractedRules.warnings, ...findRuleConflicts(extractedRules.rules)],
     }) satisfies ReviewRuleSet;
 
     for (const rule of ruleSet.rules) {

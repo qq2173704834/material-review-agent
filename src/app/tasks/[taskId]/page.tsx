@@ -92,11 +92,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         initialRuleSets={ruleSets}
         mode={runtimeStatus.mode}
       />
-      <MaterialUpload
-        key={`materials-${contextKey}`}
-        taskId={task.id}
-        initialMaterials={task.materials}
-      />
+      <MaterialUpload taskId={task.id} initialMaterials={task.materials} />
       <ReviewExecutionPanel
         key={`execution-${latestExecution?.id ?? "none"}-${contextKey}`}
         taskId={task.id}

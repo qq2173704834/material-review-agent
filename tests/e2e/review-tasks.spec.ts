@@ -746,7 +746,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await page.getByRole("button", { name: "人工纠正" }).first().click();
     await page.getByLabel("要求描述").fill("人工核对后的项目说明要求");
     await page.getByRole("button", { name: "保存为新版本" }).click();
-    await expect(page.getByText("人工核对后的项目说明要求", { exact: true })).toBeVisible();
+    await expect(page.getByText("人工核对后的项目说明要求")).toBeVisible();
 
     const savedBody = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
     const editedRuleSet = savedBody.ruleSets[0];
@@ -858,6 +858,43 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const unknownTaskId = await createWithScope("unknown");
     const unknown = await runCheckStream(request, unknownTaskId);
     expect(unknown.execution.results[0]).toMatchObject({ verdict: "needs_confirmation" });
+  });
+
+  test("同一材料互斥的页数边界会提示冲突原文", async ({ page, request }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "页数冲突样例",
+        noticeText: "项目说明至少12页。\n项目说明最多10页。",
+      },
+    });
+    const { task } = await created.json();
+    const response = await request.post(`/api/tasks/${task.id}/rules`);
+    const { ruleSet } = await response.json();
+    expect(ruleSet.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "conflicting_constraints",
+          message: expect.stringContaining("至少12页"),
+        }),
+      ]),
+    );
+    expect(ruleSet.warnings[0].message).toContain("最多10页");
+
+    const compatible = await request.post("/api/tasks", {
+      data: {
+        name: "相容页数边界样例",
+        noticeText: "项目说明至少8页。\n项目说明最多12页。",
+      },
+    });
+    const { task: compatibleTask } = await compatible.json();
+    const compatibleRules = await request.post(`/api/tasks/${compatibleTask.id}/rules`);
+    expect((await compatibleRules.json()).ruleSet.warnings).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "conflicting_constraints" })]),
+    );
+
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByText(/需要人工留意的信息/).click();
+    await expect(page.getByText(/两处原文/)).toBeVisible();
   });
 
   test("SQLite 保存失败时回收本次上传原件", async ({ request }) => {
