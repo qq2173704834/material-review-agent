@@ -63,6 +63,15 @@ test("真实模式代码链完成提取、证据审查、复检和报告（受�
     materialVersion: 1,
     segmentIndex: 0,
   });
+  const remediation = await request.get(
+    `/api/tasks/${task.id}/report?executionId=${first.id}&type=remediation`,
+  );
+  expect(remediation.status()).toBe(200);
+  expect(remediation.headers()["content-disposition"]).toContain("remediation-");
+  const remediationMarkdown = await remediation.text();
+  expect(remediationMarkdown).toContain("整改与确认清单");
+  expect(remediationMarkdown).toContain("测试样本量：尚未提供。");
+  expect(remediationMarkdown).toContain("不记录整改完成状态");
   const upload = await request.post(`/api/tasks/${task.id}/materials`, {
     multipart: {
       files: {
@@ -93,6 +102,10 @@ test("真实模式代码链完成提取、证据审查、复检和报告（受�
   expect(markdown).toContain("测试样本量：100。");
   expect(markdown).toContain("controlled-model");
   expect(markdown).toContain("已知输入 token：246");
+  const resolvedRemediation = await request.get(
+    `/api/tasks/${task.id}/report?executionId=${executions[0].id}&type=remediation`,
+  );
+  expect(await resolvedRemediation.text()).toContain("本次没有明确的必须项失败");
   const oldReport = await request.get(`/api/tasks/${task.id}/report?executionId=${first.id}`);
   expect(await oldReport.text()).toContain("待复检");
   const other = await createTask(request);

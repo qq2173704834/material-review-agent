@@ -337,12 +337,20 @@ export function ReviewExecutionPanel({
               )}
             </time>
             {currentExecution.status !== "running" ? (
-              <a
-                href={`/api/tasks/${taskId}/report?executionId=${currentExecution.id}`}
-                className="font-medium text-primary underline underline-offset-4"
-              >
-                导出 Markdown 报告
-              </a>
+              <>
+                <a
+                  href={`/api/tasks/${taskId}/report?executionId=${currentExecution.id}`}
+                  className="font-medium text-primary underline underline-offset-4"
+                >
+                  导出 Markdown 报告
+                </a>
+                <a
+                  href={`/api/tasks/${taskId}/report?executionId=${currentExecution.id}&type=remediation`}
+                  className="font-medium text-primary underline underline-offset-4"
+                >
+                  导出整改清单
+                </a>
+              </>
             ) : null}
           </div>
           {comparison?.canCompare ? (

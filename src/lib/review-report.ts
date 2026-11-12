@@ -115,3 +115,46 @@ export function createReviewReport(
   );
   return lines.join("\n");
 }
+
+export function createRemediationReport(
+  task: ReviewTaskDetails,
+  execution: ReviewExecution,
+): string {
+  const actionable = execution.results.filter(
+    (result) =>
+      (result.strength === "required" && result.verdict === "failed") ||
+      result.verdict === "needs_confirmation" ||
+      result.verdict === "unable_to_check",
+  );
+  const lines = [
+    `# ${plain(task.name)} · 整改与确认清单`,
+    "",
+    `- 执行 ID：${execution.id}`,
+    `- 检查时间：${execution.completedAt || execution.createdAt}`,
+    `- 通知版本：v${execution.sourceVersion}`,
+    `- 清单项目：${actionable.length}`,
+    "",
+    "此清单只汇总需要处理或人工确认的项目，不记录整改完成状态，也不表示复检通过。",
+    "",
+  ];
+  if (!actionable.length) lines.push("本次没有明确的必须项失败或待确认事项。", "");
+  for (const result of actionable) {
+    lines.push(
+      `## ${result.ruleCode} · ${{ failed: "未通过", needs_confirmation: "待确认", unable_to_check: "无法检查" }[result.verdict as "failed" | "needs_confirmation" | "unable_to_check"]}`,
+      "",
+      `- 要求：${plain(result.requirement)}`,
+      `- 强度：${{ required: "必须", recommended: "建议", optional: "可选", unknown: "待确认" }[result.strength]}`,
+      `- 原因：${plain(result.reason)}`,
+      `- 建议：${plain(result.recommendation) || "请对照要求人工处理。"}`,
+      `- 通知依据：v${execution.sourceVersion} · 段落 ${result.source.paragraphIndex + 1} · ${plain(result.source.quotedText)}`,
+      ...(result.evidence.length
+        ? result.evidence.map(
+            (evidence) =>
+              `- 材料证据：${evidence.materialId} · v${evidence.materialVersion} · ${plain(evidence.location)} · ${plain(evidence.quotedText)}`,
+          )
+        : ["- 材料证据：无"]),
+      "",
+    );
+  }
+  return lines.join("\n");
+}
