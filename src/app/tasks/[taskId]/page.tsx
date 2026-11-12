@@ -16,6 +16,7 @@ import { annotateExecutions } from "@/lib/review-history";
 import { TaskDeleteControl } from "@/components/task-delete-control";
 import { TaskCloneControl } from "@/components/task-clone-control";
 import { ClarificationPanel } from "@/components/clarification-panel";
+import { SupplementSourceUpload } from "@/components/supplement-source-upload";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -107,6 +108,33 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
           文件来源：{task.noticeSource.displayName} · 解析状态：{task.noticeSource.parseStatus}
         </p>
       ) : null}
+      {task.supplementalSources.length > 0 ? (
+        <section className="mt-4 max-w-4xl" aria-label="已添加的补充来源">
+          <h2 className="text-xs font-semibold">
+            已添加的补充来源（{task.supplementalSources.length}）
+          </h2>
+          <ul className="mt-2 divide-y divide-border border-y border-border">
+            {task.supplementalSources.map((source) => (
+              <li
+                key={source.id}
+                className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs"
+              >
+                <span className="break-all">{source.displayName}</span>
+                <span className="text-muted-foreground">{source.parseStatus}</span>
+                {source.segments.map((segment) => (
+                  <p
+                    key={`${source.id}-${segment.paragraphIndex}`}
+                    className="w-full break-words text-muted-foreground"
+                  >
+                    {segment.location ?? `段落 ${segment.paragraphIndex + 1}`} · {segment.text}
+                  </p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      <SupplementSourceUpload taskId={task.id} />
       <ClarificationPanel
         task={task}
         currentRuleSet={ruleSets.find(

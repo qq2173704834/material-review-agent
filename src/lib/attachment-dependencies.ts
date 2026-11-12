@@ -6,6 +6,7 @@ const ATTACHMENT_REFERENCE_PATTERN =
 
 export function findMissingAttachmentWarnings(
   source: RequirementSourceVersion,
+  supplementCount = 0,
 ): RuleExtractionWarning[] {
   return source.segments.flatMap((segment) => {
     if (!ATTACHMENT_REFERENCE_PATTERN.test(segment.text)) return [];
@@ -17,7 +18,9 @@ export function findMissingAttachmentWarnings(
       {
         code: "attachment_dependency" as const,
         message:
-          "通知提及相关附件，但任务尚未导入独立附件来源；要求可能不完整，请获取并核对附件后再审查。",
+          supplementCount === 0
+            ? "通知提及相关附件，但任务尚未导入独立附件来源；要求可能不完整，请获取并核对附件后再审查。"
+            : `通知提及相关附件；任务已有 ${supplementCount} 个补充来源，请人工确认其中包含该引用附件。`,
         source: {
           sourceId: source.id,
           sourceVersion: source.version,

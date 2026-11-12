@@ -52,6 +52,14 @@ interface UpdateReviewTaskInput extends CreateReviewTaskInput {
   taskId: string;
 }
 
+interface CreateSupplementSourceInput {
+  taskId: string;
+  displayName: string;
+  text: string;
+  segments: RequirementSourceSegment[];
+  parseStatus: MaterialParseStatus;
+}
+
 interface DatabaseTaskSummaryRow {
   id: string;
   name: string;
@@ -645,6 +653,58 @@ class ReviewStore {
     return this.database.prepare("DELETE FROM review_tasks WHERE id = ?").run(taskId).changes > 0;
   }
 
+  createSupplementSource(input: CreateSupplementSourceInput): RequirementSourceVersion | undefined {
+    if (!this.getTask(input.taskId)) return undefined;
+    const sourceId = randomUUID();
+    const createdAt = new Date().toISOString();
+    this.database.transaction(() => {
+      this.database
+        .prepare(
+          `INSERT INTO requirement_sources (id, task_id, source_role, input_type, display_name, created_at)
+           VALUES (?, ?, 'supplement', 'file', ?, ?)`,
+        )
+        .run(sourceId, input.taskId, input.displayName, createdAt);
+      saveSourceVersion(
+        this.database,
+        sourceId,
+        1,
+        input.text,
+        createdAt,
+        input.parseStatus,
+        input.segments,
+      );
+      this.database
+        .prepare("UPDATE review_tasks SET updated_at = ? WHERE id = ?")
+        .run(createdAt, input.taskId);
+    })();
+    return this.readSource(sourceId);
+  }
+
+  private readSource(sourceId: string): RequirementSourceVersion | undefined {
+    const row = this.database
+      .prepare<[string], DatabaseSourceVersionRow & { input_type: string; display_name: string }>(
+        `SELECT source.input_type, source.display_name, version.version, version.original_text,
+                version.parse_status, version.created_at, source.source_url, source.source_fetched_at
+         FROM requirement_sources AS source
+         JOIN requirement_source_versions AS version ON version.source_id = source.id
+         WHERE source.id = ? ORDER BY version.version DESC LIMIT 1`,
+      )
+      .get(sourceId);
+    if (!row || !isMaterialParseStatus(row.parse_status)) return undefined;
+    return {
+      id: sourceId,
+      version: row.version,
+      inputType: row.input_type as RequirementSourceVersion["inputType"],
+      displayName: row.display_name,
+      sourceUrl: row.source_url ?? undefined,
+      fetchedAt: row.source_fetched_at ?? undefined,
+      originalText: row.original_text,
+      parseStatus: row.parse_status,
+      segments: readSourceSegments(this.database, sourceId, row.version),
+      createdAt: row.created_at,
+    };
+  }
+
   createTask(input: CreateReviewTaskInput): ReviewTaskDetails {
     const taskId = randomUUID();
     const sourceId = randomUUID();
@@ -925,8 +985,21 @@ class ReviewStore {
       createdAt: row.created_at,
       noticeSource,
       noticeHistory,
+      supplementalSources: this.readSupplementSources(taskId),
       materials: this.listMaterials(taskId),
     };
+  }
+
+  private readSupplementSources(taskId: string): RequirementSourceVersion[] {
+    const sourceIds = this.database
+      .prepare<[string], { id: string }>(
+        "SELECT id FROM requirement_sources WHERE task_id = ? AND source_role = 'supplement' ORDER BY created_at, id",
+      )
+      .all(taskId);
+    return sourceIds.flatMap(({ id }) => {
+      const source = this.readSource(id);
+      return source ? [source] : [];
+    });
   }
 
   private readNoticeHistory(

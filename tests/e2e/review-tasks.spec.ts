@@ -1103,6 +1103,53 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     );
   });
 
+  test("同一任务的补充文件作为独立来源保存并可刷新恢复", async ({ request, page }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "多来源隔离验证",
+        description: "",
+        background: { projectType: "", projectStage: "", collaborationScope: "unknown" },
+        noticeText: "主通知原文：提交申请说明。",
+      },
+    });
+    const { task } = await created.json();
+    const attachment = await request.post(`/api/tasks/${task.id}/sources`, {
+      multipart: {
+        sourceFile: {
+          name: "材料清单.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("附件来源原文：提交材料清单。"),
+        },
+      },
+    });
+    const correction = await request.post(`/api/tasks/${task.id}/sources`, {
+      multipart: {
+        sourceFile: {
+          name: "补充通知.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("补充通知原文：截止时间顺延。"),
+        },
+      },
+    });
+    expect(attachment.status()).toBe(201);
+    expect(correction.status()).toBe(201);
+    const sources = (await (await request.get(`/api/tasks/${task.id}`)).json()).task;
+    expect(sources.noticeSource.originalText).toBe("主通知原文：提交申请说明。");
+    expect(sources.sourceCount).toBe(3);
+    expect(
+      sources.supplementalSources.map((source: { displayName: string }) => source.displayName),
+    ).toEqual(["材料清单.txt", "补充通知.txt"]);
+    expect(sources.supplementalSources[0].id).not.toBe(sources.supplementalSources[1].id);
+    expect(sources.supplementalSources[0].originalText).toContain("材料清单");
+    expect(sources.supplementalSources[1].originalText).toContain("截止时间");
+
+    await page.goto(`/tasks/${task.id}`);
+    await expect(page.getByRole("heading", { name: "补充要求来源" })).toBeVisible();
+    const sourceList = page.locator('section[aria-label="已添加的补充来源"]');
+    await expect(sourceList).toContainText("材料清单.txt");
+    await expect(sourceList).toContainText("补充通知.txt");
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {

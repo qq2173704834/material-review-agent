@@ -54,6 +54,7 @@ export interface ReviewTaskDetails extends ReviewTaskSummary {
   createdAt: string;
   noticeSource: RequirementSourceVersion;
   noticeHistory: RequirementSourceVersion[];
+  supplementalSources: RequirementSourceVersion[];
   materials: ReviewMaterialSummary[];
 }
 

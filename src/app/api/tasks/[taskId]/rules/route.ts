@@ -81,7 +81,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       warnings: [
         ...extractedRules.warnings,
         ...findRuleConflicts(extractedRules.rules),
-        ...findMissingAttachmentWarnings(task.noticeSource),
+        ...findMissingAttachmentWarnings(task.noticeSource, task.supplementalSources.length),
       ],
     }) satisfies ReviewRuleSet;
 
