@@ -64,10 +64,12 @@ export function ReviewExecutionPanel({
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const abortController = useRef<AbortController | null>(null);
   const [selectedId, setSelectedId] = useState("");
+  const [selectedRuleId, setSelectedRuleId] = useState("");
   const [activeRuleCode, setActiveRuleCode] = useState("");
   const [verdictFilter, setVerdictFilter] = useState<"all" | ReviewVerdict>("all");
   const [strengthFilter, setStrengthFilter] = useState("all");
   const [materialFilter, setMaterialFilter] = useState("all");
+  const hasSyncedViewState = useRef(false);
   const [resolutionDrafts, setResolutionDrafts] = useState<
     Record<string, { decision: string; note: string }>
   >({});
@@ -77,6 +79,70 @@ export function ReviewExecutionPanel({
     },
     [],
   );
+  useEffect(() => {
+    function restoreViewState(): void {
+      const params = new URLSearchParams(window.location.search);
+      const executionId = params.get("execution");
+      const execution = executions.find((item) => item.id === executionId);
+      const ruleId = params.get("rule");
+      const verdict = params.get("verdict");
+      const strength = params.get("strength");
+      const materialId = params.get("material");
+
+      setSelectedId(execution?.id ?? "");
+      setSelectedRuleId(
+        execution?.results.some((result) => result.ruleId === ruleId) ? (ruleId ?? "") : "",
+      );
+      setVerdictFilter(
+        verdict === "passed" ||
+          verdict === "failed" ||
+          verdict === "needs_confirmation" ||
+          verdict === "unable_to_check" ||
+          verdict === "not_applicable"
+          ? verdict
+          : "all",
+      );
+      setStrengthFilter(
+        strength === "required" ||
+          strength === "recommended" ||
+          strength === "optional" ||
+          strength === "unknown"
+          ? strength
+          : "all",
+      );
+      setMaterialFilter(
+        materials.some((material) => material.id === materialId) ? materialId! : "all",
+      );
+    }
+
+    restoreViewState();
+    window.addEventListener("popstate", restoreViewState);
+    return () => window.removeEventListener("popstate", restoreViewState);
+  }, [executions, materials]);
+  useEffect(() => {
+    if (!hasSyncedViewState.current) {
+      hasSyncedViewState.current = true;
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const nextValues: Array<[string, string]> = [
+      ["execution", selectedId],
+      ["rule", selectedRuleId],
+      ["verdict", verdictFilter],
+      ["strength", strengthFilter],
+      ["material", materialFilter],
+    ];
+    for (const [key, value] of nextValues) {
+      if (!value || value === "all") params.delete(key);
+      else params.set(key, value);
+    }
+    const query = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+    );
+  }, [selectedId, selectedRuleId, verdictFilter, strengthFilter, materialFilter]);
   const selectedIndex = selectedId
     ? executions.findIndex((execution) => execution.id === selectedId)
     : 0;
@@ -553,11 +619,18 @@ export function ReviewExecutionPanel({
                 <li
                   id={`execution-${currentExecution.id}-result-${result.ruleId}`}
                   key={result.ruleId}
-                  className="py-4"
+                  className={`scroll-mt-6 py-4 ${selectedRuleId === result.ruleId ? "bg-muted/30" : ""}`}
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="text-sm font-medium">
-                      {result.ruleCode} · {result.requirement}
+                      <button
+                        type="button"
+                        aria-pressed={selectedRuleId === result.ruleId}
+                        onClick={() => setSelectedRuleId(result.ruleId)}
+                        className="text-left underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                      >
+                        {result.ruleCode} · {result.requirement}
+                      </button>
                     </h3>
                     <span className={`text-xs font-semibold ${verdictStyles[result.verdict]}`}>
                       {verdictLabels[result.verdict]}
