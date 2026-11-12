@@ -605,6 +605,24 @@ export function ReviewExecutionPanel({
               </select>
             </label>
           </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <p aria-live="polite">
+              当前显示 {visibleResults.length} 项，共 {currentExecution.results.length} 项检查结果
+            </p>
+            {verdictFilter !== "all" || strengthFilter !== "all" || materialFilter !== "all" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setVerdictFilter("all");
+                  setStrengthFilter("all");
+                  setMaterialFilter("all");
+                }}
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                清除筛选
+              </button>
+            ) : null}
+          </div>
           <ol className="mt-4 divide-y divide-border border-y border-border">
             {visibleResults.map((result) => {
               const source = sources.find(
@@ -830,7 +848,20 @@ export function ReviewExecutionPanel({
             })}
           </ol>
           {visibleResults.length === 0 ? (
-            <p className="py-5 text-sm text-muted-foreground">当前筛选没有匹配的检查项。</p>
+            <p className="py-5 text-sm text-muted-foreground">
+              当前筛选没有匹配的检查项。
+              <button
+                type="button"
+                onClick={() => {
+                  setVerdictFilter("all");
+                  setStrengthFilter("all");
+                  setMaterialFilter("all");
+                }}
+                className="ml-2 font-medium text-primary underline underline-offset-4"
+              >
+                清除筛选
+              </button>
+            </p>
           ) : null}
           {executions.length > 1 ? (
             <p className="mt-3 text-xs text-muted-foreground">
