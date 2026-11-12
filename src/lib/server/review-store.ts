@@ -24,7 +24,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 10;
+const DATABASE_SCHEMA_VERSION = 11;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -40,10 +40,12 @@ interface CreateReviewTaskInput {
   description: string;
   background: ReviewTaskBackground;
   noticeText: string;
-  sourceType?: "text" | "webpage";
+  sourceType?: "text" | "webpage" | "file";
   sourceUrl?: string;
   sourceFetchedAt?: string;
   sourceTitle?: string;
+  sourceParseStatus?: MaterialParseStatus;
+  sourceSegments?: RequirementSourceSegment[];
 }
 
 interface UpdateReviewTaskInput extends CreateReviewTaskInput {
@@ -81,6 +83,7 @@ interface DatabaseSourceSegmentRow {
   text: string;
   start_offset: number;
   end_offset: number;
+  location: string;
 }
 
 interface DatabaseSourceVersionRow {
@@ -227,7 +230,7 @@ function readSourceSegments(
   const rows = database
     .prepare<[string, number], DatabaseSourceSegmentRow>(
       `
-      SELECT paragraph_index, text, start_offset, end_offset
+      SELECT paragraph_index, text, start_offset, end_offset, location
       FROM requirement_source_segments
       WHERE source_id = ? AND source_version = ?
       ORDER BY paragraph_index ASC
@@ -240,6 +243,7 @@ function readSourceSegments(
     text: row.text,
     startOffset: row.start_offset,
     endOffset: row.end_offset,
+    location: row.location || undefined,
   }));
 }
 
@@ -249,6 +253,8 @@ function saveSourceVersion(
   version: number,
   originalText: string,
   createdAt: string,
+  parseStatus: MaterialParseStatus = "text_extracted",
+  sourceSegments?: RequirementSourceSegment[],
 ): RequirementSourceSegment[] {
   database
     .prepare(
@@ -259,10 +265,10 @@ function saveSourceVersion(
         original_text,
         parse_status,
         created_at
-      ) VALUES (?, ?, ?, 'text_extracted', ?)
+      ) VALUES (?, ?, ?, ?, ?)
     `,
     )
-    .run(sourceId, version, originalText, createdAt);
+    .run(sourceId, version, originalText, parseStatus, createdAt);
 
   const insertSegment = database.prepare(`
     INSERT INTO requirement_source_segments (
@@ -271,24 +277,34 @@ function saveSourceVersion(
       paragraph_index,
       text,
       start_offset,
-      end_offset
-    ) VALUES (?, ?, ?, ?, ?, ?)
+      end_offset,
+      location
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
   const segments: RequirementSourceSegment[] = [];
-  let paragraphIndex = 0;
+  const sourceBlocks: RequirementSourceSegment[] =
+    sourceSegments ??
+    [...originalText.matchAll(/[^\r\n]+/g)]
+      .filter((match) => match[0].trim().length > 0)
+      .map((match, paragraphIndex) => ({
+        paragraphIndex,
+        text: match[0],
+        startOffset: match.index,
+        endOffset: match.index + match[0].length,
+      }));
 
-  for (const match of originalText.matchAll(/[^\r\n]+/g)) {
-    const text = match[0];
-    const startOffset = match.index;
-    const endOffset = startOffset + text.length;
-
-    if (text.trim().length === 0) {
-      continue;
-    }
-
-    insertSegment.run(sourceId, version, paragraphIndex, text, startOffset, endOffset);
-    segments.push({ paragraphIndex, text, startOffset, endOffset });
-    paragraphIndex += 1;
+  for (const [index, segment] of sourceBlocks.entries()) {
+    const paragraphIndex = segment.paragraphIndex ?? index;
+    insertSegment.run(
+      sourceId,
+      version,
+      paragraphIndex,
+      segment.text,
+      segment.startOffset,
+      segment.endOffset,
+      segment.location ?? "",
+    );
+    segments.push({ ...segment, paragraphIndex });
   }
 
   return segments;
@@ -596,6 +612,15 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
       })();
     }
 
+    if (database.pragma("user_version", { simple: true }) === 10) {
+      database.transaction(() => {
+        database.exec(`
+          ALTER TABLE requirement_source_segments ADD COLUMN location TEXT NOT NULL DEFAULT '';
+          PRAGMA user_version = 11;
+        `);
+      })();
+    }
+
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
     if (finalSchemaVersion !== DATABASE_SCHEMA_VERSION) {
       throw new Error("The local review database migration did not complete");
@@ -657,7 +682,9 @@ class ReviewStore {
           input.sourceType ?? "text",
           input.sourceType === "webpage"
             ? `${input.sourceTitle?.trim() || "公开网页"} · ${input.sourceUrl}`
-            : "通知原文",
+            : input.sourceType === "file"
+              ? input.sourceTitle?.trim() || "要求文件"
+              : "通知原文",
           createdAt,
         );
       if (input.sourceType === "webpage")
@@ -667,7 +694,15 @@ class ReviewStore {
           )
           .run(input.sourceUrl ?? null, input.sourceFetchedAt ?? createdAt, sourceId);
 
-      saveSourceVersion(this.database, sourceId, 1, input.noticeText, createdAt);
+      saveSourceVersion(
+        this.database,
+        sourceId,
+        1,
+        input.noticeText,
+        createdAt,
+        input.sourceParseStatus ?? "text_extracted",
+        input.sourceSegments,
+      );
     });
 
     transaction();
@@ -850,8 +885,12 @@ class ReviewStore {
     }
 
     if (
-      !(row.source_input_type === "text" || row.source_input_type === "webpage") ||
-      row.source_parse_status !== "text_extracted"
+      !(
+        row.source_input_type === "text" ||
+        row.source_input_type === "webpage" ||
+        row.source_input_type === "file"
+      ) ||
+      !isMaterialParseStatus(row.source_parse_status)
     ) {
       throw new Error("Saved task has an unsupported notice input state");
     }
@@ -859,12 +898,12 @@ class ReviewStore {
     const noticeSource: RequirementSourceVersion = {
       id: row.source_id,
       version: row.source_version,
-      inputType: row.source_input_type,
+      inputType: row.source_input_type as RequirementSourceVersion["inputType"],
       displayName: row.source_display_name,
       sourceUrl: row.source_url ?? undefined,
       fetchedAt: row.source_fetched_at ?? undefined,
       originalText: row.source_text ?? "",
-      parseStatus: "text_extracted",
+      parseStatus: row.source_parse_status,
       segments: readSourceSegments(this.database, row.source_id, row.source_version),
       createdAt: row.source_created_at,
     };
@@ -892,7 +931,7 @@ class ReviewStore {
 
   private readNoticeHistory(
     sourceId: string,
-    inputType: "text" | "webpage",
+    inputType: RequirementSourceVersion["inputType"],
     displayName: string,
   ): RequirementSourceVersion[] {
     const rows = this.database
@@ -909,7 +948,7 @@ class ReviewStore {
       .all(sourceId);
 
     return rows.map((versionRow) => {
-      if (versionRow.parse_status !== "text_extracted") {
+      if (!isMaterialParseStatus(versionRow.parse_status)) {
         throw new Error("Saved notice has an unsupported parse state");
       }
 
@@ -921,7 +960,7 @@ class ReviewStore {
         sourceUrl: versionRow.source_url ?? undefined,
         fetchedAt: versionRow.source_fetched_at ?? undefined,
         originalText: versionRow.original_text,
-        parseStatus: "text_extracted",
+        parseStatus: versionRow.parse_status,
         segments: readSourceSegments(this.database, sourceId, versionRow.version),
         createdAt: versionRow.created_at,
       };

@@ -23,17 +23,18 @@ export interface RequirementSourceSegment {
   text: string;
   startOffset: number;
   endOffset: number;
+  location?: string;
 }
 
 export interface RequirementSourceVersion {
   id: string;
   version: number;
-  inputType: "text" | "webpage";
+  inputType: "text" | "webpage" | "file";
   displayName: string;
   sourceUrl?: string;
   fetchedAt?: string;
   originalText: string;
-  parseStatus: "text_extracted";
+  parseStatus: MaterialParseStatus;
   segments: RequirementSourceSegment[];
   createdAt: string;
 }

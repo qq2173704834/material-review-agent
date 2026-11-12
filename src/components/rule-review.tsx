@@ -15,6 +15,7 @@ interface RuleReviewProps {
     text: string;
     startOffset: number;
     endOffset: number;
+    location?: string;
   }>;
   materials: Array<{ id: string; version: number; originalFileName: string }>;
   initialRuleSets: ReviewRuleSet[];
@@ -525,8 +526,11 @@ export function RuleReview({
                 ) : null}
                 <blockquote className="mt-3 border-l-2 border-primary/40 pl-3 text-xs leading-6 text-muted-foreground">
                   <span className="font-mono">
-                    通知 v{rule.source.sourceVersion} · 段落 {rule.source.paragraphIndex + 1} · 字符{" "}
-                    {rule.source.startOffset}–{rule.source.endOffset}
+                    通知 v{rule.source.sourceVersion} ·{" "}
+                    {noticeSegments.find(
+                      (segment) => segment.paragraphIndex === rule.source.paragraphIndex,
+                    )?.location ?? `段落 ${rule.source.paragraphIndex + 1}`}{" "}
+                    · 字符 {rule.source.startOffset}–{rule.source.endOffset}
                   </span>
                   <span className="mt-1 block break-words text-foreground">
                     {rule.source.quotedText}

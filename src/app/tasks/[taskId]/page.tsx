@@ -102,6 +102,11 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
           {` · ${task.noticeSource.displayName}`}
         </p>
       ) : null}
+      {task.noticeSource.inputType === "file" ? (
+        <p className="mt-4 max-w-4xl break-words border-l-2 border-border pl-3 text-xs leading-5 text-muted-foreground">
+          文件来源：{task.noticeSource.displayName} · 解析状态：{task.noticeSource.parseStatus}
+        </p>
+      ) : null}
       <ClarificationPanel
         task={task}
         currentRuleSet={ruleSets.find(

@@ -1028,6 +1028,58 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await expect(page.getByRole("button", { name: "粘贴文本" })).toBeVisible();
   });
 
+  test("从 PDF、DOCX、TXT 导入要求文件并保留真实位置", async ({ request, page }) => {
+    const docx = await createSyntheticDocx();
+    const files = [
+      { name: "通知.txt", mimeType: "text/plain", buffer: Buffer.from("通知标题\nTXT 要求正文。") },
+      {
+        name: "通知.docx",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        buffer: docx,
+      },
+      { name: "通知.pdf", mimeType: "application/pdf", buffer: createSyntheticPdf(2) },
+    ];
+
+    for (const file of files) {
+      const response = await request.post("/api/tasks", {
+        multipart: {
+          sourceFile: file,
+          name: `来源文件 ${file.name}`,
+          description: "合成要求文件导入验证",
+          background: JSON.stringify({
+            projectType: "",
+            projectStage: "",
+            collaborationScope: "unknown",
+          }),
+        },
+      });
+      expect(response.status()).toBe(201);
+      const { task } = await response.json();
+      expect(task.noticeSource.inputType).toBe("file");
+      expect(task.noticeSource.displayName).toBe(file.name);
+      expect(task.noticeSource.parseStatus).toBe("text_extracted");
+      expect(task.noticeSource.originalText.length).toBeGreaterThan(0);
+      expect(task.noticeSource.segments.length).toBeGreaterThan(0);
+      if (file.name.endsWith(".pdf")) {
+        expect(task.noticeSource.segments[0].location).toBe("第 1 页");
+        expect(task.noticeSource.segments[1].location).toBe("第 2 页");
+      }
+      if (file.name.endsWith(".txt")) expect(task.noticeSource.segments[1].location).toBe("行 2");
+
+      const restored = (await (await request.get(`/api/tasks/${task.id}`)).json()).task;
+      expect(restored.noticeSource.originalText).toBe(task.noticeSource.originalText);
+      expect(
+        restored.noticeSource.segments.map((segment: { location?: string }) => segment.location),
+      ).toEqual(
+        task.noticeSource.segments.map((segment: { location?: string }) => segment.location),
+      );
+    }
+
+    await page.goto("/tasks/new");
+    await page.getByRole("button", { name: "上传文件" }).click();
+    await expect(page.getByLabel("要求文件")).toHaveAttribute("accept", /\.pdf/);
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {

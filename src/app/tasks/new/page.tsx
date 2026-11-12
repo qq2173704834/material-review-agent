@@ -23,7 +23,7 @@ export default function NewTaskPage(): ReactElement {
         <p className="text-xs font-medium text-primary">ENG-004 · 本地任务</p>
         <h1 className="mt-2 text-2xl font-semibold">新建审查任务</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          粘贴本次项目通知或要求原文，保存后可随时回来继续整理。
+          粘贴原文、读取公开网页，或上传 PDF、DOCX、TXT 要求文件。
         </p>
       </div>
       <TaskEditor />

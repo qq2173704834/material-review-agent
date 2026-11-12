@@ -20,8 +20,9 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
     task?.background.collaborationScope ?? "unknown",
   );
   const [noticeText, setNoticeText] = useState(task?.noticeSource.originalText ?? "");
-  const [sourceMode, setSourceMode] = useState<"text" | "webpage">("text");
+  const [sourceMode, setSourceMode] = useState<"text" | "webpage" | "file">("text");
   const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -30,25 +31,38 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
     setError("");
     setIsSaving(true);
     try {
+      const isFileSource = !task && sourceMode === "file";
+      const formData = new FormData();
+      if (isFileSource && sourceFile) {
+        formData.set("sourceFile", sourceFile);
+        formData.set("name", name);
+        formData.set("description", description);
+        formData.set(
+          "background",
+          JSON.stringify({ projectType, projectStage, collaborationScope }),
+        );
+      }
       const response = await fetch(task ? `/api/tasks/${task.id}` : "/api/tasks", {
         method: task ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          !task && sourceMode === "webpage"
-            ? {
-                sourceType: "webpage",
-                sourceUrl,
-                name,
-                description,
-                background: { projectType, projectStage, collaborationScope },
-              }
-            : {
-                name,
-                description,
-                background: { projectType, projectStage, collaborationScope },
-                noticeText,
-              },
-        ),
+        headers: isFileSource ? undefined : { "Content-Type": "application/json" },
+        body: isFileSource
+          ? formData
+          : JSON.stringify(
+              !task && sourceMode === "webpage"
+                ? {
+                    sourceType: "webpage",
+                    sourceUrl,
+                    name,
+                    description,
+                    background: { projectType, projectStage, collaborationScope },
+                  }
+                : {
+                    name,
+                    description,
+                    background: { projectType, projectStage, collaborationScope },
+                    noticeText,
+                  },
+            ),
       });
       const result: unknown = await response.json();
       if (!response.ok || typeof result !== "object" || result === null || !("task" in result)) {
@@ -168,6 +182,14 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
             >
               公开网页
             </button>
+            <button
+              type="button"
+              aria-pressed={sourceMode === "file"}
+              onClick={() => setSourceMode("file")}
+              className={`h-9 border-l border-border px-3 text-xs ${sourceMode === "file" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+            >
+              上传文件
+            </button>
           </div>
         ) : null}
         {sourceMode === "webpage" && !task ? (
@@ -189,6 +211,23 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
               仅读取可公开访问的网页正文；登录受限或无法读取时，可返回并粘贴文本。
             </p>
           </div>
+        ) : sourceMode === "file" && !task ? (
+          <div>
+            <label className="block text-sm font-medium" htmlFor="source-file">
+              要求文件
+            </label>
+            <input
+              id="source-file"
+              type="file"
+              required
+              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              onChange={(event) => setSourceFile(event.target.files?.[0] ?? null)}
+              className={fieldClassName}
+            />
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              支持 PDF、DOCX、TXT，最大 20 MiB。扫描 PDF 暂不做 OCR；无法提取时可返回粘贴文本。
+            </p>
+          </div>
         ) : (
           <textarea
             id="notice-text"
@@ -202,8 +241,7 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
           />
         )}
         <p className="text-xs leading-5 text-muted-foreground">
-          在此粘贴通知原文。创建任务后可上传 PDF、DOCX、TXT、XLSX、CSV、JPG 与 PNG
-          材料；图片和扫描件尚未进行 OCR。
+          创建任务后可上传 PDF、DOCX、TXT、XLSX、CSV、JPG 与 PNG 材料；图片和扫描件尚未进行 OCR。
         </p>
       </section>
       {error ? (
@@ -218,7 +256,9 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
             isSaving ||
             (sourceMode === "text" || task
               ? noticeText.trim().length === 0
-              : sourceUrl.trim().length === 0)
+              : sourceMode === "webpage"
+                ? sourceUrl.trim().length === 0
+                : !sourceFile)
           }
           className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
         >
@@ -228,7 +268,9 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
               ? "保存修改"
               : sourceMode === "webpage"
                 ? "读取网页并创建任务"
-                : "创建审查任务"}
+                : sourceMode === "file"
+                  ? "解析文件并创建任务"
+                  : "创建审查任务"}
         </button>
         {task ? (
           <span className="text-xs text-muted-foreground">
