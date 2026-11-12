@@ -19,6 +19,7 @@ import { TaskCloneControl } from "@/components/task-clone-control";
 import { ClarificationPanel } from "@/components/clarification-panel";
 import { SupplementSourceUpload } from "@/components/supplement-source-upload";
 import { SupplementSourceRemove } from "@/components/supplement-source-remove";
+import { getRequirementSourceSegmentId } from "@/domain/review";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -152,7 +153,13 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
                 {source.segments.map((segment) => (
                   <p
                     key={`${source.id}-${segment.paragraphIndex}`}
-                    className="w-full break-words text-muted-foreground"
+                    id={getRequirementSourceSegmentId(
+                      source.id,
+                      source.version,
+                      segment.paragraphIndex,
+                    )}
+                    tabIndex={-1}
+                    className="w-full scroll-mt-6 break-words text-muted-foreground target:rounded-sm target:bg-amber-100 target:px-2 target:py-1 target:text-foreground target:ring-2 target:ring-amber-400"
                   >
                     {segment.location ?? `段落 ${segment.paragraphIndex + 1}`} · {segment.text}
                   </p>
@@ -190,6 +197,18 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
           version,
           originalFileName,
         }))}
+        sources={[
+          ...task.noticeHistory.map(({ id, version, displayName }) => ({
+            id,
+            version,
+            displayName,
+          })),
+          ...task.supplementalSources.map(({ id, version, displayName }) => ({
+            id,
+            version,
+            displayName,
+          })),
+        ]}
       />
       <section
         aria-labelledby="notice-history-heading"
@@ -221,9 +240,14 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
                 <ol className="mt-3 space-y-2">
                   {version.segments.map((segment) => (
                     <li
-                      id={`notice-v${version.version}-paragraph-${segment.paragraphIndex}`}
+                      id={getRequirementSourceSegmentId(
+                        task.noticeSource.id,
+                        version.version,
+                        segment.paragraphIndex,
+                      )}
                       key={segment.paragraphIndex}
-                      className="rounded-md bg-muted/50 px-3 py-2 text-xs leading-6"
+                      tabIndex={-1}
+                      className="scroll-mt-6 rounded-md bg-muted/50 px-3 py-2 text-xs leading-6 target:bg-amber-100 target:ring-2 target:ring-amber-400"
                     >
                       <span className="mr-2 font-mono text-muted-foreground">
                         段落 {segment.paragraphIndex + 1} · 字符 {segment.startOffset}–

@@ -218,7 +218,8 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
                       <li
                         key={segment.segmentIndex}
                         id={`material-${material.id}-segment-${segment.segmentIndex}`}
-                        className="rounded-md bg-muted/50 px-3 py-2 text-xs leading-6"
+                        tabIndex={-1}
+                        className="scroll-mt-6 rounded-md bg-muted/50 px-3 py-2 text-xs leading-6 target:bg-amber-100 target:ring-2 target:ring-amber-400"
                       >
                         <span className="mr-2 font-mono text-muted-foreground">
                           {segment.location} · 字符 {segment.startOffset}–{segment.endOffset}

@@ -1257,6 +1257,20 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
           result.source.displayName === "补充材料清单.txt",
       ),
     ).toBe(true);
+    await page.reload();
+    const sourceSegmentId = `requirement-source-${source.id}-v1-segment-0`;
+    const sourceLink = page.getByRole("link", {
+      name: "来源 · 补充材料清单.txt v1 / 段落 1",
+    });
+    await expect(sourceLink).toBeVisible();
+    await sourceLink.click();
+    await expect(page).toHaveURL(new RegExp(`#${sourceSegmentId}$`));
+    await expect(page.locator(`#${sourceSegmentId}`)).toBeInViewport();
+    await expect
+      .poll(() =>
+        page.locator(`#${sourceSegmentId}`).evaluate((element) => element.matches(":target")),
+      )
+      .toBe(true);
     const report = await request.get(`/api/tasks/${task.id}/report`);
     expect(await report.text()).toContain("要求依据：补充材料清单.txt v1");
 

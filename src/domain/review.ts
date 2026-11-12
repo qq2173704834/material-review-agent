@@ -26,6 +26,14 @@ export interface RequirementSourceSegment {
   location?: string;
 }
 
+export function getRequirementSourceSegmentId(
+  sourceId: string,
+  sourceVersion: number,
+  paragraphIndex: number,
+): string {
+  return `requirement-source-${sourceId}-v${sourceVersion}-segment-${paragraphIndex}`;
+}
+
 export interface RequirementSourceVersion {
   id: string;
   version: number;

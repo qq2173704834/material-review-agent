@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { compareExecutions } from "@/lib/review-history";
 
-import type { RemediationTask, ReviewExecution, ReviewVerdict } from "@/domain/review";
+import {
+  getRequirementSourceSegmentId,
+  type RemediationTask,
+  type RequirementSourceVersion,
+  type ReviewExecution,
+  type ReviewVerdict,
+} from "@/domain/review";
 import type { FormEvent, ReactElement } from "react";
 
 interface ReviewExecutionProps {
@@ -14,6 +20,7 @@ interface ReviewExecutionProps {
   hasCurrentRuleSet: boolean;
   mode: "mock" | "live" | "invalid";
   materials: Array<{ id: string; version: number; originalFileName: string }>;
+  sources: Array<Pick<RequirementSourceVersion, "id" | "version" | "displayName">>;
 }
 
 const verdictLabels: Record<ReviewVerdict, string> = {
@@ -47,6 +54,7 @@ export function ReviewExecutionPanel({
   hasCurrentRuleSet,
   mode,
   materials,
+  sources,
 }: ReviewExecutionProps): ReactElement {
   const router = useRouter();
   const [executions, setExecutions] = useState(initialExecutions);
@@ -525,189 +533,218 @@ export function ReviewExecutionPanel({
             </label>
           </div>
           <ol className="mt-4 divide-y divide-border border-y border-border">
-            {visibleResults.map((result) => (
-              <li
-                id={`execution-${currentExecution.id}-result-${result.ruleId}`}
-                key={result.ruleId}
-                className="py-4"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h3 className="text-sm font-medium">
-                    {result.ruleCode} · {result.requirement}
-                  </h3>
-                  <span className={`text-xs font-semibold ${verdictStyles[result.verdict]}`}>
-                    {verdictLabels[result.verdict]}
-                    {result.strength === "recommended"
-                      ? " · 建议项"
-                      : result.strength === "optional"
-                        ? " · 可选项"
-                        : ""}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.reason}</p>
-                {result.recommendation ? (
-                  <p className="mt-2 text-xs leading-5 text-primary">
-                    建议：{result.recommendation}
-                  </p>
-                ) : null}
-                <blockquote className="mt-3 border-l-2 border-primary/40 pl-3 text-xs leading-5 text-muted-foreground">
-                  <a
-                    href={`#notice-v${currentExecution.sourceVersion}-paragraph-${result.source.paragraphIndex}`}
-                    className="text-primary underline underline-offset-4"
-                  >
-                    来源 · 通知 v{currentExecution.sourceVersion} / 段落{" "}
-                    {result.source.paragraphIndex + 1}
-                  </a>
-                  ：{result.source.quotedText}
-                </blockquote>
-                {result.coverage ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    核查片段 {result.coverage.examinedSegments}/{result.coverage.totalSegments} ·{" "}
-                    {result.coverage.isComplete
-                      ? "已解析文本完整纳入本项上下文"
-                      : "片段覆盖或解析存在限制，请人工复核"}
-                  </p>
-                ) : null}
-                {result.evidence.length ? (
-                  <ul className="mt-3 space-y-2 text-xs leading-5">
-                    {result.evidence.map((evidence, index) => (
-                      <li
-                        key={`${evidence.materialId}-${index}`}
-                        className="break-words text-muted-foreground"
-                      >
-                        {evidence.segmentIndex !== undefined &&
-                        materials.some(
-                          (material) =>
-                            material.id === evidence.materialId &&
-                            material.version === evidence.materialVersion,
-                        ) ? (
-                          <a
-                            href={`#material-${evidence.materialId}-segment-${evidence.segmentIndex}`}
-                            onClick={() => {
-                              const element = document.getElementById(
-                                `material-${evidence.materialId}-segment-${evidence.segmentIndex}`,
-                              );
-                              const details = element?.closest("details");
-                              if (details) details.open = true;
-                            }}
-                            className="text-primary underline underline-offset-4"
-                          >
-                            定位证据
-                          </a>
-                        ) : (
-                          "证据"
-                        )}
-                        ：{evidence.quotedText} · {evidence.location} · 材料 v
-                        {evidence.materialVersion}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {currentExecution.status === "completed" &&
-                result.strength === "required" &&
-                result.verdict === "failed" ? (
-                  remediationTasks.some(
-                    (todo) =>
-                      todo.executionId === currentExecution.id && todo.ruleId === result.ruleId,
-                  ) ? null : (
-                    <button
-                      type="button"
-                      onClick={() => void createRemediationTask(currentExecution.id, result.ruleId)}
-                      className="mt-3 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted"
-                    >
-                      创建整改待办
-                    </button>
+            {visibleResults.map((result) => {
+              const source = sources.find(
+                (candidate) =>
+                  candidate.id === result.source.sourceId &&
+                  (result.source.sourceVersion === undefined ||
+                    candidate.version === result.source.sourceVersion),
+              );
+              const sourceSegmentId = source
+                ? getRequirementSourceSegmentId(
+                    source.id,
+                    source.version,
+                    result.source.paragraphIndex,
                   )
-                ) : null}
-                {!isRunning &&
-                ["needs_confirmation", "unable_to_check"].includes(result.verdict) ? (
-                  <form
-                    onSubmit={(event) => void saveHumanResolution(event, result.ruleId)}
-                    className="mt-4 border-l-2 border-border pl-3"
-                  >
-                    <p className="text-xs font-medium">人工复核意见（独立记录，不改变系统判定）</p>
-                    <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr_auto]">
-                      <select
-                        aria-label={`${result.ruleCode} 人工复核意见`}
-                        value={
-                          resolutionDrafts[result.ruleId]?.decision ??
-                          currentExecution.humanResolutions?.find(
-                            (item) => item.ruleId === result.ruleId,
-                          )?.decision ??
-                          "deferred"
-                        }
-                        onChange={(event) =>
-                          setResolutionDrafts((drafts) => ({
-                            ...drafts,
-                            [result.ruleId]: {
-                              ...(drafts[result.ruleId] ?? { note: "" }),
-                              decision: event.target.value,
-                            },
-                          }))
-                        }
-                        className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+                : undefined;
+              const sourceLabel = `来源 · ${result.source.displayName ?? source?.displayName ?? "要求来源"} v${result.source.sourceVersion ?? currentExecution.sourceVersion} / 段落 ${result.source.paragraphIndex + 1}`;
+
+              return (
+                <li
+                  id={`execution-${currentExecution.id}-result-${result.ruleId}`}
+                  key={result.ruleId}
+                  className="py-4"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 className="text-sm font-medium">
+                      {result.ruleCode} · {result.requirement}
+                    </h3>
+                    <span className={`text-xs font-semibold ${verdictStyles[result.verdict]}`}>
+                      {verdictLabels[result.verdict]}
+                      {result.strength === "recommended"
+                        ? " · 建议项"
+                        : result.strength === "optional"
+                          ? " · 可选项"
+                          : ""}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.reason}</p>
+                  {result.recommendation ? (
+                    <p className="mt-2 text-xs leading-5 text-primary">
+                      建议：{result.recommendation}
+                    </p>
+                  ) : null}
+                  <blockquote className="mt-3 border-l-2 border-primary/40 pl-3 text-xs leading-5 text-muted-foreground">
+                    {sourceSegmentId ? (
+                      <a
+                        href={`#${sourceSegmentId}`}
+                        onClick={() => {
+                          const target = document.getElementById(sourceSegmentId);
+                          const details = target?.closest("details");
+                          if (details) details.open = true;
+                        }}
+                        className="text-primary underline underline-offset-4"
                       >
-                        <option value="confirmed">人工认为符合</option>
-                        <option value="rejected">人工认为不符合</option>
-                        <option value="deferred">暂不确认</option>
-                      </select>
-                      <input
-                        aria-label={`${result.ruleCode} 复核依据`}
-                        maxLength={2_000}
-                        placeholder="填写复核依据"
-                        value={
-                          resolutionDrafts[result.ruleId]?.note ??
-                          currentExecution.humanResolutions?.find(
-                            (item) => item.ruleId === result.ruleId,
-                          )?.note ??
-                          ""
-                        }
-                        onChange={(event) =>
-                          setResolutionDrafts((drafts) => ({
-                            ...drafts,
-                            [result.ruleId]: {
-                              ...(drafts[result.ruleId] ?? { decision: "deferred" }),
-                              note: event.target.value,
-                            },
-                          }))
-                        }
-                        className="h-9 min-w-0 rounded-md border border-border bg-background px-2 text-xs"
-                      />
+                        {sourceLabel}
+                      </a>
+                    ) : (
+                      <span>{sourceLabel} · 原文当前不可定位</span>
+                    )}
+                    ：{result.source.quotedText}
+                  </blockquote>
+                  {result.coverage ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      核查片段 {result.coverage.examinedSegments}/{result.coverage.totalSegments} ·{" "}
+                      {result.coverage.isComplete
+                        ? "已解析文本完整纳入本项上下文"
+                        : "片段覆盖或解析存在限制，请人工复核"}
+                    </p>
+                  ) : null}
+                  {result.evidence.length ? (
+                    <ul className="mt-3 space-y-2 text-xs leading-5">
+                      {result.evidence.map((evidence, index) => (
+                        <li
+                          key={`${evidence.materialId}-${index}`}
+                          className="break-words text-muted-foreground"
+                        >
+                          {evidence.segmentIndex !== undefined &&
+                          materials.some(
+                            (material) =>
+                              material.id === evidence.materialId &&
+                              material.version === evidence.materialVersion,
+                          ) ? (
+                            <a
+                              href={`#material-${evidence.materialId}-segment-${evidence.segmentIndex}`}
+                              onClick={() => {
+                                const element = document.getElementById(
+                                  `material-${evidence.materialId}-segment-${evidence.segmentIndex}`,
+                                );
+                                const details = element?.closest("details");
+                                if (details) details.open = true;
+                              }}
+                              className="text-primary underline underline-offset-4"
+                            >
+                              定位证据
+                            </a>
+                          ) : (
+                            "证据"
+                          )}
+                          ：{evidence.quotedText} · {evidence.location} · 材料 v
+                          {evidence.materialVersion}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {currentExecution.status === "completed" &&
+                  result.strength === "required" &&
+                  result.verdict === "failed" ? (
+                    remediationTasks.some(
+                      (todo) =>
+                        todo.executionId === currentExecution.id && todo.ruleId === result.ruleId,
+                    ) ? null : (
                       <button
-                        type="submit"
-                        className="h-9 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                        type="button"
+                        onClick={() =>
+                          void createRemediationTask(currentExecution.id, result.ruleId)
+                        }
+                        className="mt-3 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted"
                       >
-                        保存意见
+                        创建整改待办
                       </button>
-                    </div>
-                    {currentExecution.humanResolutions?.find(
-                      (item) => item.ruleId === result.ruleId,
-                    ) ? (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        已保存人工意见：
-                        {
-                          (
-                            {
-                              confirmed: "认为符合",
-                              rejected: "认为不符合",
-                              deferred: "暂不确认",
-                            } as const
-                          )[
-                            currentExecution.humanResolutions.find(
-                              (item) => item.ruleId === result.ruleId,
-                            )!.decision
-                          ]
-                        }{" "}
-                        ·{" "}
-                        {currentExecution.humanResolutions.find(
-                          (item) => item.ruleId === result.ruleId,
-                        )!.note || "未填写依据"}
+                    )
+                  ) : null}
+                  {!isRunning &&
+                  ["needs_confirmation", "unable_to_check"].includes(result.verdict) ? (
+                    <form
+                      onSubmit={(event) => void saveHumanResolution(event, result.ruleId)}
+                      className="mt-4 border-l-2 border-border pl-3"
+                    >
+                      <p className="text-xs font-medium">
+                        人工复核意见（独立记录，不改变系统判定）
                       </p>
-                    ) : null}
-                  </form>
-                ) : null}
-              </li>
-            ))}
+                      <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr_auto]">
+                        <select
+                          aria-label={`${result.ruleCode} 人工复核意见`}
+                          value={
+                            resolutionDrafts[result.ruleId]?.decision ??
+                            currentExecution.humanResolutions?.find(
+                              (item) => item.ruleId === result.ruleId,
+                            )?.decision ??
+                            "deferred"
+                          }
+                          onChange={(event) =>
+                            setResolutionDrafts((drafts) => ({
+                              ...drafts,
+                              [result.ruleId]: {
+                                ...(drafts[result.ruleId] ?? { note: "" }),
+                                decision: event.target.value,
+                              },
+                            }))
+                          }
+                          className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+                        >
+                          <option value="confirmed">人工认为符合</option>
+                          <option value="rejected">人工认为不符合</option>
+                          <option value="deferred">暂不确认</option>
+                        </select>
+                        <input
+                          aria-label={`${result.ruleCode} 复核依据`}
+                          maxLength={2_000}
+                          placeholder="填写复核依据"
+                          value={
+                            resolutionDrafts[result.ruleId]?.note ??
+                            currentExecution.humanResolutions?.find(
+                              (item) => item.ruleId === result.ruleId,
+                            )?.note ??
+                            ""
+                          }
+                          onChange={(event) =>
+                            setResolutionDrafts((drafts) => ({
+                              ...drafts,
+                              [result.ruleId]: {
+                                ...(drafts[result.ruleId] ?? { decision: "deferred" }),
+                                note: event.target.value,
+                              },
+                            }))
+                          }
+                          className="h-9 min-w-0 rounded-md border border-border bg-background px-2 text-xs"
+                        />
+                        <button
+                          type="submit"
+                          className="h-9 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                        >
+                          保存意见
+                        </button>
+                      </div>
+                      {currentExecution.humanResolutions?.find(
+                        (item) => item.ruleId === result.ruleId,
+                      ) ? (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          已保存人工意见：
+                          {
+                            (
+                              {
+                                confirmed: "认为符合",
+                                rejected: "认为不符合",
+                                deferred: "暂不确认",
+                              } as const
+                            )[
+                              currentExecution.humanResolutions.find(
+                                (item) => item.ruleId === result.ruleId,
+                              )!.decision
+                            ]
+                          }{" "}
+                          ·{" "}
+                          {currentExecution.humanResolutions.find(
+                            (item) => item.ruleId === result.ruleId,
+                          )!.note || "未填写依据"}
+                        </p>
+                      ) : null}
+                    </form>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
           {visibleResults.length === 0 ? (
             <p className="py-5 text-sm text-muted-foreground">当前筛选没有匹配的检查项。</p>
