@@ -774,6 +774,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await page.goto(`/tasks/${task.id}`);
     await page.getByRole("button", { name: "人工纠正" }).first().click();
     await page.getByLabel("要求描述").fill("人工核对后的项目说明要求");
+    await page.getByLabel("识别参数（每行一项）").fill("项目名称\n负责人");
     await page.getByRole("button", { name: "保存为新版本" }).click();
     await expect(page.getByText("人工核对后的项目说明要求")).toBeVisible();
 
@@ -781,6 +782,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const editedRuleSet = savedBody.ruleSets[0];
     expect(editedRuleSet.rules[0]).toMatchObject({
       description: "人工核对后的项目说明要求",
+      parameters: ["项目名称", "负责人"],
       generationMethod: "manual",
       source: ruleSet.rules[0].source,
     });
@@ -798,6 +800,24 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       data: { rules: forgedRules },
     });
     expect(forged.status()).toBe(422);
+  });
+
+  test("停用规则会创建空的当前版本并保留上一版本", async ({ page, request }) => {
+    const created = await request.post("/api/tasks", {
+      data: { name: "规则停用任务", noticeText: "必须提交项目说明。" },
+    });
+    const { task } = await created.json();
+    const extracted = await request.post(`/api/tasks/${task.id}/rules`);
+    expect(extracted.status()).toBe(201);
+
+    await page.goto(`/tasks/${task.id}`);
+    await page.getByRole("button", { name: "停用规则" }).first().click();
+    await expect(page.getByRole("button", { name: "停用规则" })).toHaveCount(0);
+
+    const { ruleSets } = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
+    expect(ruleSets).toHaveLength(2);
+    expect(ruleSets[0].rules).toEqual([]);
+    expect(ruleSets[1].rules).toHaveLength(1);
   });
 
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {

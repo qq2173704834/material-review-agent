@@ -103,6 +103,37 @@ export function RuleReview({
     }
   }
 
+  async function deactivateRule(ruleId: string): Promise<void> {
+    if (!currentRuleSet || isSaving) return;
+    setError("");
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/rules`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rules: currentRuleSet.rules.filter((rule) => rule.id !== ruleId) }),
+      });
+      const result: unknown = await response.json();
+      if (!response.ok || typeof result !== "object" || result === null || !("ruleSet" in result)) {
+        setError(
+          typeof result === "object" &&
+            result !== null &&
+            "error" in result &&
+            typeof result.error === "string"
+            ? result.error
+            : "规则停用失败。",
+        );
+        return;
+      }
+      setRuleSets((existing) => [result.ruleSet as ReviewRuleSet, ...existing]);
+      router.refresh();
+    } catch {
+      setError("暂时无法连接本地服务，请稍后重试。");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <section
       aria-labelledby="rules-heading"
@@ -175,13 +206,23 @@ export function RuleReview({
                     </p>
                   </div>
                   {hasCurrentRuleSet ? (
-                    <button
-                      type="button"
-                      className="text-xs font-medium text-primary underline-offset-4 hover:underline"
-                      onClick={() => setEditingRule(rule)}
-                    >
-                      人工纠正
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+                        onClick={() => setEditingRule(rule)}
+                      >
+                        人工纠正
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSaving}
+                        className="text-xs font-medium text-destructive underline-offset-4 hover:underline disabled:opacity-50"
+                        onClick={() => void deactivateRule(rule.id)}
+                      >
+                        停用规则
+                      </button>
+                    </div>
                   ) : null}
                 </div>
                 {editingRule?.id === rule.id ? (
@@ -243,6 +284,24 @@ export function RuleReview({
                           setEditingRule({
                             ...editingRule,
                             applicabilityCondition: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="block text-xs font-medium">
+                      识别参数（每行一项）
+                      <textarea
+                        className="mt-1 min-h-16 w-full rounded-md border border-border bg-background p-2 text-sm"
+                        maxLength={4_000}
+                        value={editingRule.parameters.join("\n")}
+                        onChange={(event) =>
+                          setEditingRule({
+                            ...editingRule,
+                            parameters: event.target.value
+                              .split("\n")
+                              .map((parameter) => parameter.trim())
+                              .filter(Boolean)
+                              .slice(0, 20),
                           })
                         }
                       />
