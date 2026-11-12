@@ -172,7 +172,7 @@ export function RuleReview({
       parameters: [],
       checkability: String(form.get("checkability")) as ReviewRule["checkability"],
       generationMethod: "manual",
-      uncertainty: "由用户手动新增，尚未由模型或自动规则验证。",
+      uncertainty: "",
       source: {
         sourceId: currentRuleSet.sourceId,
         sourceVersion: currentNoticeVersion,
