@@ -80,6 +80,39 @@ export interface ReviewMaterialSummary {
   createdAt: string;
 }
 
+export type ReviewExecutionStatus = "completed";
+
+export interface ReviewCheckEvidence {
+  materialId: string;
+  materialVersion: number;
+  quotedText: string;
+  location: string;
+}
+
+export interface ReviewCheckResult {
+  ruleId: string;
+  ruleCode: string;
+  requirement: string;
+  strength: "required" | "recommended" | "optional" | "unknown";
+  verdict: ReviewVerdict;
+  reason: string;
+  recommendation: string;
+  source: SourcePosition;
+  evidence: ReviewCheckEvidence[];
+}
+
+export interface ReviewExecution {
+  id: string;
+  taskId: string;
+  ruleSetId: string;
+  sourceVersion: number;
+  status: ReviewExecutionStatus;
+  materialSnapshot: Array<{ materialId: string; version: number }>;
+  results: ReviewCheckResult[];
+  createdAt: string;
+  completedAt: string;
+}
+
 export interface SourcePosition {
   sourceId: string;
   paragraphIndex: number;

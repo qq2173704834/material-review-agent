@@ -449,6 +449,102 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     ).toEqual(expect.arrayContaining(invalidFiles.map((file) => file.name)));
   });
 
+  test("运行确定性规格检查并持久化结论与材料版本", async ({ page, request }) => {
+    const taskResponse = await request.post("/api/tasks", {
+      data: {
+        name: "确定性检查合成任务",
+        noticeText:
+          "必须提交 PDF 格式文件。\n文件大小不超过 1 mb。\nPDF 总页数不超过 1 页。\n必须按申请编号命名材料。",
+      },
+    });
+    const { task } = await taskResponse.json();
+    const rulesResponse = await request.post(`/api/tasks/${task.id}/rules`);
+    expect(rulesResponse.status()).toBe(201);
+
+    const firstExecutionResponse = await request.post(`/api/tasks/${task.id}/checks`);
+    expect(firstExecutionResponse.status()).toBe(201);
+    const firstExecution = (await firstExecutionResponse.json()).execution;
+    expect(firstExecution.status).toBe("completed");
+    expect(firstExecution.materialSnapshot).toEqual([]);
+    expect(firstExecution.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ verdict: "failed", reason: expect.stringContaining("PDF") }),
+        expect.objectContaining({
+          verdict: "needs_confirmation",
+          reason: expect.stringContaining("尚无材料"),
+        }),
+        expect.objectContaining({
+          verdict: "unable_to_check",
+          reason: expect.stringContaining("命名"),
+        }),
+      ]),
+    );
+
+    const uploadResponse = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: {
+          name: "proposal.pdf",
+          mimeType: "application/pdf",
+          buffer: createSyntheticPdf(),
+        },
+      },
+    });
+    expect(uploadResponse.status()).toBe(201);
+    const secondExecutionResponse = await request.post(`/api/tasks/${task.id}/checks`);
+    expect(secondExecutionResponse.status()).toBe(201);
+    const secondExecution = (await secondExecutionResponse.json()).execution;
+    expect(secondExecution.materialSnapshot).toHaveLength(1);
+    expect(secondExecution.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ verdict: "passed", reason: expect.stringContaining("文件类型") }),
+        expect.objectContaining({ verdict: "passed", reason: expect.stringContaining("均未超过") }),
+        expect.objectContaining({ verdict: "passed", reason: expect.stringContaining("总页数") }),
+        expect.objectContaining({
+          verdict: "unable_to_check",
+          recommendation: expect.stringContaining("人工确认"),
+        }),
+      ]),
+    );
+    const persisted = await (await request.get(`/api/tasks/${task.id}/checks`)).json();
+    expect(persisted.executions).toHaveLength(2);
+    expect(persisted.executions[0].materialSnapshot).toEqual(secondExecution.materialSnapshot);
+    expect(
+      secondExecution.results.find((result: { requirement: string }) =>
+        result.requirement.includes("总页数"),
+      )?.evidence,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ materialVersion: 1, location: "第 1 页" }),
+      ]),
+    );
+
+    await page.goto(`/tasks/${task.id}`);
+    await expect(page.getByRole("heading", { name: "确定性检查", exact: true })).toBeVisible();
+    await expect(page.getByText("通过 3", { exact: true })).toBeVisible();
+    await expect(page.getByText("无法检查 1", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "运行检查" }).click();
+    await expect(page.getByText("已保留 3 次检查快照。", { exact: true })).toBeVisible();
+
+    const invalidPdfUpload = await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: { name: "伪装.pdf", mimeType: "application/pdf", buffer: Buffer.from("not a PDF") },
+      },
+    });
+    expect(invalidPdfUpload.status()).toBe(201);
+    const invalidPdfExecutionResponse = await request.post(`/api/tasks/${task.id}/checks`);
+    expect(invalidPdfExecutionResponse.status()).toBe(201);
+    const invalidPdfExecution = (await invalidPdfExecutionResponse.json()).execution;
+    expect(invalidPdfExecution.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          requirement: "必须提交 PDF 格式文件",
+          verdict: "unable_to_check",
+          reason: expect.stringContaining("不能只依据扩展名"),
+        }),
+      ]),
+    );
+  });
+
   test("拒绝空通知、非法任务编号并报告本地 SQLite 状态", async ({ request }) => {
     const invalidJson = await request.post("/api/tasks", { data: { noticeText: "  " } });
     expect(invalidJson.status()).toBe(400);

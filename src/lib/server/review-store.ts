@@ -12,6 +12,7 @@ import type {
   MaterialContentSegment,
   MaterialParseStatus,
   ReviewMaterialSummary,
+  ReviewExecution,
   ReviewTaskBackground,
   ReviewTaskDetails,
   ReviewTaskSummary,
@@ -21,7 +22,7 @@ import { reviewRuleSetSchema } from "@/domain/review-rule";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 3;
+const DATABASE_SCHEMA_VERSION = 4;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -137,6 +138,18 @@ interface DatabaseMaterialSegmentRow {
   start_offset: number;
   end_offset: number;
   location: string;
+}
+
+interface DatabaseExecutionRow {
+  id: string;
+  task_id: string;
+  rule_set_id: string;
+  source_version: number;
+  status: string;
+  material_snapshot_json: string;
+  results_json: string;
+  created_at: string;
+  completed_at: string;
 }
 
 export interface SaveMaterialVersionInput {
@@ -448,6 +461,28 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
       });
 
       migrateToVersionThree();
+    }
+
+    const materialSchemaVersion = database.pragma("user_version", { simple: true });
+    if (materialSchemaVersion === 3) {
+      const migrateToVersionFour = database.transaction(() => {
+        database.exec(`
+          CREATE TABLE review_executions (
+            id TEXT PRIMARY KEY NOT NULL,
+            task_id TEXT NOT NULL REFERENCES review_tasks (id) ON DELETE CASCADE,
+            rule_set_id TEXT NOT NULL REFERENCES requirement_rule_sets (id),
+            source_version INTEGER NOT NULL CHECK (source_version > 0),
+            status TEXT NOT NULL CHECK (status IN ('completed')),
+            material_snapshot_json TEXT NOT NULL,
+            results_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            completed_at TEXT NOT NULL
+          );
+          CREATE INDEX review_executions_task_idx ON review_executions (task_id, created_at DESC);
+          PRAGMA user_version = 4;
+        `);
+      });
+      migrateToVersionFour();
     }
 
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
@@ -1062,6 +1097,70 @@ class ReviewStore {
         createdAt: row.created_at,
       };
     });
+  }
+
+  saveReviewExecution(execution: ReviewExecution): ReviewExecution {
+    const ruleSet = this.database
+      .prepare<[string, string], { task_id: string; source_version: number }>(
+        "SELECT task_id, source_version FROM requirement_rule_sets WHERE id = ? AND task_id = ?",
+      )
+      .get(execution.ruleSetId, execution.taskId);
+    if (!ruleSet || ruleSet.source_version !== execution.sourceVersion) {
+      throw new Error("Review execution must reference a rule set belonging to this task");
+    }
+    const currentMaterials = this.listMaterials(execution.taskId).map(({ id, version }) => ({
+      materialId: id,
+      version,
+    }));
+    if (JSON.stringify(currentMaterials) !== JSON.stringify(execution.materialSnapshot)) {
+      throw new Error("Review execution material snapshot is stale");
+    }
+    this.database
+      .prepare(
+        `
+      INSERT INTO review_executions (
+        id, task_id, rule_set_id, source_version, status, material_snapshot_json,
+        results_json, created_at, completed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      )
+      .run(
+        execution.id,
+        execution.taskId,
+        execution.ruleSetId,
+        execution.sourceVersion,
+        execution.status,
+        JSON.stringify(execution.materialSnapshot),
+        JSON.stringify(execution.results),
+        execution.createdAt,
+        execution.completedAt,
+      );
+    return execution;
+  }
+
+  listReviewExecutions(taskId: string): ReviewExecution[] {
+    const rows = this.database
+      .prepare<[string], DatabaseExecutionRow>(
+        `
+        SELECT id, task_id, rule_set_id, source_version, status, material_snapshot_json,
+               results_json, created_at, completed_at
+        FROM review_executions WHERE task_id = ? ORDER BY created_at DESC
+      `,
+      )
+      .all(taskId);
+    return rows.map((row) => ({
+      id: row.id,
+      taskId: row.task_id,
+      ruleSetId: row.rule_set_id,
+      sourceVersion: row.source_version,
+      status: row.status as ReviewExecution["status"],
+      materialSnapshot: JSON.parse(
+        row.material_snapshot_json,
+      ) as ReviewExecution["materialSnapshot"],
+      results: JSON.parse(row.results_json) as ReviewExecution["results"],
+      createdAt: row.created_at,
+      completedAt: row.completed_at,
+    }));
   }
 
   close(): void {

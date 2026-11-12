@@ -10,6 +10,7 @@ import { reviewTaskIdSchema } from "@/domain/review-task";
 import { getReviewStore } from "@/lib/server/review-store";
 import { RuleReview } from "@/components/rule-review";
 import { MaterialUpload } from "@/components/material-upload";
+import { ReviewExecutionPanel } from "@/components/review-execution";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -33,6 +34,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
   const task = getReviewStore().getTask(taskId);
   if (!task) notFound();
   const ruleSets = getReviewStore().listRuleSets(taskId);
+  const executions = getReviewStore().listReviewExecutions(taskId);
 
   return (
     <AppShell activePage="task-detail">
@@ -62,6 +64,13 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         initialRuleSets={ruleSets}
       />
       <MaterialUpload taskId={task.id} initialMaterials={task.materials} />
+      <ReviewExecutionPanel
+        taskId={task.id}
+        initialExecutions={executions}
+        hasCurrentRuleSet={ruleSets.some(
+          (ruleSet) => ruleSet.sourceVersion === task.noticeSource.version,
+        )}
+      />
       <section
         aria-labelledby="notice-history-heading"
         className="mt-12 max-w-4xl border-t border-border pt-7"
