@@ -37,11 +37,28 @@ export function applicableRule(
     return false;
   if (rule.applicabilityScope === "individual" && background.collaborationScope === "team")
     return false;
-  if (
-    rule.applicabilityCondition &&
-    /如|若|阶段|类别|初赛|复赛|决赛|申报|结项/.test(rule.applicabilityCondition)
-  )
-    return undefined;
+  if (rule.applicabilityCondition) {
+    const condition = rule.applicabilityCondition.replace(/\s/g, "").toLocaleLowerCase();
+    if (/阶段|初赛|复赛|决赛|申报|结项/.test(condition)) {
+      const stage = background.projectStage.replace(/\s/g, "").toLocaleLowerCase();
+      if (!stage) return undefined;
+      if (/(初赛|预赛)/.test(condition)) return /(初赛|预赛)/.test(stage);
+      if (/(复赛|半决赛)/.test(condition)) return /(复赛|半决赛)/.test(stage);
+      if (/决赛/.test(condition)) return /决赛/.test(stage);
+      if (/申报/.test(condition)) return /申报/.test(stage);
+      if (/结项/.test(condition)) return /结项/.test(stage);
+      return undefined;
+    }
+    if (/类别|类型|领域/.test(condition)) {
+      const projectType = background.projectType.replace(/\s/g, "").toLocaleLowerCase();
+      if (!projectType) return undefined;
+      const category = condition.match(
+        /(?:适用于|针对|仅限|属于)([\p{L}\p{N}]{2,12})(?:项目|类别|类型|领域)?/u,
+      )?.[1];
+      return category ? projectType.includes(category) : undefined;
+    }
+    if (/如|若|如果|仅限|适用于|针对|当.*时/.test(condition)) return undefined;
+  }
   if (rule.applicabilityScope !== "unknown" && background.collaborationScope !== "unknown")
     return true;
   if (rule.applicabilityCondition) return undefined;

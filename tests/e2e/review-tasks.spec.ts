@@ -988,6 +988,30 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(history.executions[0].results[0].verdict).toBe("failed");
   });
 
+  test("集中补充团队与阶段条件后保存背景并更新适用性", async ({ page, request }) => {
+    const created = await request.post("/api/tasks", {
+      data: { name: "集中澄清任务", noticeText: "团队项目在初赛阶段必须提交成员说明文件。" },
+    });
+    const { task } = await created.json();
+    await request.post(`/api/tasks/${task.id}/rules`);
+    const initial = await runCheckStream(request, task.id);
+    expect(initial.execution.results[0]?.verdict).toBe("needs_confirmation");
+
+    await page.goto(`/tasks/${task.id}`);
+    await expect(page.getByRole("heading", { name: "需要补充的信息" })).toBeVisible();
+    await page.getByLabel("补充参与范围").selectOption("team");
+    await page.getByLabel("补充项目阶段").fill("初赛");
+    await page.getByRole("button", { name: "保存补充信息" }).click();
+
+    const saved = (await (await request.get(`/api/tasks/${task.id}`)).json()).task;
+    expect(saved.background).toMatchObject({ collaborationScope: "team", projectStage: "初赛" });
+    const history = await (await request.get(`/api/tasks/${task.id}/checks`)).json();
+    expect(history.executions[0].validity).toBe("needs_recheck");
+    const refreshed = await runCheckStream(request, task.id);
+    expect(refreshed.execution.results[0]?.verdict).toBe("failed");
+    expect(refreshed.execution.results[0]?.reason).not.toContain("背景不足");
+  });
+
   test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
     const created = await request.post("/api/tasks", {
       data: {
