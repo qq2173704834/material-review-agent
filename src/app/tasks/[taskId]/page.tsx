@@ -11,6 +11,8 @@ import { getReviewStore } from "@/lib/server/review-store";
 import { RuleReview } from "@/components/rule-review";
 import { MaterialUpload } from "@/components/material-upload";
 import { ReviewExecutionPanel } from "@/components/review-execution";
+import { getRuntimeStatus } from "@/lib/server/runtime-status";
+import { annotateExecutions } from "@/lib/review-history";
 
 import type { Metadata } from "next";
 import type { ReactElement } from "react";
@@ -34,7 +36,14 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
   const task = getReviewStore().getTask(taskId);
   if (!task) notFound();
   const ruleSets = getReviewStore().listRuleSets(taskId);
-  const executions = getReviewStore().listReviewExecutions(taskId);
+  const executions = annotateExecutions(
+    task,
+    ruleSets,
+    getReviewStore().listReviewExecutions(taskId),
+  );
+  const runtimeStatus = getRuntimeStatus(true);
+  const latestExecution = executions[0];
+  const contextKey = `${ruleSets[0]?.id ?? "none"}:${task.latestUpdatedAt}:${task.materials.map((material) => `${material.id}-${material.version}`).join(",")}`;
 
   return (
     <AppShell activePage="task-detail">
@@ -46,7 +55,19 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
       </Button>
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <Badge className="mb-3">尚未开始审查</Badge>
+          <Badge className="mb-3">
+            {!latestExecution
+              ? "尚未开始审查"
+              : latestExecution.validity === "needs_recheck"
+                ? "待复检"
+                : latestExecution.status === "running"
+                  ? "正在审查"
+                  : latestExecution.status === "completed"
+                    ? "已有审查结果"
+                    : latestExecution.status === "cancelled"
+                      ? "上次已取消"
+                      : "上次检查中断"}
+          </Badge>
           <h1 className="break-words text-2xl font-semibold">{task.name}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             创建于{" "}
@@ -59,17 +80,26 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
       </div>
       <TaskEditor task={task} />
       <RuleReview
+        key={`rules-${ruleSets[0]?.id ?? "none"}`}
         taskId={task.id}
         currentNoticeVersion={task.noticeSource.version}
         initialRuleSets={ruleSets}
+        mode={runtimeStatus.mode}
       />
-      <MaterialUpload taskId={task.id} initialMaterials={task.materials} />
+      <MaterialUpload
+        key={`materials-${contextKey}`}
+        taskId={task.id}
+        initialMaterials={task.materials}
+      />
       <ReviewExecutionPanel
+        key={`execution-${latestExecution?.id ?? "none"}-${contextKey}`}
         taskId={task.id}
         initialExecutions={executions}
         hasCurrentRuleSet={ruleSets.some(
           (ruleSet) => ruleSet.sourceVersion === task.noticeSource.version,
         )}
+        mode={runtimeStatus.mode}
+        materials={task.materials.map(({ id, version }) => ({ id, version }))}
       />
       <section
         aria-labelledby="notice-history-heading"
@@ -101,6 +131,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
                 <ol className="mt-3 space-y-2">
                   {version.segments.map((segment) => (
                     <li
+                      id={`notice-v${version.version}-paragraph-${segment.paragraphIndex}`}
                       key={segment.paragraphIndex}
                       className="rounded-md bg-muted/50 px-3 py-2 text-xs leading-6"
                     >

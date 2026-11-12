@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { compareExecutions } from "@/lib/review-history";
 
 import type { ReviewExecution, ReviewVerdict } from "@/domain/review";
 import type { ReactElement } from "react";
@@ -9,6 +11,8 @@ interface ReviewExecutionProps {
   taskId: string;
   initialExecutions: ReviewExecution[];
   hasCurrentRuleSet: boolean;
+  mode: "mock" | "live" | "invalid";
+  materials: Array<{ id: string; version: number }>;
 }
 
 const verdictLabels: Record<ReviewVerdict, string> = {
@@ -39,13 +43,30 @@ export function ReviewExecutionPanel({
   taskId,
   initialExecutions,
   hasCurrentRuleSet,
+  mode,
+  materials,
 }: ReviewExecutionProps): ReactElement {
+  const router = useRouter();
   const [executions, setExecutions] = useState(initialExecutions);
   const [error, setError] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const abortController = useRef<AbortController | null>(null);
-  const currentExecution = executions[0];
+  const [selectedId, setSelectedId] = useState("");
+  const [activeRuleCode, setActiveRuleCode] = useState("");
+  useEffect(
+    () => () => {
+      abortController.current?.abort();
+    },
+    [],
+  );
+  const selectedIndex = selectedId
+    ? executions.findIndex((execution) => execution.id === selectedId)
+    : 0;
+  const currentExecution = executions[selectedIndex];
+  const comparison = currentExecution
+    ? compareExecutions(currentExecution, executions[selectedIndex + 1])
+    : null;
   const counts = new Map<ReviewVerdict, number>();
   currentExecution?.results.forEach((result) => {
     counts.set(result.verdict, (counts.get(result.verdict) ?? 0) + 1);
@@ -89,6 +110,8 @@ export function ReviewExecutionPanel({
   async function runChecks(): Promise<void> {
     setError("");
     setIsRunning(true);
+    setSelectedId("");
+    setActiveRuleCode("");
     setProgress({ completed: 0, total: 0 });
     const controller = new AbortController();
     abortController.current = controller;
@@ -131,6 +154,12 @@ export function ReviewExecutionPanel({
               const execution = event.execution as ReviewExecution;
               upsertExecution(execution);
               setProgress({ completed: 0, total: execution.unexecutedCount });
+            } else if (
+              event.type === "checking" &&
+              "ruleCode" in event &&
+              typeof event.ruleCode === "string"
+            ) {
+              setActiveRuleCode(event.ruleCode);
             } else if (
               event.type === "result" &&
               "result" in event &&
@@ -178,7 +207,9 @@ export function ReviewExecutionPanel({
       abortController.current = null;
       setProgress(null);
       setIsRunning(false);
+      setActiveRuleCode("");
       if (controller.signal.aborted) await refreshExecutions().catch(() => []);
+      router.refresh();
     }
   }
 
@@ -190,10 +221,12 @@ export function ReviewExecutionPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 id="execution-heading" className="text-sm font-semibold">
-            确定性检查
+            {mode === "live" ? "材料审查" : "确定性检查"}
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            本地规格工具；语义内容、命名模式及未解析的规则不会自动判为通过。
+            {mode === "live"
+              ? "规格由程序核验，内容由真实模型结合材料证据审查；片段将发送到你配置的模型服务。"
+              : "本地规格工具；模拟模式不进行真实模型语义审查，未核验的规则不会自动判为通过。"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -212,7 +245,11 @@ export function ReviewExecutionPanel({
             disabled={!hasCurrentRuleSet || isRunning}
             className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-card px-3 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
-            {isRunning ? "正在检查…" : "运行检查"}
+            {isRunning
+              ? "正在检查…"
+              : currentExecution?.validity === "needs_recheck"
+                ? "重新检查"
+                : "运行检查"}
           </button>
         </div>
       </div>
@@ -228,15 +265,50 @@ export function ReviewExecutionPanel({
         <p className="mt-5 text-sm text-muted-foreground">尚无检查结果。</p>
       ) : (
         <div className="mt-5">
+          {executions.length > 1 ? (
+            <label className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              执行历史
+              <select
+                aria-label="选择检查快照"
+                disabled={isRunning}
+                value={currentExecution.id}
+                onChange={(event) => setSelectedId(event.target.value)}
+                className="max-w-full rounded-md border border-border bg-background p-2"
+              >
+                {executions.map((execution) => (
+                  <option key={execution.id} value={execution.id}>
+                    {new Date(execution.createdAt).toLocaleString("zh-CN")} ·{" "}
+                    {execution.results.length} 项 ·{" "}
+                    {execution.validity === "needs_recheck" ? "待复检" : "当前版本"}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {currentExecution.validity === "needs_recheck" ? (
+            <p
+              role="status"
+              className="mb-4 border-l-2 border-amber-500 pl-3 text-sm leading-6 text-amber-900"
+            >
+              待复检：{currentExecution.invalidationReasons?.join("；")}
+              。下方保留原始结论，请重新检查当前材料。
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
             <span>{currentExecution.results.length} 项规则</span>
             {currentExecution.status === "running" && progress ? (
               <span aria-live="polite">
                 已完成 {progress.completed} / {progress.total} 项
+                {activeRuleCode ? ` · 正在核查 ${activeRuleCode}` : ""}
               </span>
             ) : null}
             {currentExecution.status === "cancelled" ? (
               <span>已取消，{currentExecution.unexecutedCount} 项未执行</span>
+            ) : null}
+            {currentExecution.status === "failed" ? (
+              <span className="text-red-700">
+                检查中断，{currentExecution.unexecutedCount} 项未执行
+              </span>
             ) : null}
             {verdictOrder.map((verdict) =>
               (counts.get(verdict) ?? 0) > 0 ? (
@@ -246,10 +318,45 @@ export function ReviewExecutionPanel({
               ) : null,
             )}
             <span>通知 v{currentExecution.sourceVersion}</span>
-            <time dateTime={currentExecution.completedAt}>
-              {new Date(currentExecution.completedAt).toLocaleString("zh-CN")}
+            <time dateTime={currentExecution.completedAt || currentExecution.createdAt}>
+              {new Date(currentExecution.completedAt || currentExecution.createdAt).toLocaleString(
+                "zh-CN",
+              )}
             </time>
+            {currentExecution.status !== "running" ? (
+              <a
+                href={`/api/tasks/${taskId}/report?executionId=${currentExecution.id}`}
+                className="font-medium text-primary underline underline-offset-4"
+              >
+                导出 Markdown 报告
+              </a>
+            ) : null}
           </div>
+          {comparison?.canCompare ? (
+            <p className="mt-4 rounded-md bg-muted/50 p-3 text-xs leading-6">
+              与上次同规则检查比较：已解决 {comparison.resolved.length} · 仍存在{" "}
+              {comparison.remaining.length} · 新增 {comparison.newIssues.length} · 变化待确认{" "}
+              {comparison.unconfirmed.length}。只有未通过变为通过才计为已解决。
+            </p>
+          ) : null}
+          {currentExecution.metadata ? (
+            <p className="mt-3 text-xs leading-6 text-muted-foreground">
+              {currentExecution.metadata.mode === "live"
+                ? `真实模型 · ${currentExecution.metadata.provider} / ${currentExecution.metadata.model}`
+                : "本地模拟模式"}{" "}
+              · 模型步骤 {currentExecution.metadata.modelCalls.length} · 输入{" "}
+              {currentExecution.metadata.modelCalls.reduce(
+                (total, call) => total + (call.inputTokens ?? 0),
+                0,
+              )}{" "}
+              / 输出{" "}
+              {currentExecution.metadata.modelCalls.reduce(
+                (total, call) => total + (call.outputTokens ?? 0),
+                0,
+              )}{" "}
+              token（仅已报告用量）
+            </p>
+          ) : null}
           <ol className="mt-4 divide-y divide-border border-y border-border">
             {currentExecution.results.map((result) => (
               <li key={result.ruleId} className="py-4">
@@ -259,6 +366,11 @@ export function ReviewExecutionPanel({
                   </h3>
                   <span className={`text-xs font-semibold ${verdictStyles[result.verdict]}`}>
                     {verdictLabels[result.verdict]}
+                    {result.strength === "recommended"
+                      ? " · 建议项"
+                      : result.strength === "optional"
+                        ? " · 可选项"
+                        : ""}
                   </span>
                 </div>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.reason}</p>
@@ -268,8 +380,23 @@ export function ReviewExecutionPanel({
                   </p>
                 ) : null}
                 <blockquote className="mt-3 border-l-2 border-primary/40 pl-3 text-xs leading-5 text-muted-foreground">
-                  来源：{result.source.quotedText}
+                  <a
+                    href={`#notice-v${currentExecution.sourceVersion}-paragraph-${result.source.paragraphIndex}`}
+                    className="text-primary underline underline-offset-4"
+                  >
+                    来源 · 通知 v{currentExecution.sourceVersion} / 段落{" "}
+                    {result.source.paragraphIndex + 1}
+                  </a>
+                  ：{result.source.quotedText}
                 </blockquote>
+                {result.coverage ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    核查片段 {result.coverage.examinedSegments}/{result.coverage.totalSegments} ·{" "}
+                    {result.coverage.isComplete
+                      ? "已解析文本完整纳入本项上下文"
+                      : "片段覆盖或解析存在限制，请人工复核"}
+                  </p>
+                ) : null}
                 {result.evidence.length ? (
                   <ul className="mt-3 space-y-2 text-xs leading-5">
                     {result.evidence.map((evidence, index) => (
@@ -277,7 +404,29 @@ export function ReviewExecutionPanel({
                         key={`${evidence.materialId}-${index}`}
                         className="break-words text-muted-foreground"
                       >
-                        证据：{evidence.quotedText} · {evidence.location} · 材料 v
+                        {evidence.segmentIndex !== undefined &&
+                        materials.some(
+                          (material) =>
+                            material.id === evidence.materialId &&
+                            material.version === evidence.materialVersion,
+                        ) ? (
+                          <a
+                            href={`#material-${evidence.materialId}-segment-${evidence.segmentIndex}`}
+                            onClick={() => {
+                              const element = document.getElementById(
+                                `material-${evidence.materialId}-segment-${evidence.segmentIndex}`,
+                              );
+                              const details = element?.closest("details");
+                              if (details) details.open = true;
+                            }}
+                            className="text-primary underline underline-offset-4"
+                          >
+                            定位证据
+                          </a>
+                        ) : (
+                          "证据"
+                        )}
+                        ：{evidence.quotedText} · {evidence.location} · 材料 v
                         {evidence.materialVersion}
                       </li>
                     ))}

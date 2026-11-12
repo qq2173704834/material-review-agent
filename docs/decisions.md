@@ -18,6 +18,8 @@
 
 ## 工程初始化的兼容性适配
 
+2026-11-12补充：用户明确模型服务商为DeepSeek，并在本地填写密钥。采用官方兼容接口 `https://api.deepseek.com`，当日官方示例模型 `deepseek-flash`，真实合成小样例已贯通。模型调用仍用既定Vercel AI SDK；新增锁定的兼容provider。每步最多一次重试，默认每轮12模型步骤/总180秒；未查询价格与剩余额度。详见model-setup.md。
+
 - Node.js 固定 24 主版本、pnpm 固定 11.25.0；直接依赖使用精确版本，完整解析由 pnpm-lock.yaml 锁定。
 - TypeScript 使用 5.9.3：当前 typescript-eslint 声明支持范围 `<6.1.0`，不直接采用 registry 返回的 TypeScript 7，保留严格检查。
 - ESLint 使用受维护的 10.14.0，直接组合 @eslint/js、typescript-eslint、Next.js 核心/Web Vitals 与 React Hooks 规则。默认 eslint-config-next 所带 React 插件只声明兼容至 ESLint 9；为避免停留在已停止维护的 ESLint 9，本工程不使用该聚合配置，保留框架规则及严格检查。

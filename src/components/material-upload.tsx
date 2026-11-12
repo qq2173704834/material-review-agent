@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import type { ReviewMaterialSummary } from "@/domain/review";
 import type { ReactElement, ChangeEvent } from "react";
@@ -24,6 +25,7 @@ function formatBytes(fileSizeBytes: number): string {
 }
 
 export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps): ReactElement {
+  const router = useRouter();
   const [materials, setMaterials] = useState(initialMaterials);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -76,6 +78,7 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
       setSelectedFiles([]);
       const input = document.getElementById("material-files") as HTMLInputElement | null;
       if (input) input.value = "";
+      router.refresh();
     } catch {
       setError("暂时无法连接本地服务，请稍后重试。");
     } finally {
@@ -127,7 +130,7 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
       ) : (
         <ul className="mt-5 divide-y divide-border border-y border-border">
           {materials.map((material) => (
-            <li key={material.id} className="py-4">
+            <li key={material.id} id={`material-${material.id}`} className="scroll-mt-6 py-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="break-words text-sm font-medium">{material.originalFileName}</p>
@@ -156,6 +159,7 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
                     {material.segments.map((segment) => (
                       <li
                         key={segment.segmentIndex}
+                        id={`material-${material.id}-segment-${segment.segmentIndex}`}
                         className="rounded-md bg-muted/50 px-3 py-2 text-xs leading-6"
                       >
                         <span className="mr-2 font-mono text-muted-foreground">

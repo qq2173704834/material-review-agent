@@ -147,8 +147,8 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
           placeholder="粘贴本次通知、指南或项目要求。原文会按段落保存，并可查看字符位置与历史版本。"
         />
         <p className="text-xs leading-5 text-muted-foreground">
-          当前入口保存文本通知。后续材料导入计划覆盖 PDF、DOCX、TXT、XLSX、CSV、JPG 与
-          PNG；本页不会将未解析的文件标为已读取。
+          在此粘贴通知原文。创建任务后可上传 PDF、DOCX、TXT、XLSX、CSV、JPG 与 PNG
+          材料；图片和扫描件尚未进行 OCR。
         </p>
       </section>
       {error ? (

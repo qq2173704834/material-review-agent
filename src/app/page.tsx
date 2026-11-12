@@ -14,6 +14,7 @@ import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getReviewStore } from "@/lib/server/review-store";
+import { annotateExecutions } from "@/lib/review-history";
 
 import type { ReactElement } from "react";
 
@@ -28,6 +29,33 @@ export const dynamic = "force-dynamic";
 
 export default function TasksPage(): ReactElement {
   const tasks = getReviewStore().listTasks();
+  const taskStatuses = new Map(
+    tasks.map((task) => {
+      const store = getReviewStore();
+      const details = store.getTask(task.id);
+      const latest = details
+        ? annotateExecutions(
+            details,
+            store.listRuleSets(task.id),
+            store.listReviewExecutions(task.id),
+          )[0]
+        : undefined;
+      return [
+        task.id,
+        !latest
+          ? "尚未开始审查"
+          : latest.validity === "needs_recheck"
+            ? "待复检"
+            : latest.status === "running"
+              ? "正在审查"
+              : latest.status === "completed"
+                ? "已有审查结果"
+                : latest.status === "cancelled"
+                  ? "上次已取消"
+                  : "检查中断",
+      ];
+    }),
+  );
   return (
     <AppShell activePage="tasks">
       <div className="flex flex-wrap items-start justify-between gap-5">
@@ -76,7 +104,7 @@ export default function TasksPage(): ReactElement {
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                    <span>尚未开始审查</span>
+                    <span>{taskStatuses.get(task.id)}</span>
                     <span>通知 v{task.noticeSourceVersion}</span>
                     <time dateTime={task.latestUpdatedAt}>
                       {new Date(task.latestUpdatedAt).toLocaleString("zh-CN", {
@@ -118,7 +146,7 @@ export default function TasksPage(): ReactElement {
             <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
               在这里管理通知、材料、检查结论与整改记录。
               <br className="hidden sm:block" />
-              当前工程已进入初始化阶段，审查功能将按批次接入。
+              支持多格式材料、规格检查与模型辅助审查。
             </p>
             <Button asChild variant="outline" className="mt-7">
               <Link href="/tasks/new">

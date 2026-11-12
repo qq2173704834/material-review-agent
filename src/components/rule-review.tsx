@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import type { ReviewRuleSet } from "@/domain/review-rule";
 import type { ReactElement } from "react";
@@ -9,6 +10,7 @@ interface RuleReviewProps {
   taskId: string;
   currentNoticeVersion: number;
   initialRuleSets: ReviewRuleSet[];
+  mode: "mock" | "live" | "invalid";
 }
 
 const strengthLabels = {
@@ -28,7 +30,9 @@ export function RuleReview({
   taskId,
   currentNoticeVersion,
   initialRuleSets,
+  mode,
 }: RuleReviewProps): ReactElement {
+  const router = useRouter();
   const [ruleSets, setRuleSets] = useState(initialRuleSets);
   const [error, setError] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
@@ -53,6 +57,7 @@ export function RuleReview({
         return;
       }
       setRuleSets((existingRuleSets) => [result.ruleSet as ReviewRuleSet, ...existingRuleSets]);
+      router.refresh();
     } catch {
       setError("暂时无法连接本地服务，请稍后重试。");
     } finally {
@@ -71,7 +76,9 @@ export function RuleReview({
             动态规则草稿
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            当前使用可重复的本地模拟提取。草稿须逐条对照通知确认，不代表真实模型输出或已完成材料审查。
+            {mode === "live"
+              ? "将当前通知发送到配置的真实模型，拆分要求并核对原文引用；草稿仍需关注条件与歧义。"
+              : "当前使用可重复的本地模拟提取，不代表真实模型输出或已完成材料审查。"}
           </p>
         </div>
         <button
@@ -101,7 +108,11 @@ export function RuleReview({
           ) : null}
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
             <span>通知 v{currentRuleSet.sourceVersion}</span>
-            <span>模拟模式</span>
+            <span>
+              {currentRuleSet.mode === "live"
+                ? `真实模型 · ${currentRuleSet.provider} / ${currentRuleSet.model}`
+                : "模拟模式"}
+            </span>
             <span>{currentRuleSet.rules.length} 条草稿</span>
             <time dateTime={currentRuleSet.createdAt}>
               {new Date(currentRuleSet.createdAt).toLocaleString("zh-CN")}
