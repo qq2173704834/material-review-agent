@@ -1464,6 +1464,31 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       expect.arrayContaining([expect.objectContaining({ code: "conflicting_constraints" })]),
     );
 
+    const deadlineTask = await request.post("/api/tasks", {
+      data: {
+        name: "截止日期冲突样例",
+        noticeText: "申请书截止日期为2026年12月1日。\n申请书截止日期为2026年11月30日。",
+      },
+    });
+    const { task: deadlineConflictTask } = await deadlineTask.json();
+    const deadlineRules = await request.post(`/api/tasks/${deadlineConflictTask.id}/rules`);
+    const { ruleSet: deadlineRuleSet } = await deadlineRules.json();
+    expect(deadlineRuleSet.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "conflicting_constraints",
+          sources: expect.arrayContaining([
+            expect.objectContaining({ quotedText: "申请书截止日期为2026年12月1日" }),
+            expect.objectContaining({ quotedText: "申请书截止日期为2026年11月30日" }),
+          ]),
+        }),
+      ]),
+    );
+    const deadlineChecks = await runCheckStream(request, deadlineConflictTask.id);
+    expect(
+      deadlineChecks.execution.results.map((result: { verdict: string }) => result.verdict),
+    ).toEqual(["needs_confirmation", "needs_confirmation"]);
+
     await page.goto(`/tasks/${task.id}`);
     await page.getByText(/需要人工留意的信息/).click();
     await expect(page.getByText("项目说明至少12页", { exact: true })).toBeVisible();
