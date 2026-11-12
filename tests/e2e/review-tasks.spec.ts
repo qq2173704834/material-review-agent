@@ -832,6 +832,30 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     });
   });
 
+  test("团队限定规则对个人项目不适用且未知背景待确认", async ({ request }) => {
+    const createWithScope = async (scope: "individual" | "unknown"): Promise<string> => {
+      const created = await request.post("/api/tasks", {
+        data: {
+          name: `团队限定-${scope}`,
+          background: { projectType: "", projectStage: "", collaborationScope: scope },
+          noticeText: "团队项目必须提交成员分工表。",
+        },
+      });
+      const { task } = await created.json();
+      const rules = await request.post(`/api/tasks/${task.id}/rules`);
+      expect((await rules.json()).ruleSet.rules[0]).toMatchObject({ applicabilityScope: "team" });
+      return task.id as string;
+    };
+
+    const individualTaskId = await createWithScope("individual");
+    const individual = await runCheckStream(request, individualTaskId);
+    expect(individual.execution.results[0]).toMatchObject({ verdict: "not_applicable" });
+
+    const unknownTaskId = await createWithScope("unknown");
+    const unknown = await runCheckStream(request, unknownTaskId);
+    expect(unknown.execution.results[0]).toMatchObject({ verdict: "needs_confirmation" });
+  });
+
   test("不存在的页面提供可用返回入口", async ({ page }) => {
     const response = await page.goto("/missing-page");
     expect(response?.status()).toBe(404);
