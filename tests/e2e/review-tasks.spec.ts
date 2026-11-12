@@ -539,7 +539,11 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(firstExecution.materialSnapshot).toEqual([]);
     expect(firstExecution.results).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ verdict: "failed", reason: expect.stringContaining("PDF") }),
+        expect.objectContaining({
+          verdict: "failed",
+          reason: expect.stringMatching(/pdf/i),
+          source: expect.objectContaining({ quotedText: "必须提交 PDF 格式文件" }),
+        }),
         expect.objectContaining({
           verdict: "needs_confirmation",
           reason: expect.stringContaining("尚无材料"),
