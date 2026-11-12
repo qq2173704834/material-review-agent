@@ -20,6 +20,11 @@ function plain(value: string): string {
     .replace(/\r?\n/g, " ");
 }
 
+function sourceSummary(source: ReviewTaskDetails["noticeSource"]): string {
+  const address = source.sourceUrl ? ` · ${plain(source.sourceUrl)}` : "";
+  return `- ${plain(source.displayName)} · ${source.inputType} · v${source.version} · ${source.parseStatus}${address}`;
+}
+
 export function createReviewReport(
   task: ReviewTaskDetails,
   execution: ReviewExecution,
@@ -32,7 +37,8 @@ export function createReviewReport(
     `- 导出时间：${new Date().toISOString()}`,
     `- 任务 ID：${task.id}`,
     `- 执行 ID：${execution.id}`,
-    `- 通知版本：v${execution.sourceVersion}`,
+    `- 主通知来源：${sourceSummary(task.noticeHistory.find((source) => source.version === execution.sourceVersion) ?? task.noticeSource).slice(2)}`,
+    "- 本次规则与检查使用主通知；任务当前补充来源在执行时未纳入规则提取。",
     `- 规则集：${execution.ruleSetId}`,
     `- 规则提取：${ruleSet.mode === "live" ? `真实模型 ${plain(ruleSet.provider)} / ${plain(ruleSet.model)}` : "本地模拟"}`,
     `- 检查模式：${execution.metadata?.mode === "live" ? `真实模型与确定性工具（${plain(execution.metadata.provider)} / ${plain(execution.metadata.model)}）` : execution.metadata?.mode === "mock" ? "本地模拟流程与确定性工具" : "历史记录未注明"}`,
@@ -64,6 +70,14 @@ export function createReviewReport(
       return `- ${material ? plain(material.originalFileName) : snapshot.materialId} · v${snapshot.version}${material ? ` · ${material.parseStatus} · ${plain(material.parseMessage)}` : "（当前界面已是其他版本，证据见逐项记录）"}`;
     }),
   ];
+  if (task.supplementalSources.length)
+    lines.push(
+      "",
+      "## 任务当前补充来源（导出时状态）",
+      "",
+      ...task.supplementalSources.map(sourceSummary),
+      "以上来源已独立保存，但未纳入本次执行规则集。",
+    );
   if (!execution.materialSnapshot.length) lines.push("- 本次没有上传材料。");
   const comparison = compareExecutions(execution, previous);
   if (comparison.canCompare)
@@ -137,12 +151,20 @@ export function createRemediationReport(
     "",
     `- 执行 ID：${execution.id}`,
     `- 检查时间：${execution.completedAt || execution.createdAt}`,
-    `- 通知版本：v${execution.sourceVersion}`,
+    `- 主通知来源：${sourceSummary(task.noticeHistory.find((source) => source.version === execution.sourceVersion) ?? task.noticeSource).slice(2)}`,
     `- 清单项目：${actionable.length}`,
     "",
     "此清单只汇总需要处理或人工确认的项目，不记录整改完成状态，也不表示复检通过。",
     "",
   ];
+  if (task.supplementalSources.length)
+    lines.push(
+      "",
+      "## 任务当前补充来源（导出时状态）",
+      "",
+      ...task.supplementalSources.map(sourceSummary),
+      "以上来源未纳入本次执行规则集。",
+    );
   if (!actionable.length) lines.push("本次没有明确的必须项失败或待确认事项。", "");
   for (const result of actionable) {
     lines.push(

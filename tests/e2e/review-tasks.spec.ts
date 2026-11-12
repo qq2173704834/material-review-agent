@@ -911,6 +911,15 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       data: { name: "人工复核记录", noticeText: "提交的PDF总页数不超过2页。" },
     });
     const { task } = await created.json();
+    await request.post(`/api/tasks/${task.id}/sources`, {
+      multipart: {
+        sourceFile: {
+          name: "报告范围附件.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from("仅在报告导出时存在的补充来源。"),
+        },
+      },
+    });
     await request.post(`/api/tasks/${task.id}/rules`);
     await request.post(`/api/tasks/${task.id}/materials`, {
       multipart: {
@@ -947,7 +956,10 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const report = await request.get(
       `/api/tasks/${task.id}/report?executionId=${checked.execution.id}`,
     );
-    expect(await report.text()).toContain("人工复核意见：认为符合 · 人工对照原文及材料后确认");
+    const reportText = await report.text();
+    expect(reportText).toContain("人工复核意见：认为符合 · 人工对照原文及材料后确认");
+    expect(reportText).toContain("报告范围附件.txt");
+    expect(reportText).toContain("未纳入本次执行规则集");
     const remediation = await request.get(
       `/api/tasks/${task.id}/report?executionId=${checked.execution.id}&type=remediation`,
     );
