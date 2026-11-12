@@ -746,6 +746,43 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(forged.status()).toBe(422);
   });
 
+  test("复制任务只复用通知与背景，不继承材料和检查结论", async ({ request }) => {
+    const created = await request.post("/api/tasks", {
+      data: {
+        name: "来源任务",
+        description: "合成任务说明",
+        background: { projectType: "科研", projectStage: "申报", collaborationScope: "team" },
+        noticeText: "必须提交项目说明。",
+      },
+    });
+    const { task } = await created.json();
+    await request.post(`/api/tasks/${task.id}/rules`);
+    await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: { name: "说明.txt", mimeType: "text/plain", buffer: Buffer.from("合成内容") },
+      },
+    });
+    await runCheckStream(request, task.id);
+
+    const cloneResponse = await request.post(`/api/tasks/${task.id}/clone`);
+    expect(cloneResponse.status()).toBe(201);
+    const { task: clone } = await cloneResponse.json();
+    expect(clone).toMatchObject({
+      name: "来源任务（副本）",
+      description: "合成任务说明",
+      background: task.background,
+      noticeSource: { originalText: task.noticeSource.originalText },
+      materials: [],
+    });
+    expect(clone.id).not.toBe(task.id);
+    expect(
+      (await (await request.get(`/api/tasks/${clone.id}/rules`)).json()).ruleSets,
+    ).toHaveLength(0);
+    expect(
+      (await (await request.get(`/api/tasks/${clone.id}/checks`)).json()).executions,
+    ).toHaveLength(0);
+  });
+
   test("不存在的页面提供可用返回入口", async ({ page }) => {
     const response = await page.goto("/missing-page");
     expect(response?.status()).toBe(404);
