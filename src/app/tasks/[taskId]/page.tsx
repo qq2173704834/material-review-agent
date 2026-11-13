@@ -1,3 +1,4 @@
+import { TaskExamContext } from "@/components/task-exam-context";
 import { Clock3 } from "lucide-react";
 import { notFound } from "next/navigation";
 
@@ -65,6 +66,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
   const latestExecution = executions[0];
   return (
     <AppShell activePage="task-detail">
+      <TaskExamContext taskId={taskId} />
       <TaskWorkspace
         task={task}
         initialExecution={latestExecution}

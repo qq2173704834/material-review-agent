@@ -1,10 +1,11 @@
+import { accountById } from "@/lib/server/account-auth";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { defaultOwner } from "@/lib/server/access-config";
+import { defaultOwner, isLegacyTestMode } from "@/lib/server/access-config";
 import Database from "better-sqlite3";
 
 import type {
@@ -29,7 +30,6 @@ import type { MaterialClassification } from "@/lib/material-classification";
 
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
-const MAXIMUM_TASK_COUNT = 100;
 const DATABASE_SCHEMA_VERSION = 20;
 
 interface ReviewDatabaseContext {
@@ -946,6 +946,19 @@ class ReviewStore {
     const createdAt = new Date().toISOString();
     const name = input.name.trim() || suggestTaskName(input.noticeText);
     const transaction = this.database.transaction(() => {
+      const ownerId = input.ownerId ?? defaultOwner();
+      if (!isLegacyTestMode()) {
+        const account = accountById(ownerId);
+        if (!account || account.disabled) throw new Error("账号已失效，未创建新任务，请重新登录。");
+      }
+      const count =
+        this.database
+          .prepare<[string], { count: number }>(
+            "SELECT COUNT(*) AS count FROM review_tasks WHERE owner_id=?",
+          )
+          .get(ownerId)?.count ?? 0;
+      if (!isLegacyTestMode() && count >= 100)
+        throw new Error("当前账号最多保存100个任务，请导出并清理不再需要的任务。");
       this.database
         .prepare(
           `
@@ -1094,7 +1107,7 @@ class ReviewStore {
 
   listTasks(): ReviewTaskSummary[] {
     const rows = this.database
-      .prepare<[number], DatabaseTaskSummaryRow>(
+      .prepare<[], DatabaseTaskSummaryRow>(
         `
         SELECT task.id,
                task.name,
@@ -1119,10 +1132,10 @@ class ReviewStore {
          )
         GROUP BY task.id
         ORDER BY task.updated_at DESC
-        LIMIT ?
+
       `,
       )
-      .all(MAXIMUM_TASK_COUNT);
+      .all();
 
     return rows.map((row) => ({
       id: row.id,
@@ -2103,6 +2116,10 @@ class ReviewStore {
       )
       .run(status, updatedAt, remediationId, taskId);
     return { ...(JSON.parse(row.payload_json) as RemediationTask), status, updatedAt };
+  }
+
+  removeUserGrants(userId: string): void {
+    this.database.prepare("DELETE FROM task_grants WHERE user_id=?").run(userId);
   }
 
   taskOwner(taskId: string): string | undefined {

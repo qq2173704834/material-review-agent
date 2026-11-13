@@ -33,6 +33,7 @@ export default defineConfig({
         AI_API_KEY: "synthetic-test-key",
         AI_TIMEOUT_MS: "10000",
         AI_MAX_CALLS_PER_REVIEW: "12",
+        REVIEW_AUTH_MODE: "legacy-test",
         REVIEW_DATA_DIR: ".local-data/model-e2e",
         NEXT_TELEMETRY_DISABLED: "1",
         REVIEW_ACCESS_USERS: "",

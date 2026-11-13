@@ -66,7 +66,8 @@ export function MaterialInsights({ task }: { task: ReviewTaskDetails }): ReactEl
       anchor.href = url;
       anchor.download = "提交材料包.zip";
       anchor.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      // Allow the browser to consume the Blob even when navigation/rendering is busy.
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch {
       setMessage("导出失败，请重试。");
     } finally {

@@ -29,6 +29,7 @@ export interface FetchedWebpage {
   text: string;
   fetchedAt: string;
   attachments: Array<{ url: string; name: string }>;
+  links: Array<{ url: string; name: string }>;
 }
 
 interface HtmlNode {
@@ -181,7 +182,12 @@ function collectText(root: HtmlNode, output: string[]): void {
 export function extractWebpageContent(
   source: string,
   baseUrl: string,
-): { title: string; text: string; attachments: FetchedWebpage["attachments"] } {
+): {
+  title: string;
+  text: string;
+  attachments: FetchedWebpage["attachments"];
+  links: FetchedWebpage["links"];
+} {
   const document = parse(source) as unknown as HtmlNode;
   const titleNode = findElement(document, "title");
   const titleParts: string[] = [];
@@ -190,12 +196,24 @@ export function extractWebpageContent(
   const contentParts: string[] = [];
   collectText(body, contentParts);
   const attachments: FetchedWebpage["attachments"] = [];
+  const links: FetchedWebpage["links"] = [];
   function findAttachments(node: HtmlNode): void {
-    if (node.tagName === "a" && attachments.length < 20) {
+    if (node.tagName === "a") {
       const href = node.attrs?.find((attribute) => attribute.name === "href")?.value;
       try {
         const target = validateUrl(new URL(href ?? "", baseUrl).toString());
+        const parts: string[] = [];
+        collectText(node, parts);
+        const name = parts.join(" ").trim().slice(0, 200);
         if (
+          href &&
+          name &&
+          links.length < 300 &&
+          !links.some((item) => item.url === target.toString())
+        )
+          links.push({ url: target.toString(), name });
+        if (
+          attachments.length < 20 &&
           href &&
           /\.(pdf|docx|txt)$/i.test(target.pathname) &&
           !attachments.some((item) => item.url === target.toString())
@@ -219,6 +237,7 @@ export function extractWebpageContent(
   return {
     title: titleParts.join(" ").replace(/\s+/g, " ").trim().slice(0, 300),
     attachments,
+    links,
     text: contentParts
       .join(" ")
       .replace(/[ \t]+/g, " ")
@@ -301,11 +320,18 @@ export async function fetchPublicWebpage(rawUrl: string): Promise<FetchedWebpage
   const resource = await fetchPublicResource(rawUrl);
   if (!/^(text\/html|application\/xhtml\+xml)(?:;|$)/i.test(resource.contentType))
     throw new Error("该地址未返回 HTML 网页内容。");
-  const { title, text, attachments } = extractWebpageContent(
+  const { title, text, attachments, links } = extractWebpageContent(
     decodeHtml(resource.bytes, resource.contentType),
     resource.url,
   );
   if (text.length < 40) throw new Error("网页正文过短或无法提取；可改为粘贴原文。");
   if (text.length > 200_000) throw new Error("提取正文超过 200,000 字符限制。");
-  return { url: resource.url, title, text, attachments, fetchedAt: new Date().toISOString() };
+  return {
+    url: resource.url,
+    title,
+    text,
+    attachments,
+    links,
+    fetchedAt: new Date().toISOString(),
+  };
 }

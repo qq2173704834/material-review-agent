@@ -1,3 +1,4 @@
+import { sessionAccount } from "./account-auth";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
@@ -9,6 +10,12 @@ const usersSchema = z
   )
   .min(1)
   .max(20);
+export function isLegacyTestMode(): boolean {
+  return (
+    process.env.REVIEW_AUTH_MODE === "legacy-test" &&
+    /(?:^|[\\/])(?:e2e|model-e2e|access-e2e)$/.test(process.env.REVIEW_DATA_DIR ?? "")
+  );
+}
 export function accessUsers(): Array<{ id: string; token: string }> {
   const raw = process.env.REVIEW_ACCESS_USERS?.trim();
   if (!raw) return [];
@@ -26,7 +33,7 @@ export function accessUsers(): Array<{ id: string; token: string }> {
   return users;
 }
 export function defaultOwner(): string {
-  return accessUsers()[0]?.id ?? "local";
+  return isLegacyTestMode() ? (accessUsers()[0]?.id ?? "local") : "legacy-unassigned";
 }
 export function identityForToken(token: string): string | undefined {
   const digest = createHash("sha256").update(token).digest();
@@ -35,6 +42,7 @@ export function identityForToken(token: string): string | undefined {
   )?.id;
 }
 export function requestIdentity(request: Request): string | undefined {
+  if (!isLegacyTestMode()) return sessionAccount(request)?.id;
   if (!accessUsers().length) return "local";
   const bearer = request.headers.get("authorization")?.match(/^Bearer (.{1,256})$/)?.[1];
   const cookie = request.headers

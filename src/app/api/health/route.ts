@@ -1,3 +1,4 @@
+import { isLegacyTestMode } from "@/lib/server/access-config";
 import { NextResponse } from "next/server";
 
 import { getRuntimeStatus } from "@/lib/server/runtime-status";
@@ -7,6 +8,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export function GET(): NextResponse {
+  if (!isLegacyTestMode())
+    return NextResponse.json(
+      { status: "ok", application: "material-review-agent" },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   getReviewStore().listTasks();
   const runtimeStatus = getRuntimeStatus(true);
   const isConfiguredCorrectly = runtimeStatus.mode !== "invalid";

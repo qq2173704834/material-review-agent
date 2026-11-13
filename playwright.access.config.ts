@@ -12,6 +12,7 @@ export default defineConfig({
     env: {
       AI_MODE: "mock",
       AI_API_KEY: "",
+      REVIEW_AUTH_MODE: "legacy-test",
       REVIEW_DATA_DIR: ".local-data/access-e2e",
       REVIEW_ACCESS_USERS: JSON.stringify([
         { id: "alice", token: "synthetic-alice-token-for-local-test-123456" },

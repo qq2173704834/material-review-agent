@@ -1,0 +1,330 @@
+[
+  {
+    "name": "北京教育考试院",
+    "region": "北京",
+    "referenceUrl": "http://www.bjeea.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.163306+00:00",
+    "url": "https://www.bjeea.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "北京教育考试院"
+  },
+  {
+    "name": "天津市教育招生考试院",
+    "region": "天津",
+    "referenceUrl": "http://www.zhaokao.net",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.163635+00:00",
+    "url": "https://www.zhaokao.net",
+    "status": "unavailable",
+    "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+  },
+  {
+    "name": "河北省教育考试院",
+    "region": "河北",
+    "referenceUrl": "http://www.hebeea.edu.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.164008+00:00",
+    "url": "https://www.hebeea.edu.cn",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "河北省教育考试院"
+  },
+  {
+    "name": "山西省招生考试管理中心",
+    "region": "山西",
+    "referenceUrl": "http://www.sxkszx.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.164345+00:00",
+    "url": "https://www.sxkszx.cn",
+    "status": "unavailable",
+    "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+  },
+  {
+    "name": "内蒙古自治区教育招生考试中心",
+    "region": "内蒙古",
+    "referenceUrl": "http://www.nm.zsks.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.164714+00:00",
+    "url": "https://www.nm.zsks.cn",
+    "status": "unavailable",
+    "error": "<urlopen error [SSL: DH_KEY_TOO_SMALL] dh key too small (_ssl.c:1082)>"
+  },
+  {
+    "name": "辽宁省高中等教育招生考试委员会办公室",
+    "region": "辽宁",
+    "referenceUrl": "http://www.lnzsks.com",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.165083+00:00",
+    "url": "https://www.lnzsks.com",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "辽宁招生考试之窗"
+  },
+  {
+    "name": "吉林省教育考试院",
+    "region": "吉林",
+    "referenceUrl": "https://www.jleea.com.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.375399+00:00",
+    "url": "https://www.jleea.com.cn",
+    "status": "unavailable",
+    "error": "Remote end closed connection without response"
+  },
+  {
+    "name": "黑龙江省招生考试院",
+    "region": "黑龙江",
+    "referenceUrl": "http://www.lzk.hl.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.449479+00:00",
+    "url": "https://www.lzk.hl.cn",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "黑龙江省招生考试信息港"
+  },
+  {
+    "name": "上海市教育考试院",
+    "region": "上海",
+    "referenceUrl": "http://www.shmeea.edu.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.616266+00:00",
+    "url": "https://www.shmeea.edu.cn",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "上海市教育考试院"
+  },
+  {
+    "name": "江苏省教育考试院",
+    "region": "江苏",
+    "referenceUrl": "http://www.jseea.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.752980+00:00",
+    "url": "https://www.jseea.cn/",
+    "status": "unavailable",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "name": "浙江省教育考试院",
+    "region": "浙江",
+    "referenceUrl": "http://www.zjzs.net",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:40.860030+00:00",
+    "url": "https://www.zjzs.net",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "浙江省教育考试院官网"
+  },
+  {
+    "name": "安徽省教育招生考试院",
+    "region": "安徽",
+    "referenceUrl": "http://www.ahzsks.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:41.422491+00:00",
+    "url": "https://www.ahzsks.cn/index.htm",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "页面可访问（标题编码需进一步核对）"
+  },
+  {
+    "name": "福建省教育考试院",
+    "region": "福建",
+    "referenceUrl": "http://www.eeafj.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:41.450927+00:00",
+    "url": "https://www.eeafj.cn/",
+    "status": "unavailable",
+    "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+  },
+  {
+    "name": "江西省教育考试院",
+    "region": "江西",
+    "referenceUrl": "http://www.jxeea.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:41.469869+00:00",
+    "url": "https://www.jxeea.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "江西省教育考试院"
+  },
+  {
+    "name": "山东省教育招生考试院",
+    "region": "山东",
+    "referenceUrl": "https://www.sdzk.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:41.914018+00:00",
+    "url": "https://www.sdzk.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "山东省教育招生考试院官网"
+  },
+  {
+    "name": "河南省教育考试院",
+    "region": "河南",
+    "referenceUrl": "https://www.haeea.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:42.003767+00:00",
+    "url": "https://www.haeea.cn/",
+    "status": "unavailable",
+    "error": "HTTP Error 412: Precondition Failed"
+  },
+  {
+    "name": "湖北省教育考试院",
+    "region": "湖北",
+    "referenceUrl": "http://www.hbea.edu.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:42.159609+00:00",
+    "url": "https://www.hbea.edu.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "湖北省教育考试院——首页"
+  },
+  {
+    "name": "湖南省教育考试院",
+    "region": "湖南",
+    "referenceUrl": "https://jyt.hunan.gov.cn/jyt/sjyt/hnsjyksy/web/index.html",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:42.194498+00:00",
+    "url": "https://jyt.hunan.gov.cn/jyt/sjyt/hnsjyksy/web/index.html",
+    "status": "unavailable",
+    "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1082)>"
+  },
+  {
+    "name": "广东省教育考试院",
+    "region": "广东",
+    "referenceUrl": "http://eea.gd.gov.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:42.315311+00:00",
+    "url": "https://eea.gd.gov.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "广东省教育考试院"
+  },
+  {
+    "name": "广西招生考试院",
+    "region": "广西",
+    "referenceUrl": "http://www.gxeea.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:42.454748+00:00",
+    "url": "https://www.gxeea.cn",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "页面可访问（标题编码需进一步核对）"
+  },
+  {
+    "name": "海南省考试局",
+    "region": "海南",
+    "referenceUrl": "http://ea.hainan.gov.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:43.313538+00:00",
+    "url": "https://ea.hainan.gov.cn/",
+    "status": "unavailable",
+    "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1082)>"
+  },
+  {
+    "name": "重庆市教育考试院",
+    "region": "重庆",
+    "referenceUrl": "https://www.cqksy.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:43.474129+00:00",
+    "url": "https://www.cqksy.cn",
+    "status": "unavailable",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  {
+    "name": "四川省教育考试院",
+    "region": "四川",
+    "referenceUrl": "http://www.sceea.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:43.699398+00:00",
+    "url": "https://www.sceea.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "四川省教育考试院"
+  },
+  {
+    "name": "贵州省招生考试院",
+    "region": "贵州",
+    "referenceUrl": "http://zsksy.guizhou.gov.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:44.031359+00:00",
+    "url": "https://zsksy.guizhou.gov.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "贵州省招生考试院"
+  },
+  {
+    "name": "云南省招生考试院",
+    "region": "云南",
+    "referenceUrl": "http://www.ynzs.cn",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:44.054407+00:00",
+    "url": "https://www.ynzs.cn",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "云南省招考频道"
+  },
+  {
+    "name": "西藏自治区教育考试院",
+    "region": "西藏",
+    "referenceUrl": "http://zsks.edu.xizang.gov.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:44.261511+00:00",
+    "url": "https://zsks.edu.xizang.gov.cn/",
+    "status": "unavailable",
+    "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1082)>"
+  },
+  {
+    "name": "陕西省教育考试院",
+    "region": "陕西",
+    "referenceUrl": "https://www.sneea.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:44.452270+00:00",
+    "url": "https://www.sneea.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "陕西省教育考试院"
+  },
+  {
+    "name": "甘肃省教育考试院",
+    "region": "甘肃",
+    "referenceUrl": "http://www.ganseea.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:44.517506+00:00",
+    "url": "https://www.ganseea.cn/",
+    "status": "unavailable",
+    "error": "HTTP Error 412: Precondition Failed"
+  },
+  {
+    "name": "青海省教育招生考试院",
+    "region": "青海",
+    "referenceUrl": "http://www.qhjyks.com",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:44.677962+00:00",
+    "url": "https://www.qhjyks.com",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "青海省教育考试网"
+  },
+  {
+    "name": "宁夏教育考试院",
+    "region": "宁夏",
+    "referenceUrl": "http://www.nxjyks.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:44.744322+00:00",
+    "url": "https://www.nxjyks.cn/",
+    "status": "unavailable",
+    "error": "Remote end closed connection without response"
+  },
+  {
+    "name": "新疆维吾尔自治区教育考试院",
+    "region": "新疆",
+    "referenceUrl": "http://www.xjzk.gov.cn/",
+    "directorySource": "https://www.neea.edu.cn/",
+    "checkedAt": "2026-11-13T12:45:45.150292+00:00",
+    "url": "https://www.xjzk.gov.cn/",
+    "status": "accessible",
+    "httpStatus": 200,
+    "pageTitle": "新疆教育考试院 - 新疆教育考试院"
+  }
+]

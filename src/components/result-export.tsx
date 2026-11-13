@@ -175,5 +175,6 @@ function saveBlob(blob: Blob, fileName: string): void {
   anchor.href = url;
   anchor.download = fileName;
   anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // Allow the browser to consume the Blob even when navigation/rendering is busy.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }

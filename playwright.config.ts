@@ -27,6 +27,7 @@ export default defineConfig({
       AI_BASE_URL: "",
       AI_MODEL: "",
       AI_API_KEY: "",
+      REVIEW_AUTH_MODE: "legacy-test",
       REVIEW_DATA_DIR: ".local-data/e2e",
       NEXT_TELEMETRY_DISABLED: "1",
       REVIEW_ACCESS_USERS: "",

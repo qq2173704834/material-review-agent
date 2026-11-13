@@ -137,6 +137,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     try {
       const webpage = await fetchPublicWebpage(parsedWebpage.data.sourceUrl);
       const task = getReviewStore().createTask({
+        ownerId: requestIdentity(request),
         ...parsedWebpage.data,
         noticeText: webpage.text,
         sourceType: "webpage",

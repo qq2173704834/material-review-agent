@@ -13,11 +13,13 @@ import { cn } from "@/lib/utils";
 import type { ReactElement, ReactNode } from "react";
 
 interface AppShellProps {
-  activePage: "tasks" | "setup" | "task-detail";
+  activePage: "tasks" | "setup" | "task-detail" | "exams" | "me" | "admin";
   children: ReactNode;
 }
 
 const navigationItems = [
+  { page: "exams", href: "/exams", title: "考试中心", icon: LayoutDashboard },
+  { page: "me", href: "/me", title: "我的考试", icon: ClipboardCheck },
   { page: "tasks", href: "/", title: "审查任务", icon: LayoutDashboard },
   { page: "setup", href: "/setup", title: "本地环境", icon: Settings2 },
 ] as const;
@@ -31,7 +33,7 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
       >
         跳到主要内容
       </a>
-      <aside className="flex border-b border-border bg-card lg:sticky lg:top-0 lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
+      <aside className="flex flex-col border-b border-border bg-card lg:sticky lg:top-0 lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
         <Link
           href="/"
           className="flex items-center gap-3 px-5 py-6 lg:px-6 lg:py-8"
@@ -50,7 +52,7 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
 
         <nav
           aria-label="主导航"
-          className="ml-auto flex items-center gap-1 px-3 lg:mt-3 lg:ml-0 lg:block lg:space-y-2 lg:px-4"
+          className="flex w-full flex-wrap items-center gap-1 px-3 pb-3 lg:mt-3 lg:block lg:space-y-2 lg:px-4"
         >
           {navigationItems.map(({ page, href, title, icon: Icon }) => (
             <Link
@@ -69,8 +71,11 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
               <span className="sr-only sm:hidden">{title}</span>
             </Link>
           ))}
+          <Link href="/admin/exams" className="block px-3 py-3 text-xs text-muted-foreground">
+            内容管理
+          </Link>
           <Link href="/access" className="block px-3 py-3 text-xs text-muted-foreground">
-            访问身份
+            账号与访问身份
           </Link>
         </nav>
 
@@ -96,7 +101,15 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
         <header className="flex h-20 items-center justify-between border-b border-border bg-card/60 px-6 lg:px-10">
           <p className="text-sm text-muted-foreground">
             工作空间 <span className="mx-2 text-border">/</span>{" "}
-            {activePage === "setup" ? "本地环境" : "审查任务"}
+            {activePage === "setup"
+              ? "本地环境"
+              : activePage === "exams"
+                ? "考试中心"
+                : activePage === "me"
+                  ? "我的考试"
+                  : activePage === "admin"
+                    ? "内容管理"
+                    : "审查任务"}
           </p>
           <Badge className="border-primary/15 bg-primary/5 text-primary">
             <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />

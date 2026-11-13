@@ -25,7 +25,10 @@
     "test:install": "playwright install chromium",
     "git:setup": "node scripts/setup-git.mjs",
     "commit:check": "node scripts/validate-commit.mjs",
-    "test:access": "playwright test --config=playwright.access.config.ts"
+    "test:access": "playwright test --config=playwright.access.config.ts",
+    "test:platform": "playwright test --config=playwright.platform.config.ts",
+    "test:sources": "playwright test --config=playwright.sources.config.ts",
+    "platform:admin": "node scripts/platform-admin.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.90",
