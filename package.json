@@ -27,6 +27,7 @@
     "commit:check": "node scripts/validate-commit.mjs",
     "test:access": "playwright test --config=playwright.access.config.ts",
     "test:platform": "playwright test --config=playwright.platform.config.ts",
+    "test:boundaries": "playwright test --config=playwright.boundaries.config.ts",
     "test:sources": "playwright test --config=playwright.sources.config.ts",
     "platform:admin": "node scripts/platform-admin.mjs"
   },

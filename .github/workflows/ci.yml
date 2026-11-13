@@ -27,6 +27,7 @@ jobs:
       - run: pnpm test:e2e
       - run: pnpm test:model
       - run: pnpm test:access
+      - run: pnpm test:boundaries
       - uses: actions/upload-artifact@v7.0.2
         if: failure()
         with:

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sessionAccount } from "@/lib/server/account-auth";
-import { favorite, notice, noticeHistory } from "@/lib/server/exam-store";
+import { favorite, notice, noticeVersion } from "@/lib/server/exam-store";
 import { platformDb } from "@/lib/server/platform-db";
 import { readSmallJson } from "@/lib/server/request-json";
 import { getReviewStore } from "@/lib/server/review-store";
@@ -84,7 +84,7 @@ export async function POST(
       if (!link || store.taskOwner(input.taskId!) !== account.id)
         throw new Error("只能为自己拥有的关联任务采用新版。");
       if (item.version === link.notice_version) return NextResponse.json({ ok: true });
-      const old = noticeHistory(noticeId).find((v) => v.version === link.notice_version);
+      const old = noticeVersion(noticeId, link.notice_version);
       if (!old) throw new Error("原始版本无法读取，请先核对记录。");
       store.createSupplementSource({
         taskId: input.taskId!,

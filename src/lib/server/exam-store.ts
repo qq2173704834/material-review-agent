@@ -142,6 +142,20 @@ export function noticeHistory(
     .all(id)
     .map((row) => ({ ...row, content: noticeInputSchema.parse(JSON.parse(row.payload)) }));
 }
+export function noticeVersion(
+  id: string,
+  version: number,
+): { version: number; content: NoticeContent; created_at: string; actor: string } | undefined {
+  const row = platformDb()
+    .prepare<
+      [string, number],
+      { version: number; payload: string; created_at: string; actor: string }
+    >(
+      "SELECT version,payload,created_at,actor FROM exam_notice_versions WHERE notice_id=? AND version=?",
+    )
+    .get(id, version);
+  return row ? { ...row, content: noticeInputSchema.parse(JSON.parse(row.payload)) } : undefined;
+}
 export function listNotices(admin = false): ExamNotice[] {
   const ids = platformDb()
     .prepare<[], { id: string }>("SELECT id FROM exam_notices ORDER BY created_at DESC LIMIT 2000")
@@ -261,7 +275,7 @@ export function favorites(
     .flatMap((row) => {
       const item = notice(row.notice_id, false);
       if (!item || !item.published_version) return [];
-      const historical = noticeHistory(item.id).find((v) => v.version === item.published_version);
+      const historical = noticeVersion(item.id, item.published_version);
       if (!historical) return [];
       return [
         {
@@ -287,6 +301,8 @@ export function favorite(userId: string, id: string, enabled: boolean, seen = fa
       "UPDATE exam_favorites SET seen_version=?,seen_status=? WHERE user_id=? AND notice_id=?",
     ).run(item.published_version, item.status, userId, id);
   else {
+    if (db.prepare("SELECT 1 FROM exam_favorites WHERE user_id=? AND notice_id=?").get(userId, id))
+      return;
     const count =
       db
         .prepare<[string], { n: number }>("SELECT COUNT(*) n FROM exam_favorites WHERE user_id=?")
