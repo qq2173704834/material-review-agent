@@ -135,6 +135,27 @@ export function EvidencePane({
               />
             )
           ) : null}
+          {evidence.region ? (
+            <div className="relative my-3 max-w-2xl">
+              <Image
+                unoptimized
+                src={`/api/tasks/${taskId}/materials/${evidence.materialId}/image?version=${evidence.materialVersion}&page=${evidence.region.pageNumber}`}
+                alt={`证据页图，第${evidence.region.pageNumber}页，红框为引用区域`}
+                width={1200}
+                height={1600}
+                className="block h-auto w-full"
+              />
+              <div
+                className="pointer-events-none absolute border-2 border-red-600 bg-red-500/10"
+                style={{
+                  left: `${evidence.region.box.x * 100}%`,
+                  top: `${evidence.region.box.y * 100}%`,
+                  width: `${evidence.region.box.width * 100}%`,
+                  height: `${evidence.region.box.height * 100}%`,
+                }}
+              />
+            </div>
+          ) : null}
           <ol className="space-y-3">
             {preview.segments.map((segment) => (
               <li key={segment.segmentIndex} className="rounded bg-muted/40 p-2">

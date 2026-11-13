@@ -1,6 +1,7 @@
+import { explicitRuleScope, compareRuleScopes, hasComplexRelation } from "./conflict-scope.ts";
 import type { ReviewRule, RuleExtractionWarning } from "@/domain/review-rule";
-import { findGregorianDates } from "@/lib/calendar-dates";
-import { extractNumericBounds, incompatibleBounds } from "./numeric-constraints";
+import { findGregorianDates } from "./calendar-dates.ts";
+import { extractNumericBounds, incompatibleBounds } from "./numeric-constraints.ts";
 
 interface NumericConstraint {
   unit: string;
@@ -90,6 +91,11 @@ export function findRuleConflicts(rules: ReviewRule[]): RuleExtractionWarning[] 
         firstRule.applicabilityScope !== secondRule.applicabilityScope
       )
         continue;
+      const scopeRelation = compareRuleScopes(
+        explicitRuleScope(firstRule.applicabilityCondition + ";" + firstRule.source.quotedText),
+        explicitRuleScope(secondRule.applicabilityCondition + ";" + secondRule.source.quotedText),
+      );
+      if (scopeRelation === "different") continue;
       const firstFormats = exclusiveFormats(firstRule.description, firstRule.target);
       const secondFormats = exclusiveFormats(secondRule.description, secondRule.target);
       const formatScopeMatch = firstFormats.some((first) =>
@@ -147,10 +153,17 @@ export function findRuleConflicts(rules: ReviewRule[]): RuleExtractionWarning[] 
         ),
       );
       const conflict = numericConflict || extendedConflict || deadlineConflict || formatConflict;
-      if (!conflict) continue;
+      const complex =
+        hasComplexRelation(firstRule.description + firstRule.source.quotedText) ||
+        hasComplexRelation(secondRule.description + secondRule.source.quotedText);
+      const relationCandidate = complex && firstRule.description !== secondRule.description;
+      if (!conflict && !relationCandidate) continue;
       warnings.push({
         code: "conflicting_constraints",
-        message: `对“${firstRule.target}”的要求相互矛盾，尚未指定采用依据。`,
+        message:
+          complex || scopeRelation === "unknown"
+            ? `对“${firstRule.target}”存在待核对关系候选（${complex ? "例外/替代/组合条件" : "适用范围不完整"}）；请对照双方引用确认范围与局部条款，不按发布时间自动覆盖。`
+            : `对“${firstRule.target}”的同范围要求存在显式冲突，尚未指定采用依据。`,
         source: firstRule.source,
         sources: [firstRule.source, secondRule.source],
         relatedRuleIds: [firstRule.id, secondRule.id],

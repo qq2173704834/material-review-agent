@@ -1,3 +1,5 @@
+import { hasComplexRelation } from "@/lib/conflict-scope";
+import { compareAlignedFields } from "@/lib/field-alignment";
 import type {
   ReviewCheckEvidence,
   ReviewCheckResult,
@@ -77,6 +79,7 @@ function materialDateEvidence(
     materialId: material.id,
     materialVersion: material.version,
     quotedText: segment?.text ?? matchedDateText,
+    region: segment?.region,
     location: segment?.location ?? "已提取全文",
     ...(segmentIndex >= 0 ? { segmentIndex } : {}),
   };
@@ -118,6 +121,7 @@ function fieldEvidence(
     materialId: material.id,
     materialVersion: material.version,
     quotedText: segment?.text ?? `${field}：${value}`,
+    region: segment?.region,
     location: segment?.location ?? "已提取全文",
     ...(segmentIndex >= 0 ? { segmentIndex } : {}),
   };
@@ -174,8 +178,40 @@ export function applicableRule(
 function compareRule(
   rule: ReviewRule,
   materials: ReviewMaterialSummary[],
+  background: ReviewTaskBackground,
 ): Pick<ReviewCheckResult, "verdict" | "reason" | "recommendation" | "evidence"> {
   const description = rule.description;
+  if (
+    /姓名|申请人|负责人|证号|身份证|日期|金额|合计|预算/.test(description) &&
+    materials.some((material) =>
+      material.segments.some((segment) => segment.region?.status === "candidate"),
+    )
+  )
+    return {
+      verdict: "needs_confirmation",
+      reason: "本条涉及图像关键字段，但仍有未核对区域；页面平均OCR分数不能代替关键字段与漏读核对。",
+      recommendation: "先对照原图确认相关区域、阅读顺序与字段映射，再复检。",
+      evidence: materials.flatMap((material) =>
+        material.segments
+          .filter((segment) => segment.region?.status === "candidate")
+          .slice(0, 5)
+          .map((segment) => ({
+            materialId: material.id,
+            materialVersion: material.version,
+            segmentIndex: segment.segmentIndex,
+            quotedText: segment.text,
+            location: segment.location,
+            region: segment.region,
+          })),
+      ),
+    };
+  if (hasComplexRelation(description) && !/二选一|至少一|任一/.test(description))
+    return {
+      verdict: "needs_confirmation",
+      reason: "本条含例外、更正或替代关系；当前确定性工具不能将其当作无条件约束。",
+      recommendation: "核对原文，在规则编辑中明确本次适用条件与实际约束；保留旧版本依据。",
+      evidence: materials.map(materialEvidence),
+    };
   const presencePattern = new RegExp(
     "^(?:必须|须|应|需|请)?(?:提交|提供|上传)(?:一份|1份)?\\s*" +
       escapeRegExp(rule.target) +
@@ -358,6 +394,26 @@ function compareRule(
     description.match(/字段[“「"]([^”」"]{1,40})[”」"]/u)?.[1] ??
     CONSISTENCY_FIELDS.find((field) => description.includes(field));
   if (consistencyField && /一致|相同/.test(description)) {
+    if (
+      materials.some((material) =>
+        material.segments.some(
+          (segment) =>
+            segment.region?.status === "candidate" && segment.text.includes(consistencyField),
+        ),
+      )
+    )
+      return {
+        verdict: "needs_confirmation",
+        reason: "待比较的图像字段所在区域尚未经人工核对，OCR平均分不能代替关键字段确认。",
+        recommendation: "先核对区域文字与结构，再确认字段映射。",
+        evidence,
+      };
+    const aligned = compareAlignedFields(
+      consistencyField,
+      materials,
+      background.fieldMappings ?? [],
+    );
+    if (aligned) return aligned;
     if (materials.length < 2)
       return {
         verdict: "needs_confirmation",
@@ -814,7 +870,7 @@ export function executeReviewRule(
                 recommendation: "如需提交，可上传后检查其明确规格要求。",
                 evidence: [],
               }
-            : compareRule(rule, materials);
+            : compareRule(rule, materials, background);
   return {
     ruleId: rule.id,
     ruleCode: rule.code,
@@ -833,6 +889,17 @@ export function executeReviewRule(
     requirement: rule.description,
     strength: rule.strength,
     ...comparison,
+    evidence: comparison.evidence.map((citation) => ({
+      ...citation,
+      region:
+        citation.region ??
+        materials
+          .find(
+            (material) =>
+              material.id === citation.materialId && material.version === citation.materialVersion,
+          )
+          ?.segments.find((segment) => segment.segmentIndex === citation.segmentIndex)?.region,
+    })),
     source: {
       sourceId: rule.source.sourceId,
       sourceVersion: rule.source.sourceVersion,

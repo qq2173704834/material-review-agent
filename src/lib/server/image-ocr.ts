@@ -66,6 +66,8 @@ export interface ImageOcrResult {
     text: string;
     bbox: { x0: number; y0: number; x1: number; y1: number };
     inferredColumns: boolean;
+    confidence?: number;
+    candidateCell?: { row: number; column: number };
   }>;
 }
 
@@ -99,25 +101,43 @@ export async function recognizeImageText(
     ]);
     const lines = (result.data.blocks ?? [])
       .flatMap((block) => block.paragraphs.flatMap((paragraph) => paragraph.lines))
-      .map((line) => {
-        let inferredColumns = false;
-        const parts: string[] = [];
+      .flatMap((line, rowIndex) => {
+        const groups: Array<typeof line.words> = [[]];
         line.words.forEach((word, index) => {
           const previous = line.words[index - 1];
           if (
             previous &&
             word.bbox.x0 - previous.bbox.x1 > Math.max(24, (line.bbox.y1 - line.bbox.y0) * 1.8)
-          ) {
-            parts.push("|");
-            inferredColumns = true;
-          }
-          parts.push(word.text);
+          )
+            groups.push([]);
+          groups.at(-1)!.push(word);
         });
-        return {
-          text: inferredColumns ? parts.join(" ").trim() : line.text.trim(),
-          bbox: line.bbox,
-          inferredColumns,
-        };
+        if (groups.length <= 1)
+          return [
+            {
+              text: line.text.trim(),
+              bbox: line.bbox,
+              confidence: line.confidence,
+              inferredColumns: false,
+            },
+          ];
+        return groups
+          .filter((group) => group.length)
+          .map((words, columnIndex) => ({
+            text: words
+              .map((word) => word.text)
+              .join(" ")
+              .trim(),
+            bbox: {
+              x0: Math.min(...words.map((word) => word.bbox.x0)),
+              y0: Math.min(...words.map((word) => word.bbox.y0)),
+              x1: Math.max(...words.map((word) => word.bbox.x1)),
+              y1: Math.max(...words.map((word) => word.bbox.y1)),
+            },
+            confidence: Math.min(...words.map((word) => word.confidence)),
+            inferredColumns: true,
+            candidateCell: { row: rowIndex + 1, column: columnIndex + 1 },
+          }));
       })
       .filter((line) => line.text);
     return {

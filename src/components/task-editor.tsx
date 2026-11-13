@@ -49,7 +49,12 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
     setError("");
     setIsSaving(true);
     try {
-      const background = { ...task?.background, projectType, projectStage, collaborationScope };
+      const background = {
+        conditionAnswers: task?.background.conditionAnswers,
+        projectType,
+        projectStage,
+        collaborationScope,
+      };
       const isFileSource = !task && sourceMode === "file";
       const formData = new FormData();
       if (isFileSource && sourceFile) {

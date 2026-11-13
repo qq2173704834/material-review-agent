@@ -227,6 +227,7 @@ passed和failed都要给出证据；若缺乏充分证据则needs_confirmation�
       materialVersion: material.version,
       quotedText: citation.quotedText,
       location: segment.location,
+      region: segment.region,
       segmentIndex: segment.segmentIndex,
     };
   });
@@ -248,6 +249,11 @@ passed和failed都要给出证据；若缺乏充分证据则needs_confirmation�
     };
   }
   let verdict = response.verdict;
+  if (
+    evidence.some((item) => item.region?.status === "candidate") &&
+    /姓名|证号|身份证|日期|金额|合计/.test(rule.description)
+  )
+    verdict = "needs_confirmation";
   let reason = response.reason;
   if (isPropertyRule) {
     verdict = "needs_confirmation";

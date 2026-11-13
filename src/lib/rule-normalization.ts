@@ -1,3 +1,4 @@
+import { explicitRuleScope } from "./conflict-scope";
 import type { ReviewRule } from "@/domain/review-rule";
 import { extractNumericBounds } from "./numeric-constraints";
 
@@ -49,6 +50,7 @@ export function normalizeRules(rules: ReviewRule[]): ReviewRule[] {
       rule.strength,
       rule.applicabilityScope,
       rule.applicabilityCondition,
+      explicitRuleScope(rule.source.quotedText),
       [...rule.materialIds].sort(),
       rule.parameters,
       rule.checkability,

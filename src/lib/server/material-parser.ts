@@ -1,3 +1,4 @@
+import { ocrRegion } from "@/lib/ocr-regions";
 import "server-only";
 
 import { parse as parseCsv } from "csv-parse/sync";
@@ -228,7 +229,21 @@ export async function parseMaterial(
       ...hints,
     ]);
     const extractedText = parsed.text;
-    const segments = parsed.segments;
+    const normalizedMetadata = await sharp(normalizedImage).metadata();
+    const segments = parsed.segments.map((segment, index) => ({
+      ...segment,
+      ...(recognized.lines[index] && normalizedMetadata.width && normalizedMetadata.height
+        ? {
+            region: ocrRegion(
+              recognized.lines[index],
+              normalizedMetadata.width,
+              normalizedMetadata.height,
+              1,
+              index,
+            ),
+          }
+        : {}),
+    }));
     const isComplete =
       hasRecognizedText &&
       recognized.confidence >= MINIMUM_COMPLETE_OCR_CONFIDENCE &&
@@ -241,7 +256,7 @@ export async function parseMaterial(
         : hasRecognizedText || hints.length
           ? "partial"
           : "failed",
-      parserName: "tesseract.js-chi_sim-eng+regions-v2",
+      parserName: "tesseract.js-chi_sim-eng+regions-v3",
       extractedText,
       segments,
       pageCount: null,

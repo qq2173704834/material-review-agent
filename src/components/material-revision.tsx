@@ -1,4 +1,5 @@
 "use client";
+import { MaterialRegionReview } from "@/components/material-region-review";
 import { useState } from "react";
 import { useTaskActivity } from "@/components/task-workspace";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
@@ -141,6 +142,13 @@ export function MaterialRevisionEditor({
               </button>
             </>
           )}
+          <MaterialRegionReview
+            key={`${material.version}-${segmentIndex}`}
+            taskId={taskId}
+            material={material}
+            segmentIndex={segmentIndex}
+            onSaved={onSaved}
+          />
           {material.revision && (
             <button className={buttonClass} disabled={isSaving} onClick={() => save("restore")}>
               恢复原始解析文字

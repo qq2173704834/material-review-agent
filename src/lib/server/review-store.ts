@@ -30,7 +30,7 @@ import type { MaterialClassification } from "@/lib/material-classification";
 
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
-const DATABASE_SCHEMA_VERSION = 20;
+const DATABASE_SCHEMA_VERSION = 22;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -77,6 +77,7 @@ interface DatabaseTaskSummaryRow {
   project_type: string | null;
   project_stage: string | null;
   condition_answers_json?: string;
+  field_mappings_json?: string;
   collaboration_scope: string;
   source_count: number;
   notice_source_version: number | null;
@@ -173,6 +174,7 @@ interface DatabaseMaterialRow {
 }
 
 interface DatabaseMaterialSegmentRow {
+  region_json: string;
   segment_index: number;
   text: string;
   start_offset: number;
@@ -231,6 +233,13 @@ function readProjectBackground(row: DatabaseTaskSummaryRow): ReviewTaskBackgroun
       ? {
           conditionAnswers: JSON.parse(row.condition_answers_json) as NonNullable<
             ReviewTaskBackground["conditionAnswers"]
+          >,
+        }
+      : {}),
+    ...(row.field_mappings_json && row.field_mappings_json !== "[]"
+      ? {
+          fieldMappings: JSON.parse(row.field_mappings_json) as NonNullable<
+            ReviewTaskBackground["fieldMappings"]
           >,
         }
       : {}),
@@ -811,6 +820,20 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
           .run(defaultOwner());
       })();
     }
+    if (database.pragma("user_version", { simple: true }) === 20) {
+      database.transaction(() => {
+        database.exec(
+          "ALTER TABLE review_tasks ADD COLUMN field_mappings_json TEXT NOT NULL DEFAULT '[]'; PRAGMA user_version = 21;",
+        );
+      })();
+    }
+    if (database.pragma("user_version", { simple: true }) === 21) {
+      database.transaction(() => {
+        database.exec(
+          "ALTER TABLE review_material_segments ADD COLUMN region_json TEXT NOT NULL DEFAULT 'null'; PRAGMA user_version = 22;",
+        );
+      })();
+    }
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
     if (finalSchemaVersion !== DATABASE_SCHEMA_VERSION) {
       throw new Error("The local review database migration did not complete");
@@ -1025,6 +1048,25 @@ class ReviewStore {
     return task;
   }
 
+  isReady(): boolean {
+    this.database.prepare("SELECT 1 FROM review_tasks LIMIT 1").all();
+    return true;
+  }
+
+  saveFieldMappings(
+    taskId: string,
+    expected: string,
+    mappings: NonNullable<ReviewTaskBackground["fieldMappings"]>,
+  ): boolean {
+    return (
+      this.database
+        .prepare(
+          "UPDATE review_tasks SET field_mappings_json = ?, updated_at = ? WHERE id = ? AND field_mappings_json = ?",
+        )
+        .run(JSON.stringify(mappings), new Date().toISOString(), taskId, expected).changes === 1
+    );
+  }
+
   updateTask(input: UpdateReviewTaskInput): ReviewTaskDetails | undefined {
     const updatedAt = new Date().toISOString();
     const transaction = this.database.transaction(() => {
@@ -1115,6 +1157,7 @@ class ReviewStore {
                task.project_type,
                task.project_stage,
                task.condition_answers_json,
+               task.field_mappings_json,
                task.collaboration_scope,
                COUNT(DISTINCT source.id) AS source_count,
                MAX(source_version.version) AS notice_source_version,
@@ -1159,6 +1202,7 @@ class ReviewStore {
                task.project_type,
                task.project_stage,
                task.condition_answers_json,
+               task.field_mappings_json,
                task.collaboration_scope,
                COUNT(DISTINCT all_sources.id) AS source_count,
                notice_current.version AS notice_source_version,
@@ -1586,8 +1630,8 @@ class ReviewStore {
 
       const insertSegment = this.database.prepare(`
         INSERT INTO review_material_segments (
-          material_id, material_version, segment_index, text, start_offset, end_offset, location
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          material_id, material_version, segment_index, text, start_offset, end_offset, location, region_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
       for (const segment of input.segments) {
         insertSegment.run(
@@ -1598,6 +1642,7 @@ class ReviewStore {
           segment.startOffset,
           segment.endOffset,
           segment.location,
+          JSON.stringify(segment.region ?? null),
         );
       }
     });
@@ -1635,7 +1680,7 @@ class ReviewStore {
     const segments = this.database
       .prepare<[string, number, number], DatabaseMaterialSegmentRow>(
         `
-      SELECT segment_index, substr(text, 1, 16000) AS text, start_offset, end_offset, location
+      SELECT segment_index, substr(text, 1, 16000) AS text, start_offset, end_offset, location, region_json
       FROM review_material_segments WHERE material_id = ? AND material_version = ?
       ORDER BY segment_index LIMIT 5 OFFSET ?
     `,
@@ -1657,6 +1702,13 @@ class ReviewStore {
         startOffset: segment.start_offset,
         endOffset: segment.end_offset,
         location: segment.location,
+        ...(segment.region_json !== "null"
+          ? {
+              region: JSON.parse(segment.region_json) as NonNullable<
+                MaterialContentSegment["region"]
+              >,
+            }
+          : {}),
       })),
     };
   }
@@ -1729,7 +1781,7 @@ class ReviewStore {
       const segments = this.database
         .prepare<[string, number], DatabaseMaterialSegmentRow>(
           `
-          SELECT segment_index, text, start_offset, end_offset, location
+          SELECT segment_index, text, start_offset, end_offset, location, region_json
           FROM review_material_segments
           WHERE material_id = ? AND material_version = ?
           ORDER BY segment_index ASC
@@ -1754,6 +1806,13 @@ class ReviewStore {
           startOffset: segment.start_offset,
           endOffset: segment.end_offset,
           location: segment.location,
+          ...(segment.region_json !== "null"
+            ? {
+                region: JSON.parse(segment.region_json) as NonNullable<
+                  MaterialContentSegment["region"]
+                >,
+              }
+            : {}),
         })),
         pageCount: row.page_count,
         sheetNames: parseJsonStringArray(row.sheet_names_json),

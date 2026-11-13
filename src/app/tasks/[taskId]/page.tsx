@@ -1,3 +1,4 @@
+import { FieldMappings } from "@/components/field-mappings";
 import { TaskExamContext } from "@/components/task-exam-context";
 import { Clock3 } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -78,6 +79,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
               通知、指南、模板属于审查依据。它们告诉系统按什么要求检查。
             </p>
             <TaskEditor task={task} />
+            <FieldMappings task={task} />
             {task.noticeSource.inputType === "webpage" ? (
               <p className="mt-4 max-w-4xl break-words border-l-2 border-border pl-3 text-xs leading-5 text-muted-foreground">
                 网页来源：

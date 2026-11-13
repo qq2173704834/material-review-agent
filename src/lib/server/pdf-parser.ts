@@ -1,3 +1,4 @@
+import { ocrRegion } from "@/lib/ocr-regions";
 import "server-only";
 
 import { createCanvas } from "@napi-rs/canvas";
@@ -45,13 +46,19 @@ export async function parsePdfMaterial(
     pdfjs.OPS.paintInlineImageXObjectGroup,
     pdfjs.OPS.paintImageMaskXObjectGroup,
   ]);
-  function appendText(text: string, pageNumber: number, isOcr: boolean): void {
+  function appendText(
+    text: string,
+    pageNumber: number,
+    isOcr: boolean,
+    region?: MaterialContentSegment["region"],
+  ): void {
     const normalized = text.trim();
     if (!normalized) return;
     if (extractedText) extractedText += "\n";
     const startOffset = extractedText.length;
     extractedText += normalized;
     segments.push({
+      region,
       segmentIndex: segments.length,
       text: normalized,
       startOffset,
@@ -166,15 +173,16 @@ export async function parsePdfMaterial(
         );
         const hasOcrText = Boolean(result.text.trim());
         // Keep native text if OCR fails, but disclose the unread image content.
-        appendText(
-          hasOcrText
-            ? result.lines.length
-              ? result.lines.map((line) => line.text).join("\n")
-              : result.text
-            : nativeText,
-          pageNumber,
-          hasOcrText,
-        );
+        if (hasOcrText && result.lines.length) {
+          result.lines.forEach((line, index) =>
+            appendText(
+              line.text,
+              pageNumber,
+              true,
+              ocrRegion(line, canvas.width, canvas.height, pageNumber, index),
+            ),
+          );
+        } else appendText(hasOcrText ? result.text : nativeText, pageNumber, hasOcrText);
         pageCoverage.push({
           pageNumber,
           method: hasOcrText ? "ocr" : nativeText ? "text" : "ocr",
@@ -213,7 +221,9 @@ export async function parsePdfMaterial(
       mediaType: "application/pdf",
       extension: "pdf",
       parseStatus: isComplete && extractedText ? "text_extracted" : "partial",
-      parserName: ocrPageCount ? "pdfjs-dist+tesseract.js+rows-v2" : "pdfjs-dist+rows-v2",
+      parserName: ocrPageCount
+        ? "pdfjs-dist+tesseract.js+rows-regions-v3"
+        : "pdfjs-dist+rows-regions-v3",
       extractedText,
       segments,
       pageCount: document.numPages,

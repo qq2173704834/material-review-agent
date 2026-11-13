@@ -13,7 +13,21 @@ export type RequirementStrength = "required" | "recommended" | "optional";
 
 export type CollaborationScope = "individual" | "team" | "unknown";
 
+export interface FieldMapping {
+  subject: string;
+  canonicalField: string;
+  materialId: string;
+  materialVersion: number;
+  segmentIndex: number;
+  sourceField: string;
+  rawValue: string;
+  note: string;
+  confirmedBy: string;
+  confirmedAt: string;
+}
+
 export interface ReviewTaskBackground {
+  fieldMappings?: FieldMapping[];
   conditionAnswers?: Array<{ condition: string; applies: boolean; note: string }>;
   projectType: string;
   projectStage: string;
@@ -78,7 +92,29 @@ export interface MaterialPageCoverage {
   message: string;
 }
 
+export interface MaterialRegion {
+  pageNumber: number;
+  box: { x: number; y: number; width: number; height: number };
+  role: "body" | "header" | "footer" | "sidebar" | "table";
+  readingOrder: number;
+  status: "candidate" | "confirmed";
+  recognition: "printed" | "handwritten" | "unknown";
+  confidence?: number;
+  cell?: {
+    tableId: string;
+    row: number;
+    column: number;
+    rowSpan: number;
+    columnSpan: number;
+    continuesFromPage?: number;
+  };
+  reviewedBy?: string;
+  reviewedAt?: string;
+  note?: string;
+}
+
 export interface MaterialContentSegment {
+  region?: MaterialRegion;
   segmentIndex: number;
   text: string;
   startOffset: number;
@@ -108,8 +144,16 @@ export interface ReviewMaterialSummary {
 }
 
 export interface MaterialRevision {
-  kind: "correction" | "restore" | "retry" | "classification" | "select_version";
+  kind:
+    "correction" | "restore" | "retry" | "classification" | "select_version" | "region" | "enhance";
   baseVersion: number;
+  actorId?: string;
+  imageProcessing?: {
+    rotateDegrees: number;
+    normalize: boolean;
+    sharpen: boolean;
+    corners?: Array<{ x: number; y: number }>;
+  };
   note: string;
   pageNumber?: number;
 }
@@ -130,6 +174,7 @@ export interface MaterialVersionPreview {
 export type ReviewExecutionStatus = "running" | "completed" | "cancelled" | "failed";
 
 export interface ReviewCheckEvidence {
+  region?: MaterialRegion;
   materialId: string;
   materialVersion: number;
   quotedText: string;
@@ -226,4 +271,16 @@ export interface MaterialEvidence {
   quotedText: string;
   pageNumber?: number;
   paragraphIndex?: number;
+}
+
+/** User-editable task background excludes server-authored mapping confirmations. */
+export function editableTaskBackground(
+  background: ReviewTaskBackground,
+): Omit<ReviewTaskBackground, "fieldMappings"> {
+  return {
+    projectType: background.projectType,
+    projectStage: background.projectStage,
+    collaborationScope: background.collaborationScope,
+    ...(background.conditionAnswers ? { conditionAnswers: background.conditionAnswers } : {}),
+  };
 }

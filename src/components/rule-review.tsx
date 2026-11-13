@@ -694,6 +694,7 @@ export function RuleReview({
                       <input
                         className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
                         maxLength={500}
+                        placeholder="可填写：地区：浙江；考期：2026；阶段：报名；岗位：A；科目：英语。未知条件保持待确认。"
                         value={editingRule.applicabilityCondition}
                         onChange={(event) =>
                           setEditingRule({

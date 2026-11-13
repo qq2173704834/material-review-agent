@@ -1,3 +1,4 @@
+import { relationWarnings } from "@/lib/relation-candidates";
 import "server-only";
 
 import { randomUUID } from "node:crypto";
@@ -10,7 +11,23 @@ import type { RequirementSourceVersion } from "@/domain/review";
 import type { ReviewRule, RuleExtractionWarning } from "@/domain/review-rule";
 import type { ModelCall } from "@/domain/model-call";
 
+const relationCitationSchema = z.object({
+  sourceId: z.string().uuid(),
+  paragraphIndex: z.number().int().nonnegative(),
+  quotedText: z.string().min(1).max(2000),
+});
 const extractedRulesSchema = z.object({
+  relations: z
+    .array(
+      z.object({
+        first: relationCitationSchema,
+        second: relationCitationSchema,
+        kind: z.enum(["exception", "alternative", "replacement", "implicit_conflict"]),
+        reason: z.string().min(1).max(350),
+      }),
+    )
+    .max(30)
+    .optional(),
   rules: z
     .array(
       reviewRuleSchema
@@ -50,6 +67,7 @@ export async function extractLiveRules(
       signal,
       maxOutputTokens: 12000,
       system: `你是通用材料预审规则提取器。仅提取当前给出的来源中实际存在的要求，不补充常识规则。
+可额外返回relations候选，用于例外、A或B替代组合、局部更正和隐含矛盾；全部是待人工核对，不裁决来源权威或按发布时间覆盖。每个候选必须引用两个不同已提取条款内的逐字原文与真实sourceId/paragraphIndex；没有充分双方引用则不提出。地区/考期/阶段/岗位/科目不同不作矛盾，共享条件必须放入applicabilityCondition，可用“地区：浙江；阶段：报名”的显式格式。
 每条规则只含一个独立约束：格式、单文件大小、数量、PDF总页数、存在性、内容要求分别拆开；共享条件不能丢失。
 二选一/至少一项的替代组合必须保留为一个完整关系，不拆成两条必交；组合的候选名称和满足方式写入description与parameters。原创性、美观等缺乏客观标准的要求标为assisted并说明评价限制，不伪造客观合规结论。
 required=必须，recommended=建议，optional=可选，不明确用unknown并填写uncertainty。
@@ -63,7 +81,12 @@ paragraphIndex须是提供的段落编号；quotedText须为该段落中逐字�
 仅返回业务对象{"rules":[具体规则对象]}。下面是用于校验的 JSON Schema，不是输出内容，禁止复述 Schema 或输出第二个 JSON：
 <validation_schema>${JSON.stringify(z.toJSONSchema(extractedRulesSchema))}</validation_schema>`,
       prompt: JSON.stringify({
+        sourceId: source.id,
         sourceName: source.displayName,
+        previousRules: rules.map((rule) => ({
+          description: rule.description,
+          source: rule.source,
+        })),
         noticeParagraphs: source.segments.map(({ paragraphIndex, text }) => ({
           paragraphIndex,
           text,
@@ -113,6 +136,16 @@ paragraphIndex须是提供的段落编号；quotedText须为该段落中逐字�
           message: rule.uncertainty.slice(0, 500),
           source: rule.source,
         });
+    }
+    try {
+      warnings.push(...relationWarnings(generated.value.relations ?? [], sources, rules));
+    } catch {
+      throw new ModelServiceError(
+        "invalid_citation",
+        "模型关系候选缺少可定位的双方条款，未保存本次规则。",
+        422,
+        generated.call,
+      );
     }
   }
   if (!rules.length)

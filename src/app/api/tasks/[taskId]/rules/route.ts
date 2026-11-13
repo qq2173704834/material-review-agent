@@ -315,7 +315,22 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Ne
       createdAt: new Date().toISOString(),
       rules: editedRules,
       warnings: [
-        ...currentRuleSet.warnings.filter((warning) => warning.code !== "conflicting_constraints"),
+        ...currentRuleSet.warnings.filter(
+          (warning) =>
+            warning.code !== "conflicting_constraints" ||
+            (warning.message.startsWith("模型待核对关系候选") &&
+              warning.relatedRuleIds?.every((id) => {
+                const before = currentRuleSet.rules.find((rule) => rule.id === id),
+                  after = editedRules.find((rule) => rule.id === id);
+                return (
+                  before &&
+                  after &&
+                  before.description === after.description &&
+                  before.applicabilityCondition === after.applicabilityCondition &&
+                  JSON.stringify(before.source) === JSON.stringify(after.source)
+                );
+              })),
+        ),
         ...findRuleConflicts(editedRules),
       ],
     });

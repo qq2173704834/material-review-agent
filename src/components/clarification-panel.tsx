@@ -1,4 +1,5 @@
 "use client";
+import { editableTaskBackground } from "@/domain/review";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -86,7 +87,7 @@ export function ClarificationPanel({
           description: task.description,
           noticeText: task.noticeSource.originalText,
           background: {
-            ...task.background,
+            ...editableTaskBackground(task.background),
             collaborationScope: scope,
             projectStage,
             projectType,

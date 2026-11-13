@@ -1,4 +1,5 @@
 "use client";
+import { editableTaskBackground } from "@/domain/review";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
@@ -31,7 +32,7 @@ export function MaterialInsights({ task }: { task: ReviewTaskDetails }): ReactEl
           name: task.name,
           description: task.description,
           noticeText: task.noticeSource.originalText,
-          background: { ...task.background, [field]: value },
+          background: { ...editableTaskBackground(task.background), [field]: value },
         }),
       });
       setMessage(response.ok ? "已人工确认背景建议，相关结果需复检。" : "背景保存失败，请重试。");
