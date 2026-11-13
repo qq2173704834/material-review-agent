@@ -15,19 +15,20 @@ export const metadata: Metadata = { title: "本地环境" };
 export const dynamic = "force-dynamic";
 
 const initializedItems = [
-  "Next.js App Router 与严格 TypeScript",
-  "Tailwind CSS 与 shadcn/ui 基础组件",
-  "SQLite 本地任务、通知版本与来源位置存储",
-  "多格式材料解析、规格检查与逐项进度",
-  "真实模型规则提取与材料证据审查",
-  "材料版本失效、复检对比与 Markdown 报告",
-  "服务端环境状态与健康检查",
-  "代码检查、格式化与 Playwright 测试入口",
+  "多格式材料解析、规格检查与逐项审查进度",
+  "图片与扫描 PDF 中英 OCR、逐页读取状态和人工文字纠正",
+  "公开网页与关联附件导入、来源版本及原文定位",
+  "明确字段的跨材料一致性与数值、日期、排他格式冲突提醒",
+  "模型规则提取、材料证据、历史版本、复检与报告导出",
+  "用户名密码注册登录、恢复码、会话管理与按任务授权",
+  "学生考试目录、公告审核发布、收藏与公告关联预审",
 ];
-const pendingItems = [
-  "图像 OCR 与复杂扫描件识别",
-  "网页来源、跨材料一致性与规则冲突增强",
-  "多人账号、访问权限与公网部署",
+const capabilityLimits = [
+  "复杂扫描件：多栏阅读顺序、合并表格与手写识别仍需增强和样本验收；不判断签章真伪。",
+  "复杂语义：隐含条件冲突、字段别名和多主体对应仍需人工核对。",
+  "考试覆盖：来源逐站适配并经审核发布，未收录不代表没有考试。",
+  "运行与上线：当前为本机单实例；公网部署、HTTPS、外置灾备和多实例运行尚未完成上线验收。",
+  "效果与体验：独立业务效果评估、首次学生走查与完整辅助技术人工审计仍待完成。",
 ];
 
 export default function SetupPage(): ReactElement {
@@ -42,7 +43,7 @@ export default function SetupPage(): ReactElement {
 
   return (
     <AppShell activePage="setup">
-      <Badge className="mb-4">本地工作台 · ENG-005 / ENG-008—ENG-010</Badge>
+      <Badge className="mb-4">本地工作台 · 功能与模型配置</Badge>
       <h1 className="text-2xl font-semibold sm:text-3xl">本地环境与开发状态</h1>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
         在这里检查模型配置与连接。真实服务由你手动触发调用，配置完整不等于连接已经成功。
@@ -93,10 +94,10 @@ export default function SetupPage(): ReactElement {
           className="rounded-2xl border border-border bg-card p-6"
         >
           <h2 id="pending-heading" className="font-semibold">
-            后续功能，尚未实现
+            当前限制与后续验收
           </h2>
           <ul className="mt-6 space-y-5">
-            {pendingItems.map((item) => (
+            {capabilityLimits.map((item) => (
               <li key={item} className="flex gap-3 text-sm leading-6 text-muted-foreground">
                 <CircleDashed className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 {item}
