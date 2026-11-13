@@ -1,3 +1,4 @@
+import { recordModelOperation } from "@/lib/server/model-telemetry";
 import "server-only";
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -145,7 +146,9 @@ export async function generateModelJson<T>(options: {
         const parsed = options.schema.safeParse(generated.output);
         if (!parsed.success)
           throw new ModelServiceError("invalid_response", "模型输出结构无效，未采用该结果。", 502);
-        return { value: parsed.data, call: makeCall("completed", "") };
+        const call = makeCall("completed", "");
+        recordModelOperation(call);
+        return { value: parsed.data, call };
       } catch (error) {
         if (!usageRecorded) {
           hasUnknownUsage = true;
@@ -208,6 +211,8 @@ export async function generateModelJson<T>(options: {
       code = "invalid_response";
       message = "模型没有返回有效 JSON，未采用该结果。";
     }
-    throw new ModelServiceError(code, message, statusCode, makeCall("failed", code));
+    const call = makeCall("failed", code);
+    recordModelOperation(call);
+    throw new ModelServiceError(code, message, statusCode, call);
   }
 }

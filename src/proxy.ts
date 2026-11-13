@@ -1,3 +1,4 @@
+import { requestOrigin } from "@/lib/public-origin";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { accessUsers, isLegacyTestMode, requestIdentity } from "@/lib/server/access-config";
@@ -7,12 +8,13 @@ import { getReviewStore } from "@/lib/server/review-store";
 
 export function proxy(request: NextRequest): NextResponse {
   const path = request.nextUrl.pathname;
-  if (!["GET", "HEAD", "OPTIONS"].includes(request.method)) {
-    const origin = request.headers.get("origin");
-    if (origin && origin !== `${request.nextUrl.protocol}//${request.headers.get("host")}`)
-      return NextResponse.json({ error: "拒绝跨站写入。" }, { status: 403 });
-  }
   try {
+    const expectedOrigin = requestOrigin(request);
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+      const origin = request.headers.get("origin");
+      if (origin && origin !== expectedOrigin)
+        return NextResponse.json({ error: "拒绝跨站写入。" }, { status: 403 });
+    }
     const legacy = isLegacyTestMode();
     if (legacy && ["/access", "/api/access", "/api/health"].includes(path))
       return NextResponse.next();

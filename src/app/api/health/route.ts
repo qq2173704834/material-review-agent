@@ -1,3 +1,4 @@
+import { platformDb } from "@/lib/server/platform-db";
 import { isLegacyTestMode } from "@/lib/server/access-config";
 import { NextResponse } from "next/server";
 
@@ -8,11 +9,21 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export function GET(): NextResponse {
-  if (!isLegacyTestMode())
-    return NextResponse.json(
-      { status: "ok", application: "material-review-agent" },
-      { headers: { "Cache-Control": "no-store" } },
-    );
+  if (!isLegacyTestMode()) {
+    try {
+      platformDb().prepare("SELECT 1 FROM accounts LIMIT 1").all();
+      getReviewStore().isReady();
+      return NextResponse.json(
+        { status: "ok", application: "material-review-agent" },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    } catch {
+      return NextResponse.json(
+        { status: "unavailable", application: "material-review-agent" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+  }
   getReviewStore().listTasks();
   const runtimeStatus = getRuntimeStatus(true);
   const isConfiguredCorrectly = runtimeStatus.mode !== "invalid";

@@ -1,0 +1,6 @@
+# Copy to the ignored project-root .env.deploy; replace the host before use.
+APP_PUBLIC_ORIGIN=https://exams.example.com
+REVIEW_AUTH_MODE=accounts
+AI_MODE=mock
+# For live mode, add provider/base URL/model/key here locally; never commit them.
+# Docker supplies REVIEW_DATA_DIR, FFMPEG_PATH and FFPROBE_PATH.

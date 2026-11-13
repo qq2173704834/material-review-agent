@@ -29,7 +29,11 @@
     "test:platform": "playwright test --config=playwright.platform.config.ts",
     "test:boundaries": "playwright test --config=playwright.boundaries.config.ts",
     "test:sources": "playwright test --config=playwright.sources.config.ts",
-    "platform:admin": "node scripts/platform-admin.mjs"
+    "platform:admin": "node scripts/platform-admin.mjs",
+    "backup:full": "node scripts/full-backup.mjs",
+    "ops:check": "node scripts/operations.mjs",
+    "evaluate:ocr": "node scripts/evaluate-ocr.mjs",
+    "start:deploy": "node scripts/start-production.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.90",

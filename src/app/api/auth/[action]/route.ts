@@ -1,3 +1,4 @@
+import { requestOrigin } from "@/lib/public-origin";
 import { rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { platformDirectory } from "@/lib/server/platform-db";
@@ -48,7 +49,7 @@ function sessionResponse(body: unknown, token: string, request: Request): NextRe
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: new URL(request.url).protocol === "https:",
+    secure: new URL(requestOrigin(request)).protocol === "https:",
     path: "/",
     maxAge: token ? SESSION_SECONDS : 0,
   });

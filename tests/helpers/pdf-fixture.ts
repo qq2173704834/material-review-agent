@@ -1,7 +1,10 @@
 import { createCanvas } from "@napi-rs/canvas";
 
 /** Actual image-only and mixed PDFs, with deterministic text suitable for OCR. */
-export function createReviewPdf(pages: Array<"text" | "scan" | "blank">): Buffer {
+export function createReviewPdf(
+  pages: Array<"text" | "scan" | "blank">,
+  scanJpeg?: Buffer,
+): Buffer {
   const canvas = createCanvas(1200, 500);
   const context = canvas.getContext("2d");
   context.fillStyle = "white";
@@ -10,7 +13,7 @@ export function createReviewPdf(pages: Array<"text" | "scan" | "blank">): Buffer
   context.font = "48px Arial";
   context.fillText("Project name: GREEN ENERGY", 60, 100);
   context.fillText("Budget total: 12000", 60, 200);
-  const jpeg = canvas.toBuffer("image/jpeg");
+  const jpeg = scanJpeg ?? canvas.toBuffer("image/jpeg");
   const objects: Buffer[] = [];
   const ascii = (text: string): Buffer => Buffer.from(text, "ascii");
   const stream = (header: string, data: Buffer): Buffer =>
