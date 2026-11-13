@@ -35,15 +35,56 @@ export async function GET(
       const path = await realpath(resolve(root, file.storageKey));
       if (!path.startsWith(expectedDirectory + sep)) throw new Error("Invalid storage location");
       const content = await readFile(path);
-      const inline = ["application/pdf", "image/png", "image/jpeg"].includes(file.mediaType);
+      const inline = [
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "video/mp4",
+        "video/webm",
+        "video/quicktime",
+      ].includes(file.mediaType);
+      const headers: Record<string, string> = {
+        "Content-Type": inline ? file.mediaType : "application/octet-stream",
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(file.originalFileName)}`,
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; media-src 'self'; sandbox",
+        "Accept-Ranges": "bytes",
+      };
+      const range = request.headers.get("range");
+      if (range) {
+        const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+        let start = match?.[1] ? Number(match[1]) : 0;
+        let end = match?.[2] ? Number(match[2]) : content.length - 1;
+        if (match && !match[1] && match[2]) {
+          start = Math.max(0, content.length - Number(match[2]));
+          end = content.length - 1;
+        }
+        if (
+          !match ||
+          (!match[1] && !match[2]) ||
+          !Number.isSafeInteger(start) ||
+          !Number.isSafeInteger(end) ||
+          start > end ||
+          start >= content.length
+        ) {
+          return new Response(null, {
+            status: 416,
+            headers: { ...headers, "Content-Range": "bytes */" + content.length },
+          });
+        }
+        end = Math.min(end, content.length - 1);
+        return new Response(content.subarray(start, end + 1), {
+          status: 206,
+          headers: {
+            ...headers,
+            "Content-Range": "bytes " + start + "-" + end + "/" + content.length,
+            "Content-Length": String(end - start + 1),
+          },
+        });
+      }
       return new Response(content, {
-        headers: {
-          "Content-Type": inline ? file.mediaType : "application/octet-stream",
-          "Content-Disposition": `${inline ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(file.originalFileName)}`,
-          "Cache-Control": "no-store",
-          "X-Content-Type-Options": "nosniff",
-          "Content-Security-Policy": "default-src 'none'; sandbox",
-        },
+        headers: { ...headers, "Content-Length": String(content.length) },
       });
     } catch {
       return NextResponse.json(

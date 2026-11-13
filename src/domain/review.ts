@@ -14,6 +14,7 @@ export type RequirementStrength = "required" | "recommended" | "optional";
 export type CollaborationScope = "individual" | "team" | "unknown";
 
 export interface ReviewTaskBackground {
+  conditionAnswers?: Array<{ condition: string; applies: boolean; note: string }>;
   projectType: string;
   projectStage: string;
   collaborationScope: CollaborationScope;
@@ -107,7 +108,7 @@ export interface ReviewMaterialSummary {
 }
 
 export interface MaterialRevision {
-  kind: "correction" | "restore" | "retry" | "classification";
+  kind: "correction" | "restore" | "retry" | "classification" | "select_version";
   baseVersion: number;
   note: string;
   pageNumber?: number;
@@ -193,6 +194,8 @@ export interface HumanResolution {
 }
 
 export interface RemediationTask {
+  assignee?: string;
+  assignmentHistory?: Array<{ assignee: string; note: string; at: string }>;
   id: string;
   taskId: string;
   executionId: string;

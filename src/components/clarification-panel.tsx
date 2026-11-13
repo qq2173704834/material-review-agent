@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { applicableRule } from "@/lib/review-checks";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 
 import type { ReviewRuleSet } from "@/domain/review-rule";
@@ -22,13 +23,16 @@ export function ClarificationPanel({
   const [scope, setScope] = useState(task.background.collaborationScope);
   const [projectStage, setProjectStage] = useState(task.background.projectStage);
   const [projectType, setProjectType] = useState(task.background.projectType);
+  const [conditionAnswers, setConditionAnswers] = useState(task.background.conditionAnswers ?? []);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const clearUnsaved = useUnsavedChanges(
     !dismissed &&
       (scope !== task.background.collaborationScope ||
         projectStage !== task.background.projectStage ||
-        projectType !== task.background.projectType),
+        projectType !== task.background.projectType ||
+        JSON.stringify(conditionAnswers) !==
+          JSON.stringify(task.background.conditionAnswers ?? [])),
   );
   if (!currentRuleSet || dismissed) return null;
 
@@ -44,7 +48,18 @@ export function ClarificationPanel({
   const typeRules = currentRuleSet.rules.filter(
     (rule) => !task.background.projectType && /类别|类型|领域/.test(rule.applicabilityCondition),
   );
-  if (!scopeRules.length && !stageRules.length && !typeRules.length) return null;
+  const unresolved = [
+    ...new Set(
+      currentRuleSet.rules
+        .filter(
+          (rule) =>
+            rule.applicabilityCondition && applicableRule(rule, task.background) === undefined,
+        )
+        .map((rule) => rule.applicabilityCondition),
+    ),
+  ];
+  if (!scopeRules.length && !stageRules.length && !typeRules.length && !unresolved.length)
+    return null;
 
   async function saveAnswers(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -58,7 +73,13 @@ export function ClarificationPanel({
           name: task.name,
           description: task.description,
           noticeText: task.noticeSource.originalText,
-          background: { collaborationScope: scope, projectStage, projectType },
+          background: {
+            ...task.background,
+            collaborationScope: scope,
+            projectStage,
+            projectType,
+            conditionAnswers,
+          },
         }),
       });
       const payload: unknown = await response.json();
@@ -146,6 +167,41 @@ export function ClarificationPanel({
             />
           </label>
         ) : null}
+        {unresolved.map((condition) => (
+          <label className="block text-xs font-medium" key={condition}>
+            是否满足条件：{condition}？影响{" "}
+            {currentRuleSet.rules
+              .filter((rule) => rule.applicabilityCondition === condition)
+              .map((rule) => rule.code)
+              .join("、")}
+            <select
+              aria-label={"确认条件：" + condition}
+              className="mt-1 h-10 w-full rounded-md border px-3"
+              value={String(
+                conditionAnswers.find((answer) => answer.condition === condition)?.applies ??
+                  "unknown",
+              )}
+              onChange={(event) =>
+                setConditionAnswers((previous) => [
+                  ...previous.filter((answer) => answer.condition !== condition),
+                  ...(event.target.value === "unknown"
+                    ? []
+                    : [
+                        {
+                          condition,
+                          applies: event.target.value === "true",
+                          note: "用户在澄清面板确认完整适用条件",
+                        },
+                      ]),
+                ])
+              }
+            >
+              <option value="unknown">暂不确定，保留待确认</option>
+              <option value="true">是，整个条件成立</option>
+              <option value="false">否，整个条件不成立</option>
+            </select>
+          </label>
+        ))}
         {error ? (
           <p role="alert" className="text-sm text-red-700">
             {error}

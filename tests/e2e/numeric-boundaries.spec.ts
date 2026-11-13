@@ -53,3 +53,30 @@ test("文件总量、严格边界与页数下限由工具核验 ENG-007", async 
     await request.delete(`/api/tasks/${task.id}`);
   }
 });
+
+test("参数保留范围不包含边界 R04", async ({ request }) => {
+  const { task } = await (
+    await request.post("/api/tasks", {
+      data: { name: "开区间", noticeText: "文件大小必须为1至2 KB（不含上限）。" },
+    })
+  ).json();
+  try {
+    await request.post(`/api/tasks/${task.id}/materials`, {
+      multipart: {
+        files: { name: "边界.txt", mimeType: "text/plain", buffer: Buffer.alloc(2000, "a") },
+      },
+    });
+    const { ruleSet } = await (await request.post(`/api/tasks/${task.id}/rules`)).json();
+    expect(ruleSet.rules[0].numericConstraints).toEqual([
+      { operator: "gte", value: 1, unit: "KB" },
+      { operator: "lt", value: 2, unit: "KB" },
+    ]);
+    await request.post(`/api/tasks/${task.id}/checks`);
+    expect(
+      (await (await request.get(`/api/tasks/${task.id}/checks`)).json()).executions[0].results[0]
+        .verdict,
+    ).toBe("failed");
+  } finally {
+    await request.delete(`/api/tasks/${task.id}`);
+  }
+});

@@ -35,6 +35,7 @@ export default defineConfig({
         AI_MAX_CALLS_PER_REVIEW: "12",
         REVIEW_DATA_DIR: ".local-data/model-e2e",
         NEXT_TELEMETRY_DISABLED: "1",
+        REVIEW_ACCESS_USERS: "",
       },
     },
   ],

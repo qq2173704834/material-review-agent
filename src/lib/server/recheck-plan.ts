@@ -10,7 +10,7 @@ import type {
 } from "@/domain/review";
 
 // Bump whenever prompts, retrieval, matching, tools or dependency semantics change.
-const REVIEW_PIPELINE_REVISION = "2026-11-13-6";
+const REVIEW_PIPELINE_REVISION = "2026-11-13-8";
 
 export interface PlannedCheck extends RecheckPlanItem {
   dependencyKey: string;

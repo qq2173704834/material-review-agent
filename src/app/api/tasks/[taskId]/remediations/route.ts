@@ -8,10 +8,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const createSchema = z.object({ executionId: reviewTaskIdSchema, ruleId: reviewTaskIdSchema });
-const updateSchema = z.object({
-  id: reviewTaskIdSchema,
-  status: z.enum(["open", "in_progress", "done"]),
-});
+const updateSchema = z
+  .object({
+    id: reviewTaskIdSchema,
+    status: z.enum(["open", "in_progress", "done"]).optional(),
+    assignee: z.string().trim().max(80).optional(),
+    note: z.string().trim().max(500).default(""),
+  })
+  .refine((value) => value.status !== undefined || value.assignee !== undefined);
 
 export async function GET(
   _request: Request,
@@ -65,10 +69,20 @@ export async function PATCH(
     return NextResponse.json({ error: "任务编号无效。" }, { status: 400 });
   const parsed = updateSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "待办状态无效。" }, { status: 400 });
+  if (parsed.data.assignee !== undefined) {
+    const todo = getReviewStore().assignRemediation(
+      taskId,
+      parsed.data.id,
+      parsed.data.assignee,
+      parsed.data.note,
+    );
+    if (!todo) return NextResponse.json({ error: "没有找到该整改待办。" }, { status: 404 });
+    if (parsed.data.status === undefined) return NextResponse.json({ remediationTask: todo });
+  }
   const todo = getReviewStore().updateRemediationStatus(
     taskId,
     parsed.data.id,
-    parsed.data.status,
+    parsed.data.status!,
     new Date().toISOString(),
   );
   if (!todo) return NextResponse.json({ error: "没有找到该整改待办。" }, { status: 404 });

@@ -24,6 +24,9 @@ import { DemoControls } from "@/components/demo-controls";
 import { SourceEditor } from "@/components/source-editor";
 import { targetCandidates } from "@/lib/material-classification";
 import { applicableRule } from "@/lib/review-checks";
+import { TaskAccess } from "@/components/task-access";
+import { MaterialInsights } from "@/components/material-insights";
+import { LinkMaterial } from "@/components/link-material";
 import { getRequirementSourceSegmentId } from "@/domain/review";
 
 import type { Metadata } from "next";
@@ -281,6 +284,9 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
           mode={runtimeStatus.mode}
         />
         <MaterialUpload key={task.id} taskId={task.id} initialMaterials={task.materials} />
+        <LinkMaterial taskId={task.id} />
+        <MaterialInsights task={task} />
+        <TaskAccess taskId={task.id} />
       </div>
       <ReviewExecutionPanel
         key={`execution-${latestExecution?.id ?? "none"}-${contextKey}`}

@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+import { requestIdentity } from "@/lib/server/access-config";
 import {
   ArrowRight,
   FileCheck2,
@@ -28,8 +30,11 @@ const workflowSteps = [
 
 export const dynamic = "force-dynamic";
 
-export default function TasksPage(): ReactElement {
-  const tasks = getReviewStore().listTasks();
+export default async function TasksPage(): Promise<ReactElement> {
+  const identity = requestIdentity(new Request("http://localhost", { headers: await headers() }));
+  const tasks = getReviewStore()
+    .listTasks()
+    .filter((task) => getReviewStore().canAccessTask(task.id, identity ?? ""));
   const taskStatuses = new Map(
     tasks.map((task) => {
       const store = getReviewStore();

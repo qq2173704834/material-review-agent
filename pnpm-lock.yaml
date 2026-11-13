@@ -132,6 +132,13 @@ importers:
       typescript-eslint:
         specifier: 8.72.2
         version: 8.72.2(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)
+    optionalDependencies:
+      '@ffmpeg-installer/win32-x64':
+        specifier: 4.1.0
+        version: 4.1.0
+      '@ffprobe-installer/win32-x64':
+        specifier: 5.1.0
+        version: 5.1.0
 
 packages:
 
@@ -290,6 +297,16 @@ packages:
 
   '@fast-csv/parse@4.3.6':
     resolution: {integrity: sha512-uRsLYksqpbDmWaSmzvJcuApSEe38+6NQZBUsuAyMZKqHxH0g1wcJgsKUvN3WC8tewaqFjBMMGrkHmC+T7k8LvA==}
+
+  '@ffmpeg-installer/win32-x64@4.1.0':
+    resolution: {integrity: sha512-Drt5u2vzDnIONf4ZEkKtFlbvwj6rI3kxw1Ck9fpudmtgaZIHD4ucsWB2lCZBXRxJgXR+2IMSti+4rtM4C4rXgg==}
+    cpu: [x64]
+    os: [win32]
+
+  '@ffprobe-installer/win32-x64@5.1.0':
+    resolution: {integrity: sha512-jMGYeAgkrdn4e2vvYt/qakgHRE3CPju4bn5TmdPfoAm1BlX1mY9cyMd8gf5vSzI8gH8Zq5WQAyAkmekX/8TSTg==}
+    cpu: [x64]
+    os: [win32]
 
   '@floating-ui/core@1.8.0':
     resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
@@ -3250,6 +3267,12 @@ snapshots:
       lodash.isnil: 4.0.0
       lodash.isundefined: 3.0.1
       lodash.uniq: 4.5.0
+
+  '@ffmpeg-installer/win32-x64@4.1.0':
+    optional: true
+
+  '@ffprobe-installer/win32-x64@5.1.0':
+    optional: true
 
   '@floating-ui/core@1.8.0':
     dependencies:

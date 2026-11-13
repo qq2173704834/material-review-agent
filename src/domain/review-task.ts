@@ -6,6 +6,22 @@ export const reviewTaskIdSchema = z.string().uuid();
 
 const taskBackgroundSchema = z
   .object({
+    conditionAnswers: z
+      .array(
+        z
+          .object({
+            condition: z.string().trim().min(1).max(500),
+            applies: z.boolean(),
+            note: z.string().trim().max(500),
+          })
+          .strict(),
+      )
+      .max(100)
+      .refine(
+        (answers) => new Set(answers.map((answer) => answer.condition)).size === answers.length,
+        "同一条件不能保存重复答案。",
+      )
+      .optional(),
     projectType: z.string().trim().max(80).optional().default(""),
     projectStage: z.string().trim().max(80).optional().default(""),
     collaborationScope: z.enum(["individual", "team", "unknown"]).optional().default("unknown"),

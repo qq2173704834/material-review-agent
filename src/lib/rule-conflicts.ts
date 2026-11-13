@@ -59,11 +59,11 @@ function explicitDeadlines(description: string): ExplicitDeadline[] {
   return deadlines;
 }
 
-function exclusiveFormats(description: string): ExclusiveFormat[] {
+function exclusiveFormats(description: string, target: string): ExclusiveFormat[] {
   const materialTargets = [...description.matchAll(MATERIAL_TARGET_PATTERN)].map(
     (match) => match[0],
   );
-  const materialTarget = materialTargets[0];
+  const materialTarget = materialTargets[0] ?? target;
   if (!materialTarget) return [];
 
   const formats: ExclusiveFormat[] = [];
@@ -84,8 +84,14 @@ export function findRuleConflicts(rules: ReviewRule[]): RuleExtractionWarning[] 
     for (let secondIndex = firstIndex + 1; secondIndex < rules.length; secondIndex += 1) {
       const secondRule = rules[secondIndex];
       if (!secondRule) continue;
-      const firstFormats = exclusiveFormats(firstRule.description);
-      const secondFormats = exclusiveFormats(secondRule.description);
+      if (
+        firstRule.applicabilityScope !== "unknown" &&
+        secondRule.applicabilityScope !== "unknown" &&
+        firstRule.applicabilityScope !== secondRule.applicabilityScope
+      )
+        continue;
+      const firstFormats = exclusiveFormats(firstRule.description, firstRule.target);
+      const secondFormats = exclusiveFormats(secondRule.description, secondRule.target);
       const formatScopeMatch = firstFormats.some((first) =>
         secondFormats.some((second) => first.materialTarget === second.materialTarget),
       );

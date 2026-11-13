@@ -4,7 +4,9 @@ import { parse as parseCsv } from "csv-parse/sync";
 import ExcelJS from "exceljs";
 import { fileTypeFromBuffer } from "file-type";
 import mammoth from "mammoth";
+import { documentBlocks } from "@/lib/document-blocks";
 import JSZip from "jszip";
+import { readZipEntry } from "./zip-entry";
 import sharp from "sharp";
 
 import type {
@@ -13,7 +15,9 @@ import type {
   MaterialPageCoverage,
 } from "@/domain/review";
 import { parsePdfMaterial } from "@/lib/server/pdf-parser";
+import { imageVisualHints } from "@/lib/server/image-hints";
 import { recognizeImageText } from "@/lib/server/image-ocr";
+import { parseVideoMaterial } from "@/lib/server/video-parser";
 
 const MAXIMUM_ARCHIVE_EXPANDED_BYTES = 100 * 1024 * 1024;
 const MAXIMUM_IMAGE_PIXELS = 25_000_000;
@@ -77,7 +81,7 @@ async function validateOfficeArchive(buffer: Buffer, requiredPath: string): Prom
   }
   for (const entry of Object.values(zip.files)) {
     if (entry.dir) continue;
-    await entry.async("uint8array");
+    await readZipEntry(entry, MAXIMUM_ARCHIVE_EXPANDED_BYTES);
   }
 }
 
@@ -92,8 +96,12 @@ export async function parseMaterial(
 ): Promise<ParsedMaterial> {
   const extension = originalFileName.split(".").pop()?.toLowerCase() ?? "";
   const signature = await fileTypeFromBuffer(buffer);
+  if (["mp4", "webm", "mov"].includes(extension)) {
+    if (!signature?.mime.startsWith("video/")) throw new Error("扩展名与视频签名不匹配。");
+    return parseVideoMaterial(buffer, extension, signal);
+  }
 
-  if (extension === "txt" || extension === "csv") {
+  if (["txt", "csv", "md", "json", "yaml", "yml", "url"].includes(extension)) {
     const content = assertUtf8(buffer);
     const parsed: string[][] =
       extension === "csv"
@@ -135,18 +143,13 @@ export async function parseMaterial(
     }
     await validateOfficeArchive(buffer, "word/document.xml");
     const officeBuffer = Buffer.from(new Uint8Array(buffer).buffer);
-    const result = await mammoth.extractRawText({ buffer: officeBuffer as unknown as Buffer });
-    const parsed = createSegments(
-      result.value.split(/\r?\n/).map((line, index) => ({
-        text: line,
-        location: `段落 ${index + 1}`,
-      })),
-    );
+    const result = await mammoth.convertToHtml({ buffer: officeBuffer as unknown as Buffer });
+    const parsed = createSegments(documentBlocks(result.value));
     return {
       mediaType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       extension,
       parseStatus: parsed.text ? (result.messages.length ? "partial" : "text_extracted") : "failed",
-      parserName: "mammoth",
+      parserName: "mammoth-logical-blocks",
       extractedText: parsed.text,
       segments: parsed.segments,
       pageCount: null,
@@ -213,27 +216,32 @@ export async function parseMaterial(
       .split(/\n+/)
       .map((line) => line.trim())
       .filter(Boolean);
-    const extractedText = text.join("\n");
-    let textOffset = 0;
-    const segments = text.map((line, segmentIndex) => {
-      const startOffset = textOffset;
-      textOffset += line.length + 1;
-      return {
-        segmentIndex,
-        text: line,
-        startOffset,
-        endOffset: startOffset + line.length,
-        location: `OCR 第 ${segmentIndex + 1} 行`,
-      };
-    });
-    const hasRecognizedText = Boolean(extractedText);
+    const hasRecognizedText = text.length > 0;
+    const hints = await imageVisualHints(normalizedImage);
+    const parsed = createSegments([
+      ...(recognized.lines.length
+        ? recognized.lines.map((line, index) => ({
+            text: line.text,
+            location: `OCR 第 ${index + 1} 行 · x=${line.bbox.x0}–${line.bbox.x1}, y=${line.bbox.y0}–${line.bbox.y1}${line.inferredColumns ? " · 候选表格列，需核对" : ""}`,
+          }))
+        : text.map((line, index) => ({ text: line, location: `OCR 第 ${index + 1} 行` }))),
+      ...hints,
+    ]);
+    const extractedText = parsed.text;
+    const segments = parsed.segments;
     const isComplete =
-      hasRecognizedText && recognized.confidence >= MINIMUM_COMPLETE_OCR_CONFIDENCE;
+      hasRecognizedText &&
+      recognized.confidence >= MINIMUM_COMPLETE_OCR_CONFIDENCE &&
+      !recognized.lines.some((line) => line.inferredColumns);
     return {
       mediaType: expectedMime,
       extension: extension === "jpeg" ? "jpg" : extension,
-      parseStatus: isComplete ? "text_extracted" : hasRecognizedText ? "partial" : "failed",
-      parserName: "tesseract.js-chi_sim-eng",
+      parseStatus: isComplete
+        ? "text_extracted"
+        : hasRecognizedText || hints.length
+          ? "partial"
+          : "failed",
+      parserName: "tesseract.js-chi_sim-eng+regions-v2",
       extractedText,
       segments,
       pageCount: null,
@@ -246,5 +254,7 @@ export async function parseMaterial(
     };
   }
 
-  throw new Error("暂不支持该材料格式；当前支持 PDF、DOCX、TXT、XLSX、CSV、JPG 和 PNG。");
+  throw new Error(
+    "暂不支持该材料格式；当前支持 PDF、DOCX、TXT/Markdown/JSON/YAML、XLSX/CSV、JPG/PNG 和 MP4/WebM/MOV。",
+  );
 }

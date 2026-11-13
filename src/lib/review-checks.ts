@@ -8,7 +8,10 @@ import type {
 import type { ReviewRule, ReviewRuleSet } from "@/domain/review-rule";
 import { findGregorianDates } from "@/lib/calendar-dates";
 import { compareExtendedNumericRule } from "@/lib/numeric-review";
-import { compareBudgetTotal } from "@/lib/budget-review";
+import { compareBudgetTotal, compareBudgetRatio } from "@/lib/budget-review";
+import { compareTemplateRule, compareScopedCount } from "@/lib/structure-review";
+import { compareRepositoryRule } from "@/lib/repository-review";
+import { compareVideoRule } from "@/lib/video-review";
 
 const EXTENSION_NAMES: Record<string, string> = {
   PDF: "pdf",
@@ -30,6 +33,11 @@ const CONSISTENCY_FIELDS = [
   "申请单位",
   "项目名",
   "负责人",
+  "成员姓名",
+  "团队成员",
+  "指导老师",
+  "联系电话",
+  "电子邮箱",
 ] as const;
 
 function materialEvidence(material: ReviewMaterialSummary): ReviewCheckEvidence {
@@ -79,7 +87,10 @@ function escapeRegExp(value: string): string {
 }
 
 function fieldValues(material: ReviewMaterialSummary, field: string): string[] {
-  const fieldPattern = new RegExp(`${field}\\s*[：:]\\s*([^\\r\\n|,，;；。]+)`, "g");
+  const fieldPattern = new RegExp(
+    `${escapeRegExp(field)}\\s*(?:[：:]|\\|)\\s*([^\\r\\n|,，;；。]+)`,
+    "g",
+  );
   const normalizedValues = new Set<string>();
   for (const match of material.extractedText.matchAll(fieldPattern)) {
     const value = match[1]
@@ -96,7 +107,9 @@ function fieldEvidence(
   field: string,
   value: string,
 ): ReviewCheckEvidence {
-  const fieldValuePattern = new RegExp(`${field}\\s*[：:]\\s*${escapeRegExp(value)}`);
+  const fieldValuePattern = new RegExp(
+    `${escapeRegExp(field)}\\s*(?:[：:]|\\|)\\s*${escapeRegExp(value)}`,
+  );
   const segmentIndex = material.segments.findIndex((segment) =>
     fieldValuePattern.test(segment.text),
   );
@@ -118,7 +131,19 @@ export function applicableRule(
     return false;
   if (rule.applicabilityScope === "individual" && background.collaborationScope === "team")
     return false;
+  if (rule.applicabilityScope !== "unknown" && background.collaborationScope === "unknown")
+    return undefined;
   if (rule.applicabilityCondition) {
+    const answer = background.conditionAnswers?.find(
+      (answer) => answer.condition === rule.applicabilityCondition,
+    );
+    if (answer) return answer.applies;
+    if (
+      /且|并且|同时|或者|\b(?:and|or)\b|除非|不属于|不适用于|非.*阶段/i.test(
+        rule.applicabilityCondition,
+      )
+    )
+      return undefined;
     const condition = rule.applicabilityCondition.replace(/\s/g, "").toLocaleLowerCase();
     if (/阶段|初赛|复赛|决赛|申报|结项/.test(condition)) {
       const stage = background.projectStage.replace(/\s/g, "").toLocaleLowerCase();
@@ -151,6 +176,100 @@ function compareRule(
   materials: ReviewMaterialSummary[],
 ): Pick<ReviewCheckResult, "verdict" | "reason" | "recommendation" | "evidence"> {
   const description = rule.description;
+  const presencePattern = new RegExp(
+    "^(?:必须|须|应|需|请)?(?:提交|提供|上传)(?:一份|1份)?\\s*" +
+      escapeRegExp(rule.target) +
+      "[。.!！]?$",
+  );
+  if (presencePattern.test(description.trim()) && rule.materialIds.length > 0) {
+    return {
+      verdict:
+        materials.length && materials.every((material) => material.parseStatus !== "failed")
+          ? "passed"
+          : "needs_confirmation",
+      reason: materials.length
+        ? "已找到人工关联的目标材料；本项只检查提交存在性，内容和规格由独立规则核验。"
+        : "人工关联材料不可用，需要重新确认匹配。",
+      recommendation: materials.length ? "" : "重新选择对应材料。",
+      evidence: materials.map(materialEvidence),
+    };
+  }
+  if (
+    /签章|印章|盖章|签名/.test(description) &&
+    materials.some((material) => ["png", "jpg"].includes(material.extension))
+  ) {
+    const evidence = materials.flatMap((material) =>
+      material.segments
+        .filter(
+          (segment) =>
+            /图像辅助区域/.test(segment.location) || /签章|印章|盖章|签名/.test(segment.text),
+        )
+        .map((segment) => ({
+          materialId: material.id,
+          materialVersion: material.version,
+          segmentIndex: segment.segmentIndex,
+          location: segment.location,
+          quotedText: segment.text,
+        })),
+    );
+    return {
+      verdict: "needs_confirmation",
+      reason: evidence.length
+        ? "已定位OCR或局部红色图形线索；需要人工打开图像核对签章。外观不证明真实性。"
+        : "未定位可靠签章线索；不能据OCR或红色检测未命中断言没有签章。",
+      recommendation: "人工检查签章、签字与授权依据；需要真实性核验时走官方核验渠道。",
+      evidence,
+    };
+  }
+  const repository = compareRepositoryRule(description, materials);
+  if (repository) return repository;
+  const ratio = compareBudgetRatio(description, materials);
+  if (ratio) return ratio;
+  const structure = compareTemplateRule(rule, materials) ?? compareScopedCount(rule, materials);
+  if (structure) return structure;
+  const video = compareVideoRule(description, materials);
+  if (video) return video;
+  if (/链接|网址|URL|站点/i.test(description) && /访问|打开|有效|可用/.test(description)) {
+    const links = materials.filter((material) => material.parserName === "public-link");
+    const evidence = links.map(materialEvidence);
+    if (!links.length)
+      return {
+        verdict: "needs_confirmation",
+        reason: "未关联带有访问记录的链接材料。",
+        recommendation: "添加公开链接并读取访问状态。",
+        evidence: [],
+      };
+    const records = links.map((material) => {
+      try {
+        return JSON.parse(material.segments[0]?.text ?? "") as {
+          state?: string;
+          fetchedAt?: string;
+        };
+      } catch {
+        return {};
+      }
+    });
+    if (records.some((record) => record.state === "not_found"))
+      return {
+        verdict: "failed",
+        reason: "至少一个链接返回404或410，证据为保存时访问记录。",
+        recommendation: "修正链接后重新添加并复检。",
+        evidence,
+      };
+    if (records.every((record) => record.state === "accessible"))
+      return {
+        verdict: "passed",
+        reason: "关联链接在记录时间均可公开访问；不代表其内容符合其他要求或未来持续可用。",
+        recommendation: "",
+        evidence,
+      };
+    return {
+      verdict: "needs_confirmation",
+      reason: "部分链接需要登录、返回其他HTTP错误或网络失败，不能据此断言失效。",
+      recommendation: "核对权限或稍后重新读取。",
+      evidence,
+    };
+  }
   const budget = compareBudgetTotal(description, materials);
   if (budget) return budget;
   const extendedNumeric = compareExtendedNumericRule(description, materials);
@@ -235,7 +354,9 @@ function compareRule(
           ),
         };
   }
-  const consistencyField = CONSISTENCY_FIELDS.find((field) => description.includes(field));
+  const consistencyField =
+    description.match(/字段[“「"]([^”」"]{1,40})[”」"]/u)?.[1] ??
+    CONSISTENCY_FIELDS.find((field) => description.includes(field));
   if (consistencyField && /一致|相同/.test(description)) {
     if (materials.length < 2)
       return {
@@ -668,7 +789,7 @@ export function executeReviewRule(
     applies === false
       ? {
           verdict: "not_applicable" as const,
-          reason: "该规则的个人/团队适用范围与任务背景不符。",
+          reason: "该规则的适用条件或个人/团队范围与已确认背景不符。",
           recommendation: "",
           evidence: [],
         }

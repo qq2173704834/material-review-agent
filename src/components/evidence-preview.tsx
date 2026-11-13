@@ -107,6 +107,16 @@ export function EvidencePane({
               </button>
             ) : null}
           </div>
+          {["mp4", "mov", "webm"].includes(preview.extension) ? (
+            <video
+              controls
+              preload="metadata"
+              className="my-3 max-w-full"
+              src={`${endpoint}?file=1#t=${evidence.location.match(/视频\s*([\d.]+)\s*秒/)?.[1] ?? "0"}`}
+            >
+              <track kind="captions" />
+            </video>
+          ) : null}
           {showOriginal ? (
             preview.extension === "pdf" ? (
               <iframe

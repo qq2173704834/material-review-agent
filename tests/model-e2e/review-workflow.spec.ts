@@ -247,8 +247,8 @@ test("正文字符数要求不使用全文计数代替", async ({ request }) => 
     taskResponse.task.background,
   );
   expect(result).toMatchObject({
-    verdict: "unable_to_check",
-    reason: expect.stringContaining("只能统计已解析全文字符数"),
+    verdict: "needs_confirmation",
+    reason: expect.stringContaining("指定范围的起止标记或包含边界尚未明确"),
   });
 });
 

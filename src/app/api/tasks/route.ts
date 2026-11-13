@@ -1,3 +1,4 @@
+import { requestIdentity } from "@/lib/server/access-config";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -10,10 +11,16 @@ import { fetchPublicWebpage } from "@/lib/server/webpage-fetcher";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export function GET(): NextResponse {
+export function GET(request: Request): NextResponse {
   try {
     return NextResponse.json(
-      { tasks: getReviewStore().listTasks() },
+      {
+        tasks: getReviewStore()
+          .listTasks()
+          .filter((task) =>
+            getReviewStore().canAccessTask(task.id, requestIdentity(request) ?? ""),
+          ),
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch {
@@ -81,6 +88,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           { status: 422 },
         );
       const task = getReviewStore().createTask({
+        ownerId: requestIdentity(request),
         ...parsedMetadata.data,
         noticeText: parsed.extractedText,
         sourceType: "file",
@@ -153,7 +161,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
 
   try {
-    const task = getReviewStore().createTask(parsedInput.data);
+    const task = getReviewStore().createTask({
+      ...parsedInput.data,
+      ownerId: requestIdentity(request),
+    });
     return NextResponse.json({ task }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "任务未能保存到本地，请稍后重试。" }, { status: 500 });

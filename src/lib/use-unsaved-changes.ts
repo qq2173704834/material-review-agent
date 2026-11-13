@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 interface NavigationEvent extends Event {
   destination: { url: string };
+  downloadRequest?: string | null;
 }
 
 /** Chromium Navigation API covers SPA links and history traversal; unload remains a fallback. */
@@ -31,6 +32,7 @@ export function useUnsavedChanges(isDirty: boolean): () => void {
     }
     function navigate(event: Event): void {
       if (!event.cancelable) return;
+      if ((event as NavigationEvent).downloadRequest != null) return;
       const destination = (event as NavigationEvent).destination;
       if (destination && !shouldLeave(destination.url)) event.preventDefault();
     }

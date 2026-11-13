@@ -1,3 +1,4 @@
+import { canReuseMaterialParse } from "@/lib/material-parser-version";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -8,6 +9,7 @@ import { reviewTaskIdSchema } from "@/domain/review-task";
 import { getReviewStore } from "@/lib/server/review-store";
 import { parseMaterial } from "@/lib/server/material-parser";
 import { readLimitedFormData, MultipartSizeLimitError } from "@/lib/server/limited-form-data";
+import { expandMaterialArchive } from "@/lib/server/archive-import";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +45,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       return NextResponse.json({ error: "上传请求超过批次大小上限。" }, { status: 413 });
     return NextResponse.json({ error: "上传请求无法读取。" }, { status: 400 });
   }
-  const files = formData.getAll("files").filter((value): value is File => value instanceof File);
+  let files = formData.getAll("files").filter((value): value is File => value instanceof File);
   if (!files.length || files.length > MAXIMUM_FILE_COUNT) {
     return NextResponse.json(
       { error: `每批需选择 1 至 ${MAXIMUM_FILE_COUNT} 个文件。` },
@@ -57,6 +59,34 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
     return NextResponse.json(
       { error: "文件不能为空；单个文件上限 20 MiB，整批上限 50 MiB。" },
       { status: 413 },
+    );
+  }
+
+  try {
+    const expanded: File[] = [];
+    for (const file of files) {
+      if (/\.zip$/i.test(file.name)) {
+        const entries = await expandMaterialArchive(
+          Buffer.from(await file.arrayBuffer()),
+          file.name,
+        );
+        expanded.push(
+          ...entries.map((entry) => new File([new Uint8Array(entry.bytes)], entry.name)),
+        );
+      } else expanded.push(file);
+    }
+    if (
+      expanded.length > 50 ||
+      expanded.reduce((sum, file) => sum + file.size, 0) > MAXIMUM_BATCH_SIZE_BYTES
+    )
+      throw new Error("解包后每批最多50个文件、50MiB。");
+    if (new Set(expanded.map((file) => file.name.toLowerCase())).size !== expanded.length)
+      throw new Error("批次内有重复输出文件名，请拆分或更名。");
+    files = expanded;
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "解包失败。" },
+      { status: 422 },
     );
   }
 
@@ -81,7 +111,11 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       .listMaterials(taskId)
       .find((material) => material.originalFileName === originalFileName);
     const version = (previous?.version ?? 0) + 1;
-    if (previous?.sha256 === sha256 && previous.parseStatus === "text_extracted") {
+    if (
+      previous?.sha256 === sha256 &&
+      previous.parseStatus === "text_extracted" &&
+      canReuseMaterialParse(previous)
+    ) {
       results.push({
         id: previous.id,
         version: previous.version,
@@ -98,6 +132,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
           material.sha256 === sha256 &&
           material.extension === originalFileName.split(".").pop()?.toLowerCase() &&
           material.parseStatus === "text_extracted" &&
+          canReuseMaterialParse(material) &&
           !material.revision,
       );
     const key = `${id}-v${version}`;

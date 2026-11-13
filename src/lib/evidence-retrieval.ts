@@ -26,6 +26,25 @@ export function retrieveEvidence(
       ]),
     ),
   ];
+  const expansions: Record<string, string[]> = {
+    预算: ["金额", "费用", "明细", "合计"],
+    测试: ["实验", "样本", "指标", "验证"],
+    团队: ["成员", "分工", "负责人"],
+    实施: ["技术路线", "方法", "步骤"],
+    演示: ["操作", "运行", "展示"],
+    依赖: ["dependencies", "requirements", "安装"],
+    配置: ["environment", "环境变量", ".env"],
+  };
+  const secondaryTerms = [
+    ...new Set([
+      ...(rule.parameters ?? []),
+      ...Object.entries(expansions)
+        .filter(([keyword]) => rule.description.includes(keyword))
+        .flatMap(([, values]) => values),
+    ]),
+  ]
+    .filter((term) => term.length > 1)
+    .slice(0, 80);
   const segments = materials.flatMap((material) =>
     material.segments.map((segment) => ({ ...segment, materialId: material.id })),
   );
@@ -60,6 +79,26 @@ export function retrieveEvidence(
   }
   // Reserve half the budget for expansion so a long first segment cannot hide later evidence.
   for (const chunk of ranked) {
+    if (remaining <= 18_000) break;
+    add(chunk);
+  }
+  // Supplement the initial query using explicit parameters and bounded related vocabulary.
+  // This changes retrieval only, never adds a requirement or treats an unsearched region as absent.
+  const expanded = chunks
+    .map((chunk) => ({
+      ...chunk,
+      secondaryScore: secondaryTerms.reduce(
+        (score, term) => score + (chunk.text.includes(term) ? 1 : 0),
+        0,
+      ),
+    }))
+    .filter((chunk) => chunk.secondaryScore > 0)
+    .sort((a, b) => b.secondaryScore - a.secondaryScore);
+  for (const material of materials) {
+    if (remaining <= 12_000) break;
+    add(expanded.find((chunk) => chunk.materialId === material.id));
+  }
+  for (const chunk of expanded) {
     if (remaining <= 12_000) break;
     add(chunk);
   }

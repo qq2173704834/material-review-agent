@@ -22,6 +22,12 @@ const inputSchema = z.discriminatedUnion("action", [
   }),
   z.object({ action: z.literal("restore"), version: z.number().int().positive() }),
   z.object({
+    action: z.literal("select_version"),
+    version: z.number().int().positive(),
+    selectedVersion: z.number().int().positive(),
+    note: z.string().trim().min(1).max(500),
+  }),
+  z.object({
     action: z.literal("retry"),
     version: z.number().int().positive(),
     pageNumber: z.number().int().min(1).max(200),
@@ -46,7 +52,7 @@ export async function POST(
   if (!material) return NextResponse.json({ error: "没有找到该材料。" }, { status: 404 });
   if (material.version !== input.data.version)
     return NextResponse.json({ error: "材料版本已更新，请刷新后重新核对。" }, { status: 409 });
-  const file = store.getMaterialFile(taskId, materialId, material.version);
+  let file = store.getMaterialFile(taskId, materialId, material.version);
   if (!file) return NextResponse.json({ error: "原件记录不可用。" }, { status: 404 });
   let revised = { ...material, segments: material.segments.map((segment) => ({ ...segment })) };
   let note = "恢复本原件首次解析的文字与覆盖状态";
@@ -75,6 +81,20 @@ export async function POST(
     };
     revised.parseMessage =
       `人工分类为“${input.data.label}”；分类不代替内容审查。` + material.parseMessage;
+  } else if (input.data.action === "select_version") {
+    const selectedVersion = input.data.selectedVersion;
+    const original = store
+      .listMaterials(taskId, true)
+      .find((item) => item.id === materialId && item.version === selectedVersion);
+    const selectedFile = store.getMaterialFile(taskId, materialId, selectedVersion);
+    if (!original || !selectedFile)
+      return NextResponse.json({ error: "所选版本不属于此材料。" }, { status: 404 });
+    if (original.version === material.version)
+      return NextResponse.json({ error: "已是当前有效版本。" }, { status: 409 });
+    revised = { ...original, segments: original.segments.map((segment) => ({ ...segment })) };
+    file = selectedFile;
+    note = `采用历史v${original.version}作为本次有效内容：${input.data.note}`;
+    revised.parseMessage = note + "。" + original.parseMessage;
   } else if (input.data.action === "restore") {
     const original = store
       .listMaterials(taskId, true)

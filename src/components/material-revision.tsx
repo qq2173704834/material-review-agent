@@ -17,6 +17,7 @@ export function MaterialRevisionEditor({
   const [text, setText] = useState(material.segments[0]?.text ?? "");
   const [note, setNote] = useState("");
   const [label, setLabel] = useState(material.classification?.label ?? "");
+  const [selectedVersion, setSelectedVersion] = useState(Math.max(1, material.version - 1));
   const [pageNumber, setPageNumber] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -27,7 +28,7 @@ export function MaterialRevisionEditor({
     isOpen && (text !== originalText || !!note || label !== (material.classification?.label ?? "")),
   );
   async function save(
-    action: "correction" | "restore" | "retry" | "classification",
+    action: "correction" | "restore" | "retry" | "classification" | "select_version",
   ): Promise<void> {
     setIsSaving(true);
     setMessage("");
@@ -38,6 +39,7 @@ export function MaterialRevisionEditor({
         body: JSON.stringify({
           action,
           version: material.version,
+          selectedVersion,
           segmentIndex,
           text,
           note,
@@ -152,6 +154,32 @@ export function MaterialRevisionEditor({
           >
             保存材料类型
           </button>
+          {material.version > 1 && (
+            <div className="space-y-2">
+              <label className="block text-xs">
+                采用历史版本
+                <input
+                  aria-label="采用历史版本"
+                  type="number"
+                  min={1}
+                  max={material.version - 1}
+                  className="ml-2 min-h-11 w-20 rounded border p-2"
+                  value={selectedVersion}
+                  onChange={(event) => setSelectedVersion(Number(event.target.value))}
+                />
+              </label>
+              <button
+                className={buttonClass}
+                disabled={isSaving || !note.trim()}
+                onClick={() => save("select_version")}
+              >
+                采用此历史版本并生成新版本
+              </button>
+              <p className="text-xs">
+                使用所选历史原件及解析，保留全部版本；请在修订依据说明本次采用原因。
+              </p>
+            </div>
+          )}
           {material.extension === "pdf" && (
             <div className="flex flex-wrap items-center gap-2">
               <label className="text-xs">

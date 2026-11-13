@@ -62,6 +62,11 @@ async function terminateOcrWorker(): Promise<void> {
 export interface ImageOcrResult {
   text: string;
   confidence: number;
+  lines: Array<{
+    text: string;
+    bbox: { x0: number; y0: number; x1: number; y1: number };
+    inferredColumns: boolean;
+  }>;
 }
 
 export async function recognizeImageText(
@@ -83,7 +88,7 @@ export async function recognizeImageText(
     const result = await Promise.race([
       (async () => {
         const worker = await getOcrWorker();
-        return worker.recognize(image);
+        return worker.recognize(image, {}, { text: true, blocks: true });
       })(),
       new Promise<never>((_, reject) => {
         timer = setTimeout(
@@ -92,7 +97,31 @@ export async function recognizeImageText(
         );
       }),
     ]);
+    const lines = (result.data.blocks ?? [])
+      .flatMap((block) => block.paragraphs.flatMap((paragraph) => paragraph.lines))
+      .map((line) => {
+        let inferredColumns = false;
+        const parts: string[] = [];
+        line.words.forEach((word, index) => {
+          const previous = line.words[index - 1];
+          if (
+            previous &&
+            word.bbox.x0 - previous.bbox.x1 > Math.max(24, (line.bbox.y1 - line.bbox.y0) * 1.8)
+          ) {
+            parts.push("|");
+            inferredColumns = true;
+          }
+          parts.push(word.text);
+        });
+        return {
+          text: inferredColumns ? parts.join(" ").trim() : line.text.trim(),
+          bbox: line.bbox,
+          inferredColumns,
+        };
+      })
+      .filter((line) => line.text);
     return {
+      lines,
       text: result.data.text.replace(/\r/g, "").trim(),
       confidence: result.data.confidence,
     };

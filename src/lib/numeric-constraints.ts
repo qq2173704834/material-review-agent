@@ -58,9 +58,25 @@ export function extractNumericBounds(text: string): NumericBound[] {
       "gi",
     ),
   )) {
+    const suffix = text.slice(
+      (match.index ?? 0) + match[0].length,
+      (match.index ?? 0) + match[0].length + 40,
+    );
+    const lowerOpen =
+      /不(?:包含|含)下限|下限不(?:包含|含)/.test(suffix) || suffix.includes("不含" + match[1]);
+    const upperOpen =
+      /不(?:包含|含)上限|上限不(?:包含|含)/.test(suffix) || suffix.includes("不含" + match[2]);
     result.push(
-      { operator: "gte", value: Number(match[1]), unit: match[3]!.toUpperCase() },
-      { operator: "lte", value: Number(match[2]), unit: match[3]!.toUpperCase() },
+      {
+        operator: lowerOpen ? "gt" : "gte",
+        value: Number(match[1]),
+        unit: match[3]!.toUpperCase(),
+      },
+      {
+        operator: upperOpen ? "lt" : "lte",
+        value: Number(match[2]),
+        unit: match[3]!.toUpperCase(),
+      },
     );
   }
   return result;

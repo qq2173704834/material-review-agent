@@ -79,9 +79,37 @@ export async function parsePdfMaterial(
       try {
         page = await document.getPage(pageNumber);
         const content = await page.getTextContent();
-        nativeText = content.items
-          .map((item) => ("str" in item ? item.str : ""))
-          .join(" ")
+        const rows: Array<{ y: number; items: Array<{ x: number; width: number; text: string }> }> =
+          [];
+        for (const item of content.items) {
+          if (!("str" in item) || !item.str.trim()) continue;
+          const y = item.transform[5] as number;
+          const x = item.transform[4] as number;
+          let row = rows.find((row) => Math.abs(row.y - y) < 2);
+          if (!row) {
+            row = { y, items: [] };
+            rows.push(row);
+          }
+          row.items.push({ x, width: item.width, text: item.str });
+        }
+        nativeText = rows
+          .sort((a, b) => b.y - a.y)
+          .map((row) =>
+            row.items
+              .sort((a, b) => a.x - b.x)
+              .map((item, index) => {
+                const previous = row.items[index - 1];
+                return (
+                  (previous && item.x - previous.x - previous.width > 20
+                    ? " | "
+                    : index
+                      ? " "
+                      : "") + item.text
+                );
+              })
+              .join(""),
+          )
+          .join("\n")
           .trim();
         const operators = await page.getOperatorList();
         const hasImages = operators.fnArray.some((operator) => imageOperators.has(operator));
@@ -138,19 +166,29 @@ export async function parsePdfMaterial(
         );
         const hasOcrText = Boolean(result.text.trim());
         // Keep native text if OCR fails, but disclose the unread image content.
-        appendText(hasOcrText ? result.text : nativeText, pageNumber, hasOcrText);
+        appendText(
+          hasOcrText
+            ? result.lines.length
+              ? result.lines.map((line) => line.text).join("\n")
+              : result.text
+            : nativeText,
+          pageNumber,
+          hasOcrText,
+        );
         pageCoverage.push({
           pageNumber,
           method: hasOcrText ? "ocr" : nativeText ? "text" : "ocr",
           status:
-            hasOcrText && result.confidence >= 45
+            hasOcrText &&
+            result.confidence >= 45 &&
+            !result.lines.some((line) => line.inferredColumns)
               ? "read"
               : hasOcrText || nativeText
                 ? "partial"
                 : "failed",
           confidence: result.confidence,
           message: hasOcrText
-            ? "已识别整页文字；OCR 分数不代表漏字率，不验证表格结构或签章真伪。"
+            ? "已识别整页文字；OCR 分数不代表漏字率，候选列仅按文字间距推断，合并单元格需人工核对；不验证签章真伪。"
             : "未识别到可用 OCR 文字；请核对原页或上传更清晰版本。",
         });
       } catch {
@@ -175,7 +213,7 @@ export async function parsePdfMaterial(
       mediaType: "application/pdf",
       extension: "pdf",
       parseStatus: isComplete && extractedText ? "text_extracted" : "partial",
-      parserName: ocrPageCount ? "pdfjs-dist+tesseract.js" : "pdfjs-dist",
+      parserName: ocrPageCount ? "pdfjs-dist+tesseract.js+rows-v2" : "pdfjs-dist+rows-v2",
       extractedText,
       segments,
       pageCount: document.numPages,

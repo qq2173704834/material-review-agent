@@ -22,6 +22,18 @@ const knownKinds = [
 export function classifyMaterial(
   segments: MaterialContentSegment[],
 ): MaterialClassification | undefined {
+  const explicit = segments.flatMap((segment) =>
+    [...segment.text.matchAll(/(?:材料类型|文档类型)\s*[：:]\s*([^\n|，。；]{1,80})/g)].map(
+      (match) => ({
+        label: match[1]!.trim(),
+        method: "content" as const,
+        quote: match[0],
+        location: segment.location,
+      }),
+    ),
+  );
+  if (new Set(explicit.map((candidate) => candidate.label)).size === 1) return explicit[0];
+  if (explicit.length) return undefined;
   const candidates = knownKinds.flatMap((label) => {
     const segment = segments.find((item) => item.text.includes(label));
     if (!segment) return [];

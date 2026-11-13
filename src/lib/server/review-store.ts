@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { defaultOwner } from "@/lib/server/access-config";
 import Database from "better-sqlite3";
 
 import type {
@@ -29,7 +30,7 @@ import type { MaterialClassification } from "@/lib/material-classification";
 import type { ReviewRuleSet } from "@/domain/review-rule";
 
 const MAXIMUM_TASK_COUNT = 100;
-const DATABASE_SCHEMA_VERSION = 18;
+const DATABASE_SCHEMA_VERSION = 20;
 
 interface ReviewDatabaseContext {
   databaseDirectory: string;
@@ -41,6 +42,7 @@ type ReviewDatabaseGlobal = typeof globalThis & {
 };
 
 interface CreateReviewTaskInput {
+  ownerId?: string;
   name: string;
   description: string;
   background: ReviewTaskBackground;
@@ -74,6 +76,7 @@ interface DatabaseTaskSummaryRow {
   description: string;
   project_type: string | null;
   project_stage: string | null;
+  condition_answers_json?: string;
   collaboration_scope: string;
   source_count: number;
   notice_source_version: number | null;
@@ -224,6 +227,13 @@ function readProjectBackground(row: DatabaseTaskSummaryRow): ReviewTaskBackgroun
   }
 
   return {
+    ...(row.condition_answers_json && row.condition_answers_json !== "[]"
+      ? {
+          conditionAnswers: JSON.parse(row.condition_answers_json) as NonNullable<
+            ReviewTaskBackground["conditionAnswers"]
+          >,
+        }
+      : {}),
     projectType: row.project_type ?? "",
     projectStage: row.project_stage ?? "",
     collaborationScope: row.collaboration_scope,
@@ -784,6 +794,23 @@ function createReviewDatabase(databaseDirectory: string): Database.Database {
         );
       })();
     }
+    if (database.pragma("user_version", { simple: true }) === 18) {
+      database.transaction(() => {
+        database.exec(
+          "ALTER TABLE review_tasks ADD COLUMN condition_answers_json TEXT NOT NULL DEFAULT '[]'; PRAGMA user_version = 19;",
+        );
+      })();
+    }
+    if (database.pragma("user_version", { simple: true }) === 19) {
+      database.transaction(() => {
+        database.exec(
+          "ALTER TABLE review_tasks ADD COLUMN owner_id TEXT; CREATE TABLE task_grants (task_id TEXT NOT NULL REFERENCES review_tasks(id) ON DELETE CASCADE, user_id TEXT NOT NULL, PRIMARY KEY(task_id,user_id)); PRAGMA user_version = 20;",
+        );
+        database
+          .prepare("UPDATE review_tasks SET owner_id = ? WHERE owner_id IS NULL")
+          .run(defaultOwner());
+      })();
+    }
     const finalSchemaVersion = database.pragma("user_version", { simple: true });
     if (finalSchemaVersion !== DATABASE_SCHEMA_VERSION) {
       throw new Error("The local review database migration did not complete");
@@ -923,8 +950,8 @@ class ReviewStore {
         .prepare(
           `
           INSERT INTO review_tasks (
-            id, name, description, project_type, project_stage, collaboration_scope, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            id, name, description, project_type, project_stage, collaboration_scope, created_at, updated_at, condition_answers_json, owner_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         )
         .run(
@@ -936,6 +963,8 @@ class ReviewStore {
           input.background.collaborationScope,
           createdAt,
           createdAt,
+          JSON.stringify(input.background.conditionAnswers ?? []),
+          input.ownerId ?? defaultOwner(),
         );
       this.database
         .prepare(
@@ -995,6 +1024,7 @@ class ReviewStore {
               project_type = ?,
               project_stage = ?,
               collaboration_scope = ?,
+              condition_answers_json = COALESCE(?, condition_answers_json),
               updated_at = ?
           WHERE id = ?
         `,
@@ -1005,6 +1035,9 @@ class ReviewStore {
           input.background.projectType || null,
           input.background.projectStage || null,
           input.background.collaborationScope,
+          input.background.conditionAnswers
+            ? JSON.stringify(input.background.conditionAnswers)
+            : null,
           updatedAt,
           input.taskId,
         );
@@ -1068,6 +1101,7 @@ class ReviewStore {
                task.description,
                task.project_type,
                task.project_stage,
+               task.condition_answers_json,
                task.collaboration_scope,
                COUNT(DISTINCT source.id) AS source_count,
                MAX(source_version.version) AS notice_source_version,
@@ -1111,6 +1145,7 @@ class ReviewStore {
                task.description,
                task.project_type,
                task.project_stage,
+               task.condition_answers_json,
                task.collaboration_scope,
                COUNT(DISTINCT all_sources.id) AS source_count,
                notice_current.version AS notice_source_version,
@@ -2068,6 +2103,65 @@ class ReviewStore {
       )
       .run(status, updatedAt, remediationId, taskId);
     return { ...(JSON.parse(row.payload_json) as RemediationTask), status, updatedAt };
+  }
+
+  taskOwner(taskId: string): string | undefined {
+    return this.database
+      .prepare<[string], { owner_id: string }>("SELECT owner_id FROM review_tasks WHERE id = ?")
+      .get(taskId)?.owner_id;
+  }
+  canAccessTask(taskId: string, userId: string): boolean {
+    return (
+      this.taskOwner(taskId) === userId ||
+      Boolean(
+        this.database
+          .prepare("SELECT 1 FROM task_grants WHERE task_id = ? AND user_id = ?")
+          .get(taskId, userId),
+      )
+    );
+  }
+  taskGrants(taskId: string): string[] {
+    return this.database
+      .prepare<[string], { user_id: string }>(
+        "SELECT user_id FROM task_grants WHERE task_id = ? ORDER BY user_id",
+      )
+      .all(taskId)
+      .map((row) => row.user_id);
+  }
+  setTaskGrant(taskId: string, userId: string, enabled: boolean): void {
+    if (enabled)
+      this.database
+        .prepare("INSERT OR IGNORE INTO task_grants (task_id,user_id) VALUES (?,?)")
+        .run(taskId, userId);
+    else
+      this.database
+        .prepare("DELETE FROM task_grants WHERE task_id = ? AND user_id = ?")
+        .run(taskId, userId);
+  }
+
+  assignRemediation(
+    taskId: string,
+    remediationId: string,
+    assignee: string,
+    note: string,
+  ): RemediationTask | undefined {
+    const todo = this.listRemediationTasks(taskId).find((item) => item.id === remediationId);
+    if (!todo) return undefined;
+    const now = new Date().toISOString();
+    const updated: RemediationTask = {
+      ...todo,
+      assignee,
+      updatedAt: now,
+      assignmentHistory: [...(todo.assignmentHistory ?? []), { assignee, note, at: now }].slice(
+        -100,
+      ),
+    };
+    this.database
+      .prepare(
+        "UPDATE review_remediation_tasks SET payload_json = ?, updated_at = ? WHERE id = ? AND task_id = ?",
+      )
+      .run(JSON.stringify(updated), now, remediationId, taskId);
+    return updated;
   }
 
   close(): void {

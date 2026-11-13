@@ -6,6 +6,7 @@ import { compareExecutions } from "@/lib/review-history";
 import { EvidencePreview } from "@/components/evidence-preview";
 import { SourceEvidencePreview } from "@/components/source-evidence-preview";
 import { ReviewWorkbench } from "@/components/review-workbench";
+import { RemediationAssignment } from "@/components/remediation-assignment";
 
 import {
   getRequirementSourceSegmentId,
@@ -965,6 +966,15 @@ export function ReviewExecutionPanel({
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
                           {todo.reason}
                         </p>
+                        <RemediationAssignment
+                          taskId={taskId}
+                          todo={todo}
+                          onUpdated={(updated) =>
+                            setRemediationTasks((items) =>
+                              items.map((item) => (item.id === updated.id ? updated : item)),
+                            )
+                          }
+                        />
                         {todo.recommendation ? (
                           <p className="mt-1 text-xs text-primary">建议：{todo.recommendation}</p>
                         ) : null}

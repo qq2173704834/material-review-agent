@@ -69,6 +69,9 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
               <span className="sr-only sm:hidden">{title}</span>
             </Link>
           ))}
+          <Link href="/access" className="block px-3 py-3 text-xs text-muted-foreground">
+            访问身份
+          </Link>
         </nav>
 
         <div className="mt-auto hidden p-4 lg:block">

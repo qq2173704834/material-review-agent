@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { EvidencePane } from "./evidence-preview";
 import { SourceEvidencePreview } from "./source-evidence-preview";
+import { ResultQuestion } from "./result-question";
 import type { ReviewCheckResult } from "@/domain/review";
 import type { ReactElement } from "react";
 
@@ -137,6 +138,7 @@ export function ReviewWorkbench({
               ? ` · 片段 ${selected.coverage.examinedSegments}/${selected.coverage.totalSegments} · ${selected.coverage.isComplete ? "完整纳入上下文" : "存在未核验范围"}`
               : ""}
           </p>
+          <ResultQuestion taskId={taskId} executionId={executionId} ruleId={selected.ruleId} />
           <div className="mt-4 flex flex-col gap-2 text-xs">
             <a
               className="inline-flex min-h-11 items-center text-primary underline"

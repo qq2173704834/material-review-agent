@@ -1,6 +1,6 @@
 # 开发计划与最小审查闭环
 
-更新：2026-11-13（Asia/Shanghai）。本轮补齐及验收结果见 acceptance-2026-11-13.md，原始范围状态见 requirements-status.md。下方阶段表保留原开发顺序和退出条件，不以旧的“待实现”文字覆盖最新记录。
+更新：2026-11-13（Asia/Shanghai）。本轮剩余39条补齐及最终验收结果见 acceptance-remaining-39.md，原始范围状态见 requirements-status.md。下方阶段表保留原开发顺序和退出条件，不以旧的“待实现”文字覆盖最新记录。
 
 ## 范围与完成定义
 

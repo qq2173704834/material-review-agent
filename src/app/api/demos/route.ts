@@ -1,3 +1,4 @@
+import { requestIdentity } from "@/lib/server/access-config";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -19,6 +20,8 @@ export async function POST(request: Request): Promise<Response> {
   const demo = demoCases[domain];
   const marker = `[合成演示:${domain}]`;
   const store = getReviewStore();
+  if (taskId && !store.canAccessTask(taskId, requestIdentity(request) ?? ""))
+    return NextResponse.json({ error: "没有找到该任务。" }, { status: 404 });
   const existing = taskId ? store.getTask(taskId) : undefined;
   if (taskId && (!existing || !existing.description.startsWith(marker)))
     return NextResponse.json({ error: "只能向对应演示任务载入修订版。" }, { status: 422 });
@@ -35,6 +38,7 @@ export async function POST(request: Request): Promise<Response> {
     const task =
       existing ??
       store.createTask({
+        ownerId: requestIdentity(request),
         name: `${demo.name}（合成数据）`,
         description: `${marker} 独立演示任务；初始包含缺失材料、名称不一致和空标题。按当前配置生成规则并运行，结果为实际执行结果，不是预置成绩。可载入修订版后复检；重新创建案例得到独立初始任务。`,
         noticeText: demo.notice,

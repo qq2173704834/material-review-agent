@@ -1,3 +1,5 @@
+import { containsInstructionOverride } from "@/lib/instruction-isolation";
+import { compareRepositoryRule } from "@/lib/repository-review";
 import { retrieveEvidence } from "@/lib/evidence-retrieval";
 import "server-only";
 
@@ -32,12 +34,6 @@ const semanticReviewSchema = z.object({
     .max(30),
 });
 
-function containsInstructionOverride(text: string): boolean {
-  return /(?:忽略|无视|覆盖).{0,16}(?:先前|之前|以上|所有|系统).{0,8}(?:指令|规则|要求|提示词)|(?:ignore|disregard|override).{0,40}(?:previous|above|system).{0,20}(?:instructions?|rules?|prompt)|(?:泄漏|输出|显示).{0,12}(?:系统)?(?:提示词|密钥)|(?:执行|运行).{0,12}(?:命令|代码)|(?:reveal|print|show).{0,24}(?:system prompt|api key)|(?:run|execute).{0,24}(?:command|code)/i.test(
-    text,
-  );
-}
-
 export async function reviewLiveRule(options: {
   rule: ReviewRule;
   materials: ReviewMaterialSummary[];
@@ -48,6 +44,37 @@ export async function reviewLiveRule(options: {
   const { rule, materials, background, signal } = options;
   const baseline = executeReviewRule(rule, materials, background);
   const applicability = applicableRule(rule, background);
+  if (compareRepositoryRule(rule.description, materials))
+    return { result: { ...baseline, method: "deterministic" } };
+  if (
+    /签章|印章|盖章|签名/.test(rule.description) &&
+    materials.some((material) => ["png", "jpg"].includes(material.extension))
+  )
+    return { result: { ...baseline, method: "deterministic" } };
+  if (
+    baseline.reason.startsWith("已找到人工关联的目标材料") ||
+    baseline.reason.startsWith("人工关联材料不可用")
+  )
+    return { result: { ...baseline, method: "deterministic" } };
+  if (/字段[“「"]/.test(rule.description) && /一致|相同/.test(rule.description))
+    return { result: { ...baseline, method: "deterministic" } };
+  if (
+    (/模板/.test(rule.description) && /必填|必要结构|必要章节/.test(rule.description)) ||
+    (/字数|页数|字|页/.test(rule.description) && /摘要|正文|从.+到|自.+至/.test(rule.description))
+  )
+    return { result: { ...baseline, method: "deterministic" } };
+  if (
+    /视频|录像|演示片/.test(rule.description) &&
+    /时长|分辨率|格式/.test(rule.description) &&
+    materials.some((material) => material.parserName === "ffprobe-ffmpeg-sampled-ocr")
+  )
+    return { result: { ...baseline, method: "deterministic" } };
+  if (
+    /链接|网址|URL|站点/i.test(rule.description) &&
+    /访问|打开|有效|可用/.test(rule.description) &&
+    materials.some((material) => material.parserName === "public-link")
+  )
+    return { result: { ...baseline, method: "deterministic" } };
   if (
     applicability !== true ||
     rule.uncertainty ||
@@ -65,12 +92,12 @@ export async function reviewLiveRule(options: {
   const isCharacterCountRule =
     /(?:不少于|至少|不超过|至多|最多)\s*\d+\s*(?:个)?(?:汉字|字|字符)/.test(rule.description);
   const isExplicitCrossMaterialFieldRule =
-    /(?:项目名称|项目名|负责人|申报单位|申请单位|团队名称|项目编号).*(?:一致|相同)/.test(
+    /(?:项目名称|项目名|负责人|申报单位|申请单位|团队名称|项目编号|成员姓名|团队成员|指导老师|联系电话|电子邮箱).*(?:一致|相同)/.test(
       rule.description,
     );
   if (
     /预算|金额|费用/.test(rule.description) &&
-    /合计|总计|总额|加总/.test(rule.description) &&
+    /合计|总计|总额|加总|占比|比例/.test(rule.description) &&
     (rule.materialIds.length > 0 || isGlobalTarget)
   )
     return { result: { ...baseline, method: "deterministic" } };
@@ -112,7 +139,7 @@ export async function reviewLiveRule(options: {
         coverage: context.coverage,
       },
     };
-  if (context.snippets.some((snippet) => containsInstructionOverride(snippet.text)))
+  if (materials.some((material) => containsInstructionOverride(material.extractedText)))
     return {
       result: {
         ...baseline,

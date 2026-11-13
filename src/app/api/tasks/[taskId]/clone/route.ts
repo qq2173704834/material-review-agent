@@ -1,3 +1,4 @@
+import { requestIdentity } from "@/lib/server/access-config";
 import { NextResponse } from "next/server";
 
 import { reviewTaskIdSchema } from "@/domain/review-task";
@@ -21,6 +22,7 @@ export async function POST(_request: Request, context: RouteContext): Promise<Ne
     const sourceTask = store.getTask(taskId);
     if (!sourceTask) return NextResponse.json({ error: "没有找到该任务。" }, { status: 404 });
     const clone = store.createTask({
+      ownerId: requestIdentity(_request),
       name: `${sourceTask.name}（副本）`.slice(0, 120),
       description: sourceTask.description,
       background: sourceTask.background,

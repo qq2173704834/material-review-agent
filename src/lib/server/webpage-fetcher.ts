@@ -229,7 +229,8 @@ export function extractWebpageContent(
 
 export async function fetchPublicResource(
   rawUrl: string,
-): Promise<{ url: string; bytes: Uint8Array; contentType: string }> {
+  probe = false,
+): Promise<{ url: string; bytes: Uint8Array; contentType: string; status: number }> {
   let url = validateUrl(rawUrl);
   const dispatcher = createPublicOnlyAgent();
   const controller = new AbortController();
@@ -244,7 +245,7 @@ export async function fetchPublicResource(
           signal: controller.signal,
           headers: {
             Accept:
-              "text/html,application/xhtml+xml,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain",
+              "application/json,text/html,application/xhtml+xml,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain",
             "User-Agent": "MaterialReviewWorkbench/0.1 (+public webpage import)",
           },
         });
@@ -271,11 +272,25 @@ export async function fetchPublicResource(
       break;
     }
     if (!response) throw new Error("网页请求失败。");
+    if (probe) {
+      await response.body?.cancel();
+      return {
+        url: url.toString(),
+        bytes: new Uint8Array(),
+        contentType: response.headers.get("content-type") ?? "",
+        status: response.status,
+      };
+    }
     if (response.status === 401 || response.status === 403 || response.status === 407)
       throw new Error("网页需要登录、授权或代理认证，未尝试绕过访问限制。");
     if (!response.ok) throw new Error(`网页返回 HTTP ${response.status}。`);
     const contentType = response.headers.get("content-type") ?? "";
-    return { url: url.toString(), bytes: await readLimitedBody(response), contentType };
+    return {
+      url: url.toString(),
+      bytes: await readLimitedBody(response),
+      contentType,
+      status: response.status,
+    };
   } finally {
     clearTimeout(timeout);
     await dispatcher.destroy();

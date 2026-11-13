@@ -136,7 +136,8 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
             审查材料
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            支持 PDF、DOCX、TXT、XLSX、CSV、JPG、PNG；单文件最多 20 MiB，每批最多 10 个文件。
+            支持 PDF、DOCX、TXT、XLSX、CSV、JPG、PNG、Markdown、配置文件与 ZIP；单文件最多 20
+            MiB，每批最多 10 个文件，解包后最多50份/50MiB。
           </p>
         </div>
       </div>
@@ -146,7 +147,7 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
           aria-label="选择审查材料"
           type="file"
           multiple
-          accept=".pdf,.docx,.txt,.xlsx,.csv,.jpg,.jpeg,.png"
+          accept=".pdf,.docx,.txt,.xlsx,.csv,.jpg,.jpeg,.png,.zip,.md,.json,.yaml,.yml,.mp4,.webm,.mov"
           onChange={selectFiles}
           className="min-w-0 flex-1 text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-card file:px-3 file:py-2 file:text-xs file:font-medium"
         />
@@ -232,9 +233,11 @@ export function MaterialUpload({ taskId, initialMaterials }: MaterialUploadProps
                     ? "人工修订"
                     : material.revision.kind === "restore"
                       ? "恢复原始文字"
-                      : material.revision.kind === "classification"
-                        ? "人工分类"
-                        : "单页重试"}{" "}
+                      : material.revision.kind === "select_version"
+                        ? "采用历史版本"
+                        : material.revision.kind === "classification"
+                          ? "人工分类"
+                          : "单页重试"}{" "}
                   · 基于 v{material.revision.baseVersion} · {material.createdAt} ·{" "}
                   {material.revision.note}
                 </p>

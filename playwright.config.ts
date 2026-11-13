@@ -29,6 +29,7 @@ export default defineConfig({
       AI_API_KEY: "",
       REVIEW_DATA_DIR: ".local-data/e2e",
       NEXT_TELEMETRY_DISABLED: "1",
+      REVIEW_ACCESS_USERS: "",
     },
   },
 });
