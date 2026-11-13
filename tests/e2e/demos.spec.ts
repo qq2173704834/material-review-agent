@@ -9,9 +9,11 @@ test("两个领域的演示独立创建、载入修订和重新开始 ENG-010", 
     created.push(taskId);
     const initial = (await (await request.get(`/api/tasks/${taskId}`)).json()).task;
     expect(initial.materials).toHaveLength(2);
-    await page.goto(`/tasks/${taskId}`);
+    await page.goto(`/tasks/${taskId}?verdict=all`);
     await page.getByRole("button", { name: "载入演示修订材料" }).click();
-    await expect(page.getByRole("status")).toContainText("修订材料已载入");
+    await expect(
+      page.getByRole("region", { name: "合成案例演示" }).getByRole("status"),
+    ).toContainText("修订材料已载入");
     const revised = (await (await request.get(`/api/tasks/${taskId}`)).json()).task;
     expect(revised.materials).toHaveLength(3);
     expect(
@@ -21,7 +23,7 @@ test("两个领域的演示独立创建、载入修订和重新开始 ENG-010", 
       page.getByText(domain === "competition" ? "授权证明.txt" : "预算说明.txt", { exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "重新创建初始案例" }).click();
-    await expect(page).not.toHaveURL(`/tasks/${taskId}`);
+    await expect(page).not.toHaveURL(new RegExp(`/tasks/${taskId}(?:[?]|$)`));
     const resetId = new URL(page.url()).pathname.split("/").pop()!;
     created.push(resetId);
     expect((await (await request.get(`/api/tasks/${resetId}`)).json()).task.materials).toHaveLength(

@@ -27,7 +27,7 @@ test("背景建议、敏感提醒、相似材料与副本包 Q06 N12 M11 E06", a
   expect(insights.sensitive[0].field).toBe("电子邮箱");
   expect(JSON.stringify(insights.sensitive)).not.toContain("test@example.com");
   expect(insights.similar).toHaveLength(1);
-  await page.goto(`/tasks/${task.id}`);
+  await page.goto(`/tasks/${task.id}?verdict=all`);
   await page.getByRole("button", { name: "确认采用此背景" }).first().click();
   await expect(page.getByRole("status").filter({ hasText: "已人工确认背景建议" })).toBeVisible();
   expect(
@@ -160,7 +160,7 @@ test("追问保留原判定、分工记录持久化且拒绝跨任务 O10 V09", 
       })
     ).status(),
   ).toBe(404);
-  await page.goto(`/tasks/${task.id}`);
+  await page.goto(`/tasks/${task.id}?verdict=all`);
   await expect(page.getByText("负责人/认领：张同学", { exact: true })).toBeVisible();
   await page.getByText("负责人/认领：张同学", { exact: true }).click();
   await page.getByRole("button", { name: "由我认领", exact: true }).click();
@@ -275,7 +275,8 @@ test("自定义条件集中确认、保存和复检 Q01 Q02", async ({ request, 
     expect((await request.patch(`/api/tasks/${task.id}/rules`, { data: { rules } })).status()).toBe(
       201,
     );
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await page.getByTestId("task-primary-action").click();
     await page.getByLabel("确认条件：" + condition, { exact: true }).selectOption("false");
     await page.getByRole("button", { name: "保存补充信息", exact: true }).click();
     await expect(page.getByLabel("确认条件：" + condition, { exact: true })).toHaveCount(0);
@@ -384,7 +385,7 @@ test("选用历史原件版本不覆盖旧内容 M11", async ({ request, page })
       });
     const material = (await (await request.get(`/api/tasks/${task.id}`)).json()).task.materials[0];
     expect(material.version).toBe(2);
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
     await page.getByText("核对与修订解析文字", { exact: true }).click();
     await page.getByLabel("修订依据", { exact: true }).fill("本轮正式提交采用第一版");
     await page.getByLabel("采用历史版本", { exact: true }).fill("1");

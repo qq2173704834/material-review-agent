@@ -40,7 +40,7 @@ test("文字修订、恢复、历史证据和重复上传不产生虚假版本 E
   expect(
     (await request.post(endpoint.replace(task.id, randomUUID()), { data: correction })).status(),
   ).toBe(404);
-  await page.goto(`/tasks/${task.id}`);
+  await page.goto(`/tasks/${task.id}?view=prepare&verdict=all`);
   await page.getByText("核对与修订解析文字", { exact: true }).click();
   await page.getByLabel("核对后的文字", { exact: true }).fill(correction.text);
   await page.getByLabel("修订依据", { exact: true }).fill(correction.note);

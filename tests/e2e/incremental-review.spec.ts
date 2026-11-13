@@ -60,7 +60,7 @@ test("材料修订只复检受影响规则，全量复检结果一致 ENG-009", 
   );
   const report = await request.get(`/api/tasks/${task.id}/report?executionId=${incremental.id}`);
   expect(await report.text()).toContain("复用结果：原执行 " + first.id);
-  await page.goto(`/tasks/${task.id}?execution=${incremental.id}`);
+  await page.goto(`/tasks/${task.id}?execution=${incremental.id}&verdict=all`);
   await expect(page.getByText(/复用结果 · 原检查时间/)).toBeVisible();
   await expect(page.getByRole("button", { name: "全量复检" })).toBeVisible();
   const latestRules = (await (await request.get(`/api/tasks/${task.id}/rules`)).json()).ruleSets[0]

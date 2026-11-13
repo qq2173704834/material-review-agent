@@ -27,7 +27,7 @@ interface RouteContext {
 const reviewGlobals = globalThis as typeof globalThis & { __activeReviewTasks?: Set<string> };
 const activeReviewTasks = (reviewGlobals.__activeReviewTasks ??= new Set<string>());
 
-export async function GET(_request: Request, context: RouteContext): Promise<NextResponse> {
+export async function GET(request: Request, context: RouteContext): Promise<NextResponse> {
   const { taskId } = await context.params;
   if (!reviewTaskIdSchema.safeParse(taskId).success) {
     return NextResponse.json({ error: "任务编号无效。" }, { status: 400 });
@@ -42,7 +42,14 @@ export async function GET(_request: Request, context: RouteContext): Promise<Nex
   );
   let plan: ReturnType<typeof createRecheckPlan> = [];
   try {
-    if (rules) plan = createRecheckPlan(task, rules, executions[0]);
+    if (rules)
+      plan = createRecheckPlan(
+        task,
+        rules,
+        executions[0],
+        false,
+        new URL(request.url).searchParams.get("mode") === "mock" ? "mock" : undefined,
+      );
   } catch {
     /* Configuration errors are surfaced when starting a check. */
   }
@@ -89,13 +96,14 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     }
     if (activeReviewTasks.has(taskId))
       return NextResponse.json({ error: "该任务正在检查，请等待结束或先取消。" }, { status: 409 });
-    const mode = getAiMode();
+    const mode = new URL(request.url).searchParams.get("mode") === "mock" ? "mock" : getAiMode();
     const configuration = mode === "live" ? getModelConfiguration() : null;
     const plan = createRecheckPlan(
       task,
       ruleSet,
       store.listReviewExecutions(taskId)[0],
       new URL(request.url).searchParams.get("full") === "1",
+      mode,
     );
     activeReviewTasks.add(taskId);
     acquired = true;

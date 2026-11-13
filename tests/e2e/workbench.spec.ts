@@ -15,7 +15,7 @@ test("联动工作台显示双方历史证据并保持移动端可用 ENG-008", 
     });
   await request.post(`/api/tasks/${task.id}/rules`);
   await request.post(`/api/tasks/${task.id}/checks`);
-  await page.goto(`/tasks/${task.id}`);
+  await page.goto(`/tasks/${task.id}?verdict=all`);
   await page.getByRole("button", { name: "打开联动工作台", exact: true }).click();
   const board = page.getByRole("region", { name: "联动审查工作台" });
   await expect(board.getByText("项目名称：绿色能源", { exact: true }).last()).toBeVisible();
@@ -35,7 +35,7 @@ test("联动工作台显示双方历史证据并保持移动端可用 ENG-008", 
     await page.setViewportSize(viewport);
     await expect(board.getByLabel("工作台原文证据")).toBeVisible();
     if (!isMobile) {
-      await expect(board.getByLabel("工作台规则导航")).toBeVisible();
+      await expect(board.getByLabel("工作台检查项导航")).toBeVisible();
       await expect(board.getByLabel("工作台结论与处理")).toBeVisible();
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

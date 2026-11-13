@@ -1,3 +1,4 @@
+import { openRequirements } from "../helpers/task-ui";
 import { expect, test } from "@playwright/test";
 
 import type { APIRequestContext, APIResponse } from "@playwright/test";
@@ -84,10 +85,11 @@ test("真实模式代码链完成提取、证据审查、复检和报告（受�
   expect(upload.status()).toBe(201);
   const beforeRecheck = await (await request.get(`/api/tasks/${task.id}/checks`)).json();
   expect(beforeRecheck.executions[0].validity).toBe("needs_recheck");
-  await page.goto(`/tasks/${task.id}`);
-  await expect(page.getByRole("button", { name: "重新检查" })).toBeEnabled();
-  await page.getByRole("button", { name: "重新检查" }).click();
+  await page.goto(`/tasks/${task.id}?verdict=all`);
+  await expect(page.getByTestId("task-primary-action")).toBeEnabled();
+  await page.getByTestId("task-primary-action").click();
   await expect(page.getByText(/已解决 1 · 仍存在 0/)).toBeVisible();
+  await page.getByLabel("按判定筛选").selectOption("all");
   await page.getByRole("link", { name: "定位证据" }).click();
   await expect(
     page.locator("details[open]").getByText("测试样本量：100。", { exact: true }),
@@ -143,7 +145,8 @@ test("真实模式逐来源提取补充要求并保存可核验引用（受控�
       }),
     ]),
   );
-  await page.goto(`/tasks/${task.id}`);
+  await page.goto(`/tasks/${task.id}?verdict=all`);
+  await openRequirements(page);
   await expect(page.getByText("补充通知.txt v1 · 行 1", { exact: false })).toBeVisible();
 });
 
@@ -274,9 +277,11 @@ test("恰好一份的数量规则拒绝两份材料", async ({ request }) => {
 
 test("取消正在等待模型的检查并保留未执行数", async ({ request, page }) => {
   const { task } = await createTask(request, "SLOW_MODEL 项目说明必须给出测试样本量。");
-  await page.goto(`/tasks/${task.id}`);
-  await page.getByRole("button", { name: "运行检查" }).click();
-  await expect(page.getByText(/正在核查 R-001/)).toBeVisible();
+  await page.goto(`/tasks/${task.id}?verdict=all`);
+  await page.getByTestId("task-primary-action").click();
+  await expect(
+    page.getByRole("region", { name: "本次审查进度" }).getByText(/正在核查 R-001/),
+  ).toBeVisible();
   await page.getByRole("button", { name: "取消检查" }).click();
   await expect
     .poll(
@@ -288,4 +293,39 @@ test("取消正在等待模型的检查并保留未执行数", async ({ request,
     .executions[0];
   expect(execution.results).toHaveLength(0);
   expect(execution.unexecutedCount).toBe(1);
+});
+
+test("明确切换模拟不会调用模型或复用真实结果，切回后重新核验 UX-04", async ({ request, page }) => {
+  const { task } = await createTask(request);
+  try {
+    const live = await runChecks(request, task.id);
+    expect(live.metadata?.mode).toBe("live");
+    expect(live.results[0]?.method).toBe("model");
+    await page.goto(`/tasks/${task.id}?view=results`);
+    await expect(page.getByText("此记录：真实模型审查", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "明确使用模拟演示（不调用真实模型）" }).click();
+    await expect(page.getByTestId("task-primary-action")).toHaveText("复查受影响项");
+    await page.getByTestId("task-primary-action").click();
+    await expect(
+      page.getByText("此记录：模拟演示，不代表真实模型语义核验", { exact: true }),
+    ).toBeVisible();
+    const { executions } = await (
+      await request.get(`/api/tasks/${task.id}/checks?mode=mock`)
+    ).json();
+    expect(executions[0].metadata.mode).toBe("mock");
+    expect(executions[0].metadata.modelCalls).toHaveLength(0);
+    expect(executions[0].results.every((item: { reusedFrom?: unknown }) => !item.reusedFrom)).toBe(
+      true,
+    );
+    await page.goto(`/tasks/${task.id}?view=results`);
+    await expect(page.getByTestId("task-primary-action")).toHaveText("复查受影响项");
+    await page.getByTestId("task-primary-action").click();
+    await expect(page.getByText("此记录：真实模型审查", { exact: true })).toBeVisible();
+    const final = (await (await request.get(`/api/tasks/${task.id}/checks`)).json()).executions[0];
+    expect(final.metadata.mode).toBe("live");
+    expect(final.results[0].method).toBe("model");
+    expect(final.results[0].reusedFrom).toBeFalsy();
+  } finally {
+    await request.delete(`/api/tasks/${task.id}`);
+  }
 });

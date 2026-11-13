@@ -45,18 +45,48 @@ export async function GET(_request: Request, context: RouteContext): Promise<Nex
   }
 }
 
+const ruleGlobals = globalThis as typeof globalThis & { __preparingRuleTasks?: Set<string> };
+const preparingRuleTasks = (ruleGlobals.__preparingRuleTasks ??= new Set<string>());
+
 export async function POST(request: Request, context: RouteContext): Promise<NextResponse> {
   const { taskId } = await context.params;
   if (!reviewTaskIdSchema.safeParse(taskId).success) {
     return NextResponse.json({ error: "任务编号无效。" }, { status: 400 });
   }
 
+  let acquired = false;
   try {
     const reviewStore = getReviewStore();
     const task = reviewStore.getTask(taskId);
     if (!task) return NextResponse.json({ error: "没有找到该任务。" }, { status: 404 });
-
-    const mode = getAiMode();
+    if (
+      preparingRuleTasks.has(taskId) ||
+      reviewStore.listReviewExecutions(taskId).some((item) => item.status === "running")
+    )
+      return NextResponse.json(
+        { error: "该任务正在整理要求或执行检查，请等待结束，避免重复调用。" },
+        { status: 409 },
+      );
+    if (new URL(request.url).searchParams.get("prepare") === "1") {
+      const existing = reviewStore.listRuleSets(taskId);
+      const current = existing.find(
+        (item) =>
+          item.sourceVersion === task.noticeSource.version &&
+          hasCurrentRuleSources(item, [task.noticeSource, ...task.supplementalSources]),
+      );
+      if (current) return NextResponse.json({ ruleSet: current, reused: true });
+      if (existing[0]?.rules.some((rule) => rule.generationMethod === "manual"))
+        return NextResponse.json(
+          {
+            error:
+              "来源已变化，旧审查要求包含人工调整。请先查看审查要求与新旧来源，再明确选择重新整理；系统不会自动覆盖人工修改。",
+          },
+          { status: 409 },
+        );
+    }
+    preparingRuleTasks.add(taskId);
+    acquired = true;
+    const mode = new URL(request.url).searchParams.get("mode") === "mock" ? "mock" : getAiMode();
     const configuration = mode === "live" ? getModelConfiguration() : null;
     const sources = [task.noticeSource, ...task.supplementalSources];
     const sourceVersions = sources.map(({ id, version, displayName }) => ({
@@ -138,6 +168,16 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
       }
     }
 
+    const latestTask = reviewStore.getTask(taskId);
+    if (
+      !latestTask ||
+      latestTask.noticeSource.version !== task.noticeSource.version ||
+      !hasCurrentRuleSources(ruleSet, [latestTask.noticeSource, ...latestTask.supplementalSources])
+    )
+      return NextResponse.json(
+        { error: "整理期间来源发生变化，本次草稿未覆盖当前要求，请重新开始。" },
+        { status: 409 },
+      );
     reviewStore.saveRuleSet(ruleSet);
     return NextResponse.json(
       { ruleSet },
@@ -151,7 +191,9 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         { status: failure.status },
       );
     }
-    return NextResponse.json({ error: "规则草稿未能保存，请稍后重试。" }, { status: 500 });
+    return NextResponse.json({ error: "审查要求未能保存，请稍后重试。" }, { status: 500 });
+  } finally {
+    if (acquired) preparingRuleTasks.delete(taskId);
   }
 }
 

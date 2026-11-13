@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTaskActivity, useTaskWorkflow } from "@/components/task-workspace";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 
 import type { CollaborationScope, ReviewTaskDetails } from "@/domain/review";
@@ -13,6 +14,7 @@ interface TaskEditorProps {
 
 export function TaskEditor({ task }: TaskEditorProps): ReactElement {
   const router = useRouter();
+  const workflow = useTaskWorkflow();
   const [name, setName] = useState(task?.name ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [projectType, setProjectType] = useState(task?.background.projectType ?? "");
@@ -29,21 +31,32 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
   const [isDirty, setIsDirty] = useState(false);
   const clearUnsaved = useUnsavedChanges(isDirty);
 
-  async function submitTask(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
+  useTaskActivity("task-save", isSaving ? "正在保存审查依据" : null);
+  const [previousTask, setPreviousTask] = useState(task);
+  if (task !== previousTask) {
+    setPreviousTask(task);
+    if (task && !isDirty) {
+      setName(task.name);
+      setDescription(task.description);
+      setProjectType(task.background.projectType);
+      setProjectStage(task.background.projectStage);
+      setCollaborationScope(task.background.collaborationScope);
+      setNoticeText(task.noticeSource.originalText);
+    }
+  }
+
+  async function saveTask(forReview = false): Promise<boolean> {
     setError("");
     setIsSaving(true);
     try {
+      const background = { ...task?.background, projectType, projectStage, collaborationScope };
       const isFileSource = !task && sourceMode === "file";
       const formData = new FormData();
       if (isFileSource && sourceFile) {
         formData.set("sourceFile", sourceFile);
         formData.set("name", name);
         formData.set("description", description);
-        formData.set(
-          "background",
-          JSON.stringify({ projectType, projectStage, collaborationScope }),
-        );
+        formData.set("background", JSON.stringify(background));
       }
       const response = await fetch(task ? `/api/tasks/${task.id}` : "/api/tasks", {
         method: task ? "PATCH" : "POST",
@@ -57,12 +70,12 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
                     sourceUrl,
                     name,
                     description,
-                    background: { projectType, projectStage, collaborationScope },
+                    background,
                   }
                 : {
                     name,
                     description,
-                    background: { projectType, projectStage, collaborationScope },
+                    background,
                     noticeText,
                   },
             ),
@@ -77,18 +90,32 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
             ? result.error
             : "任务保存失败，请检查填写内容后重试。";
         setError(message);
-        return;
+        return false;
       }
       const savedTask = result.task as ReviewTaskDetails;
       clearUnsaved();
       setIsDirty(false);
-      router.push(`/tasks/${savedTask.id}`);
-      router.refresh();
+      if (!forReview && !task) router.push(`/tasks/${savedTask.id}`);
+      if (!forReview) router.refresh();
+      return true;
     } catch {
       setError("暂时无法连接本地服务，请确认服务仍在运行后重试。");
+      return false;
     } finally {
       setIsSaving(false);
     }
+  }
+
+  useEffect(() =>
+    workflow?.registerSave(async () => {
+      if (isDirty && !(await saveTask(true)))
+        throw new Error("审查依据未能保存，请处理表单错误后重试。");
+    }),
+  );
+
+  async function submitTask(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    await saveTask();
   }
 
   const fieldClassName =
@@ -100,13 +127,14 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
       onChangeCapture={() => setIsDirty(true)}
       className="max-w-4xl space-y-8"
     >
-      <section
-        className="space-y-5 border-y border-border py-6"
+      <details
+        open={!task}
+        className="space-y-5 border-y border-border py-4"
         aria-labelledby="task-info-heading"
       >
-        <h2 id="task-info-heading" className="text-sm font-semibold">
-          任务信息
-        </h2>
+        <summary id="task-info-heading" className="cursor-pointer text-sm font-semibold">
+          任务信息与条件背景
+        </summary>
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="text-sm font-medium">
             任务名称
@@ -161,7 +189,7 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
             placeholder="可记录本次申报范围或内部备注"
           />
         </label>
-      </section>
+      </details>
       <section className="space-y-3" aria-labelledby="notice-heading">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="notice-heading" className="text-sm font-semibold">
@@ -241,7 +269,7 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
           <textarea
             id="notice-text"
             aria-labelledby="notice-heading"
-            className={`${fieldClassName} min-h-[320px] resize-y font-mono leading-7`}
+            className={`${fieldClassName} min-h-[180px] resize-y leading-7`}
             value={noticeText}
             maxLength={200000}
             required
@@ -250,8 +278,8 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
           />
         )}
         <p className="text-xs leading-5 text-muted-foreground">
-          创建任务后可上传 PDF、DOCX、TXT、XLSX、CSV、JPG 与 PNG 材料；JPG/PNG 会进行中文和英文
-          OCR，扫描 PDF 暂不支持 OCR。
+          支持文档、表格、图片及更多材料格式；扫描 PDF 和图片可进行中英文
+          OCR，读取范围和失败会单独说明。
         </p>
       </section>
       {error ? (

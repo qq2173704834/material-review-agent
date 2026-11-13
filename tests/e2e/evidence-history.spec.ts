@@ -31,9 +31,9 @@ test("移除补充来源后执行仍保留原文快照 ENG-008 ENG-011", async (
   expect(snapshot.status()).toBe(200);
   expect((await snapshot.json()).source.segments[0].text).toContain("必须提交 PDF");
   expect((await request.get(endpoint.replace(task.id, randomUUID()))).status()).toBe(404);
-  await page.goto(`/tasks/${task.id}`);
+  await page.goto(`/tasks/${task.id}?verdict=all`);
   const result = page
-    .getByRole("region", { name: "确定性检查" })
+    .getByRole("region", { name: "审查结果与待处理问题" })
     .locator("li")
     .filter({ has: page.getByRole("heading", { name: /必须提交 PDF 格式文件/ }) });
   await result.getByRole("button", { name: "查看执行时来源原文" }).click();
@@ -85,8 +85,8 @@ test("历史证据按执行版本预览、分页及任务隔离 ENG-008 ENG-009"
   ).toBe(404);
   const report = await request.get(`/api/tasks/${task.id}/report?executionId=${executions[0].id}`);
   expect(await report.text()).toContain("材料.txt · v1");
-  await page.goto(`/tasks/${task.id}?execution=${executions[0].id}`);
-  const panel = page.getByRole("region", { name: "确定性检查" });
+  await page.goto(`/tasks/${task.id}?execution=${executions[0].id}&verdict=all`);
+  const panel = page.getByRole("region", { name: "审查结果与待处理问题" });
   const ruleButton = panel.getByRole("button", { name: /R-001 · 必须提交 TXT/ });
   await ruleButton.click();
   await page.reload();

@@ -22,8 +22,9 @@ export function createRecheckPlan(
   ruleSet: ReviewRuleSet,
   previous?: ReviewExecution,
   forceFull = false,
+  requestedMode?: "mock" | "live",
 ): PlannedCheck[] {
-  const mode = getAiMode();
+  const mode = requestedMode ?? getAiMode();
   const configuration = mode === "live" ? getModelConfiguration() : null;
   const sources = [task.noticeSource, ...task.supplementalSources]
     .map(({ id, version }) => ({ id, version }))

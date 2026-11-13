@@ -24,7 +24,7 @@ export function annotateExecutions(
       !hasCurrentRuleSources(executionRuleSet, [task.noticeSource, ...task.supplementalSources])
     )
       reasons.push("要求来源已经更新");
-    if (latestRuleSet?.id !== execution.ruleSetId) reasons.push("规则草稿已经更新");
+    if (latestRuleSet?.id !== execution.ruleSetId) reasons.push("审查要求已经更新");
     if (
       execution.materialSnapshot.length !== currentMaterials.size ||
       execution.materialSnapshot.some(

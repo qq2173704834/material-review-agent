@@ -1,4 +1,5 @@
 "use client";
+import { useTaskWorkflow } from "@/components/task-workspace";
 import { useState } from "react";
 import { EvidencePane } from "./evidence-preview";
 import { SourceEvidencePreview } from "./source-evidence-preview";
@@ -28,6 +29,7 @@ export function ReviewWorkbench({
   selectedRuleId: string;
   onSelect: (ruleId: string) => void;
 }): ReactElement {
+  const workflow = useTaskWorkflow();
   const [tab, setTab] = useState("evidence");
   const selected =
     results.find((result) => result.ruleId === selectedRuleId) ??
@@ -35,7 +37,7 @@ export function ReviewWorkbench({
     results.find((result) => ["needs_confirmation", "unable_to_check"].includes(result.verdict)) ??
     results[0];
   const tabs = [
-    { id: "rules", label: "规则导航" },
+    { id: "rules", label: "检查项导航" },
     { id: "evidence", label: "原文证据" },
     { id: "result", label: "结论与处理" },
   ];
@@ -60,10 +62,10 @@ export function ReviewWorkbench({
       </div>
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(160px,0.7fr)_minmax(0,1.6fr)_minmax(220px,1fr)]">
         <nav
-          aria-label="工作台规则导航"
+          aria-label="工作台检查项导航"
           className={`${tab === "rules" ? "block" : "hidden"} min-w-0 lg:block`}
         >
-          <p className="mb-2 text-xs font-semibold">当前执行 · {executionId.slice(0, 8)}</p>
+          <p className="mb-2 text-xs font-semibold">当前选定检查记录</p>
           <ul className="max-h-[70vh] space-y-2 overflow-auto">
             {results.map((result) => (
               <li key={result.ruleId}>
@@ -139,32 +141,62 @@ export function ReviewWorkbench({
               : ""}
           </p>
           <ResultQuestion taskId={taskId} executionId={executionId} ruleId={selected.ruleId} />
-          <div className="mt-4 flex flex-col gap-2 text-xs">
-            <a
-              className="inline-flex min-h-11 items-center text-primary underline"
-              href="#task-info-heading"
-            >
-              补充条件背景
-            </a>
-            <a
-              className="inline-flex min-h-11 items-center text-primary underline"
-              href="#stage-prepare"
-            >
-              纠正规则 / 调整材料匹配
-            </a>
-            <a
-              className="inline-flex min-h-11 items-center text-primary underline"
-              href="#materials-heading"
-            >
-              替换或修订材料
-            </a>
-            <a
-              className="inline-flex min-h-11 items-center text-primary underline"
-              href={`#execution-${executionId}-result-${selected.ruleId}`}
-            >
-              查看完整结果 / 人工意见 / 整改待办
-            </a>
-          </div>
+          {workflow ? (
+            <div className="mt-4 flex flex-col gap-2 text-xs">
+              <button
+                className="min-h-11 rounded border px-3 text-left text-primary"
+                onClick={() => workflow.openTool("clarification")}
+              >
+                补充条件背景
+              </button>
+              <button
+                className="min-h-11 rounded border px-3 text-left text-primary"
+                onClick={() => workflow.openTool("requirements")}
+              >
+                纠正要求 / 更换材料 / 选择依据
+              </button>
+              <button
+                className="min-h-11 rounded border px-3 text-left text-primary"
+                onClick={() =>
+                  workflow.openTool(
+                    "materials",
+                    selected.evidence[0]
+                      ? `material-${selected.evidence[0].materialId}`
+                      : "material-files",
+                  )
+                }
+              >
+                替换或修订材料
+              </button>
+            </div>
+          ) : (
+            <div className="mt-4 flex flex-col gap-2 text-xs">
+              <a
+                className="inline-flex min-h-11 items-center text-primary underline"
+                href="#task-info-heading"
+              >
+                补充条件背景
+              </a>
+              <a
+                className="inline-flex min-h-11 items-center text-primary underline"
+                href="#stage-prepare"
+              >
+                纠正规则 / 调整材料匹配
+              </a>
+              <a
+                className="inline-flex min-h-11 items-center text-primary underline"
+                href="#materials-heading"
+              >
+                替换或修订材料
+              </a>
+              <a
+                className="inline-flex min-h-11 items-center text-primary underline"
+                href={`#execution-${executionId}-result-${selected.ruleId}`}
+              >
+                查看完整结果 / 人工意见 / 整改待办
+              </a>
+            </div>
+          )}
         </aside>
       </div>
     </section>

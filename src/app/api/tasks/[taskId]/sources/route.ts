@@ -23,11 +23,34 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
   const store = getReviewStore();
   const task = store.getTask(taskId);
   if (!task) return NextResponse.json({ error: "没有找到该任务。" }, { status: 404 });
-  if (task.supplementalSources.length >= MAXIMUM_SOURCE_COUNT)
-    return NextResponse.json(
-      { error: `每个任务最多添加 ${MAXIMUM_SOURCE_COUNT} 个补充来源。` },
-      { status: 413 },
+  function saveSource(input: Parameters<typeof store.createSupplementSource>[0]): NextResponse {
+    const current = store.getTask(taskId);
+    if (!current) return NextResponse.json({ error: "任务已不存在。" }, { status: 404 });
+    const sameName = current.supplementalSources.find(
+      (item) => item.displayName.toLowerCase() === input.displayName.toLowerCase(),
     );
+    if (sameName) {
+      if (sameName.originalText === input.text && sameName.parseStatus === input.parseStatus)
+        return NextResponse.json(
+          { source: sameName, reused: true },
+          { headers: { "Cache-Control": "no-store" } },
+        );
+      return NextResponse.json(
+        {
+          error:
+            "已有同名审查依据但内容不同。请在已添加的补充来源中展开修订，核对新旧内容后保存新版本；原文会保留。",
+        },
+        { status: 409 },
+      );
+    }
+    if (current.supplementalSources.length >= MAXIMUM_SOURCE_COUNT)
+      return NextResponse.json(
+        { error: `每个任务最多添加 ${MAXIMUM_SOURCE_COUNT} 个补充来源。` },
+        { status: 413 },
+      );
+    const source = store.createSupplementSource(input);
+    return NextResponse.json({ source }, { status: 201, headers: { "Cache-Control": "no-store" } });
+  }
 
   if (request.headers.get("content-type")?.includes("application/json")) {
     let body: unknown;
@@ -61,7 +84,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         endOffset: match.index + match[0].length,
         location: `网页段落 ${paragraphIndex + 1}`,
       }));
-      const source = store.createSupplementSource({
+      return saveSource({
         taskId,
         sourceType: "webpage",
         displayName: `${webpage.title || "公开网页"} · ${webpage.url}`,
@@ -71,11 +94,6 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         parseStatus: "text_extracted",
         segments,
       });
-      if (!source) return NextResponse.json({ error: "任务已不存在。" }, { status: 404 });
-      return NextResponse.json(
-        { source },
-        { status: 201, headers: { "Cache-Control": "no-store" } },
-      );
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : "无法读取该公开网页。请改为粘贴原文。" },
@@ -121,7 +139,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         { error: parsed.parseMessage || "文件未提取到可用文字，未添加来源。" },
         { status: 422 },
       );
-    const source = store.createSupplementSource({
+    return saveSource({
       taskId,
       displayName: sourceFile.name,
       sourceType: "file",
@@ -135,8 +153,6 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         location: segment.location,
       })),
     });
-    if (!source) return NextResponse.json({ error: "任务已不存在。" }, { status: 404 });
-    return NextResponse.json({ source }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "补充来源解析失败。" },

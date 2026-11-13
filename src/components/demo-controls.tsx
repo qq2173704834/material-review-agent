@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { demoCases } from "@/lib/demo-cases";
 import type { DemoDomain } from "@/lib/demo-cases";
@@ -8,42 +8,85 @@ import type { ReactElement } from "react";
 export function DemoControls({
   taskId,
   domain,
+  autoRun = false,
+  forceMock = false,
 }: {
   taskId?: string;
   domain?: DemoDomain;
+  autoRun?: boolean;
+  forceMock?: boolean;
 }): ReactElement {
   const router = useRouter();
+  const busy = useRef(false);
+  const [createdTaskId, setCreatedTaskId] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [message, setMessage] = useState("");
-  async function create(selected: DemoDomain, revision = false): Promise<void> {
-    setIsBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch("/api/demos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: selected, ...(revision ? { taskId } : {}) }),
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        setMessage(payload.error ?? "创建失败，请重试。");
-        return;
+  const create = useCallback(
+    async (selected: DemoDomain, revision = false): Promise<void> => {
+      if (busy.current) return;
+      busy.current = true;
+      setIsBusy(true);
+      setMessage("");
+      try {
+        const response = await fetch("/api/demos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: selected, ...(revision ? { taskId } : {}) }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          setMessage(payload.error ?? "创建失败，请重试。");
+          return;
+        }
+        if (revision) {
+          setMessage("修订材料已载入，请复检查看真实变化。");
+          router.refresh();
+        } else {
+          setCreatedTaskId(payload.taskId);
+          if (autoRun) {
+            setMessage("独立示例已创建，正在按当前模式整理要求并执行审查…");
+            const rules = await fetch(
+              `/api/tasks/${payload.taskId}/rules?prepare=1${forceMock ? "&mode=mock" : ""}`,
+              {
+                method: "POST",
+              },
+            );
+            if (!rules.ok) {
+              setMessage(
+                "示例已保存，但当前模式无法整理要求。请打开示例查看配置或重试；未自动切换模拟模式。",
+              );
+              return;
+            }
+            const check = await fetch(
+              `/api/tasks/${payload.taskId}/checks${forceMock ? "?mode=mock" : ""}`,
+              { method: "POST" },
+            );
+            if (!check.ok) {
+              setMessage("示例已保存，检查未启动。可打开示例继续，未预置审查成绩。");
+              return;
+            }
+            await check.text();
+          }
+          router.push(
+            `/tasks/${payload.taskId}${autoRun ? `?view=results${forceMock ? "&mode=mock" : ""}` : ""}`,
+          );
+        }
+      } catch {
+        setMessage("本地服务连接失败，请稍后重试。");
+      } finally {
+        busy.current = false;
+        setIsBusy(false);
       }
-      if (revision) {
-        setMessage("修订材料已载入，请复检查看真实变化。");
-        router.refresh();
-      } else router.push(`/tasks/${payload.taskId}`);
-    } catch {
-      setMessage("本地服务连接失败，请稍后重试。");
-    } finally {
-      setIsBusy(false);
-    }
-  }
+    },
+    [router, taskId, autoRun, forceMock],
+  );
   return (
     <section className="my-5 rounded-md border border-border p-4" aria-label="合成案例演示">
       <p className="text-xs text-muted-foreground">
         合成演示数据 ·
-        创建独立案例，可从初始问题走到修订复检。检查使用当前配置的模拟或真实模型，并明确显示模式。
+        {forceMock
+          ? "明确使用模拟模式，不调用真实模型。创建独立示例并实际运行本地检查，不覆盖已有任务。"
+          : "创建独立案例，可从初始问题走到修订复检；使用当前配置的模拟或真实模型，并明确显示模式。"}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         {domain && taskId ? (
@@ -64,18 +107,34 @@ export function DemoControls({
             </button>
           </>
         ) : (
-          (Object.keys(demoCases) as DemoDomain[]).map((key) => (
+          <>
             <button
               className="min-h-11 rounded border px-3 text-xs"
-              key={key}
               disabled={isBusy}
-              onClick={() => create(key)}
+              onClick={() => create("competition")}
             >
-              创建{demoCases[key].name}
+              {autoRun ? "创建并审查" : "创建"}
+              {demoCases.competition.name}
             </button>
-          ))
+            <button
+              className="min-h-11 rounded border px-3 text-xs"
+              disabled={isBusy}
+              onClick={() => create("grant")}
+            >
+              {autoRun ? "创建并审查" : "创建"}
+              {demoCases.grant.name}
+            </button>
+          </>
         )}
       </div>
+      {createdTaskId && (
+        <a
+          className="my-2 inline-flex min-h-11 items-center text-xs text-primary underline"
+          href={`/tasks/${createdTaskId}`}
+        >
+          打开已创建的独立示例
+        </a>
+      )}
       {message && (
         <p role="status" className="mt-2 text-xs">
           {message}

@@ -1,3 +1,4 @@
+import { openHistory } from "../helpers/task-ui";
 import { test, expect } from "@playwright/test";
 const aliceToken = "synthetic-alice-token-for-local-test-123456";
 const bobToken = "synthetic-bob-token-for-local-test-654321";
@@ -71,8 +72,9 @@ test("多身份跨任务隔离、授权撤销和浏览器登录 N01", async ({ p
     await expect(page).toHaveURL(/\/access$/);
     await page.getByLabel("访问凭据", { exact: true }).fill(aliceToken);
     await page.getByRole("button", { name: "登录", exact: true }).click();
-    await expect(page.getByText("Alice私有任务", { exact: true })).toBeVisible();
+    await expect(page.locator(`a[href^="/tasks/${task.id}?"]`)).toContainText("Alice私有任务");
     await page.goto(`/tasks/${task.id}`);
+    await openHistory(page);
     await page.getByText("任务访问授权", { exact: true }).click();
     await expect(page.getByLabel("授权 bob", { exact: true })).toBeVisible();
     await page.goto("/access");

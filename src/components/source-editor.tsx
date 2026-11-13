@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTaskActivity } from "@/components/task-workspace";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import type { RequirementSourceVersion } from "@/domain/review";
 import type { ReactElement } from "react";
@@ -19,6 +20,14 @@ export function SourceEditor({
   const [complete, setComplete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  useTaskActivity(
+    `source-editor-${source.id}`,
+    isSaving
+      ? "正在保存来源修订"
+      : isOpen && (text !== source.originalText || !!note)
+        ? "请先保存或取消来源修订"
+        : null,
+  );
   const clearUnsaved = useUnsavedChanges(isOpen && (text !== source.originalText || !!note));
   async function save(): Promise<void> {
     setIsSaving(true);

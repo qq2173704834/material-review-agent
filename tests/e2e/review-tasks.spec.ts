@@ -1,3 +1,4 @@
+import { closeTaskTool, openHistory, openRequirements } from "../helpers/task-ui";
 import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -126,8 +127,11 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await page.getByRole("button", { name: "创建审查任务" }).click();
 
     await expect(page.getByRole("heading", { name: "E2E 合成任务 ENG-004" })).toBeVisible();
+    await openHistory(page);
     await expect(page.getByText("版本 1 · 当前版本")).toBeVisible();
-    await page.getByRole("button", { name: "从通知生成草稿" }).click();
+    await closeTaskTool(page);
+    await openRequirements(page);
+    await page.getByRole("button", { name: "整理审查要求", exact: true }).click();
     await expect(page.getByText("模拟模式", { exact: true })).toBeVisible();
     await expect(page.getByText(/必须.*可用确定性工具检查/).first()).toBeVisible();
     await expect(page.getByText(/字符 7–19/)).toBeVisible();
@@ -141,8 +145,11 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     expect(initialRuleSetsResponse.ok()).toBe(true);
     const initialRuleSetsBody: unknown = await initialRuleSetsResponse.json();
     expect(JSON.stringify(initialRuleSetsBody)).toContain('"mode":"mock"');
+    await closeTaskTool(page);
+    await openHistory(page);
     await page.getByText("查看原文段落位置").click();
     await expect(page.getByText(/字符 0–6/)).toBeVisible();
+    await closeTaskTool(page);
     await page.reload();
     await expect(page.getByLabel("项目类型")).toHaveValue("合成项目");
     await expect(page.getByLabel("参与范围")).toHaveValue("team");
@@ -151,18 +158,23 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await page
       .getByRole("textbox", { name: "通知或要求原文" })
       .fill("修订后的合成通知\n仍然保留旧版本内容。");
+    await page.getByText("任务信息与条件背景", { exact: true }).click();
     await page.getByLabel("项目阶段").fill("复核阶段");
     await page.getByRole("button", { name: "保存修改" }).click();
+    await openHistory(page);
     await expect(page.getByText("版本 2 · 当前版本")).toBeVisible();
     const versionOne = page.locator("li.border-l-2").filter({ hasText: "版本 1" });
     await expect(versionOne.locator("p").first()).toContainText("合成通知标题");
     await expect(page.getByLabel("项目阶段")).toHaveValue("复核阶段");
+    await closeTaskTool(page);
     await page.reload();
     await expect(page.getByRole("textbox", { name: "通知或要求原文" })).toHaveValue(
       /修订后的合成通知/,
     );
+    await openRequirements(page);
     await expect(page.getByText(/当前来源集合与最近规则草稿不一致/)).toBeVisible();
-    await page.getByRole("button", { name: "从通知生成草稿" }).click();
+    await openRequirements(page);
+    await page.getByRole("button", { name: "整理审查要求", exact: true }).click();
     await expect(page.getByText(/当前来源集合与最近规则草稿不一致/)).toHaveCount(0);
     await expect(page.getByText(/修订后的合成通知/).first()).toBeVisible();
 
@@ -288,8 +300,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       );
     }
 
-    await page.goto(`/tasks/${taskId}`);
-    await expect(page.getByRole("heading", { name: "审查材料" })).toBeVisible();
+    await page.goto(`/tasks/${taskId}?verdict=all`);
+    await expect(page.getByRole("heading", { name: "上传待审查材料" })).toBeVisible();
     await expect(page.getByText("说明.txt", { exact: true })).toBeVisible();
     await page
       .locator("li")
@@ -362,10 +374,9 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       buffer: Buffer.from("invalid Office package"),
     });
-    await page.getByRole("button", { name: "上传 1" }).click();
-    const batchResults = page.getByRole("list", { name: "本批上传结果" });
-    await expect(batchResults.getByText("解析失败", { exact: true })).toBeVisible();
-    await expect(batchResults).toContainText("恢复测试.docx · v1");
+    const batchResults = page.getByRole("list", { name: "逐文件上传状态" });
+    await expect(batchResults.getByText(/上传或读取失败/)).toBeVisible();
+    await expect(batchResults).toContainText("恢复测试.docx");
     const recovered = await request.post(`/api/tasks/${taskId}/materials`, {
       multipart: {
         files: {
@@ -598,9 +609,11 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       "通过 3 · 未通过 0 · 待确认 0",
     );
 
-    await page.goto(`/tasks/${task.id}`);
-    await expect(page.getByRole("heading", { name: "确定性检查", exact: true })).toBeVisible();
-    const checkPanel = page.getByRole("region", { name: "确定性检查" });
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await expect(
+      page.getByRole("heading", { name: "审查结果与待处理问题", exact: true }),
+    ).toBeVisible();
+    const checkPanel = page.getByRole("region", { name: "审查结果与待处理问题" });
     await expect(checkPanel.getByText("通过 3", { exact: true })).toBeVisible();
     await expect(checkPanel.getByText("无法检查 1", { exact: true })).toBeVisible();
     await expect(
@@ -624,7 +637,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     ).toBeVisible();
     await expect(checkPanel.getByText(/当前显示 \d+ 项，共 \d+ 项检查结果/)).toBeVisible();
     await page.reload();
-    const restoredCheckPanel = page.getByRole("region", { name: "确定性检查" });
+    const restoredCheckPanel = page.getByRole("region", { name: "审查结果与待处理问题" });
     await expect(restoredCheckPanel.getByLabel("按材料筛选")).not.toHaveValue("all");
     await expect(
       restoredCheckPanel.getByRole("heading", { name: "R-001 · 必须提交 PDF 格式文件" }),
@@ -633,12 +646,12 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await expect(
       page.getByRole("status").filter({ hasText: "之前查看的位置已失效" }),
     ).toBeVisible();
-    await page.goto("/tasks/" + task.id);
-    const cleanCheckPanel = page.getByRole("region", { name: "确定性检查" });
+    await page.goto("/tasks/" + task.id + "?verdict=all");
+    const cleanCheckPanel = page.getByRole("region", { name: "审查结果与待处理问题" });
     await cleanCheckPanel.getByLabel("按材料筛选").selectOption({ label: "proposal.pdf · v1" });
     await cleanCheckPanel.getByLabel("按材料筛选").selectOption("all");
     await expect(cleanCheckPanel.getByRole("button", { name: "清除筛选" })).toHaveCount(0);
-    await page.getByRole("button", { name: "运行检查" }).click();
+    await page.getByRole("button", { name: "全量复检", exact: true }).click();
     await expect(page.getByText("已保留 3 次检查快照。", { exact: true })).toBeVisible();
 
     const invalidPdfUpload = await request.post(`/api/tasks/${task.id}/materials`, {
@@ -675,11 +688,15 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const rulesBody = await rulesResponse.json();
     expect(rulesBody.ruleSet.rules).toHaveLength(80);
 
-    await page.goto(`/tasks/${task.id}`);
-    await page.getByRole("button", { name: "运行检查" }).click();
-    await expect(page.getByText(/已完成 \d+ \/ 80 项/)).toBeVisible();
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await page.getByTestId("task-primary-action").click();
+    await expect(
+      page.getByRole("region", { name: "本次审查进度" }).getByText(/已完成 \d+ \/ 80 项/),
+    ).toBeVisible();
     await page.getByRole("button", { name: "取消检查" }).click();
-    await expect(page.getByText(/已取消，\d+ 项未执行/)).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "本次审查进度" }).getByText(/已取消，\d+ 项未执行/),
+    ).toBeVisible();
 
     await expect
       .poll(async () => {
@@ -792,7 +809,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const check = await runCheckStream(request, task.id);
     expect(check.status).toBe(200);
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await openRequirements(page);
     await page.getByRole("button", { name: "人工纠正" }).first().click();
     await page.getByLabel("要求描述").fill("人工核对后的项目说明要求");
     await page.getByLabel("识别参数（每行一项）").fill("项目名称\n负责人");
@@ -811,7 +829,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
 
     const checks = await (await request.get(`/api/tasks/${task.id}/checks`)).json();
     expect(checks.executions[0].validity).toBe("needs_recheck");
-    expect(checks.executions[0].invalidationReasons).toContain("规则草稿已经更新");
+    expect(checks.executions[0].invalidationReasons).toContain("审查要求已经更新");
 
     const forgedRules = editedRuleSet.rules.map((rule: { source: { quotedText: string } }) => ({
       ...rule,
@@ -831,7 +849,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const extracted = await request.post(`/api/tasks/${task.id}/rules`);
     expect(extracted.status()).toBe(201);
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await openRequirements(page);
     await page.getByRole("button", { name: "停用规则" }).first().click();
     await expect(page.getByRole("button", { name: "停用规则" })).toHaveCount(0);
 
@@ -853,7 +872,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const before = await (await request.get(`/api/tasks/${task.id}/rules`)).json();
     const previousCount = before.ruleSets[0].rules.length;
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await openRequirements(page);
     await page.getByRole("button", { name: "新增人工规则" }).click();
     await page.getByLabel("要求描述").last().fill("补充核对签章页原件");
     await page.getByLabel("目标材料").last().fill("签章页原件");
@@ -896,7 +916,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     });
     const unrelated = (await unrelatedResponse.json()).materials[0];
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await openRequirements(page);
     await page.getByRole("button", { name: "人工纠正" }).first().click();
     await page.getByLabel("正确材料.txt · v1").check();
     await page.getByRole("button", { name: "保存为新版本" }).click();
@@ -953,7 +974,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     );
     if (!target) throw new Error("Expected a result that requires human confirmation.");
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
     await page.getByLabel(`${target.ruleCode} 人工复核意见`).selectOption("confirmed");
     await page.getByLabel(`${target.ruleCode} 复核依据`).fill("人工对照原文及材料后确认");
     await page.getByRole("button", { name: "保存意见" }).click();
@@ -1016,7 +1037,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     if (!failed) throw new Error("Expected the missing required filename to fail.");
     expect(failed).toMatchObject({ verdict: "failed", strength: "required" });
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
     await page.getByRole("button", { name: "创建整改待办" }).click();
     const todoStatus = page.getByLabel("R-001 整改待办状态");
     await expect(todoStatus).toBeVisible();
@@ -1043,7 +1064,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const initial = await runCheckStream(request, task.id);
     expect(initial.execution.results[0]?.verdict).toBe("needs_confirmation");
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await page.getByRole("button", { name: "补充条件背景" }).first().click();
     await expect(page.getByRole("heading", { name: "需要补充的信息" })).toBeVisible();
     await page.getByLabel("补充参与范围").selectOption("team");
     await page.getByLabel("补充项目阶段").fill("初赛");
@@ -1196,7 +1218,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       (await (await request.get(`/api/tasks/${task.id}`)).json()).task.supplementalSources,
     ).toHaveLength(2);
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
     await expect(page.getByRole("heading", { name: "补充要求来源" })).toBeVisible();
     const sourceList = page.locator('section[aria-label="已添加的补充来源"]');
     await expect(sourceList).toContainText("材料清单.txt");
@@ -1268,7 +1290,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       ]),
     );
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await openRequirements(page);
     await expect(page.getByText("补充材料清单.txt v1 · 行 1", { exact: false })).toBeVisible();
     await expect(page.getByText("必须提交技术说明书", { exact: true })).toBeVisible();
     const checked = await runCheckStream(request, task.id);
@@ -1285,13 +1308,9 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     });
     await expect(sourceLink).toBeVisible();
     await sourceLink.click();
-    await expect(page).toHaveURL(new RegExp(`#${sourceSegmentId}$`));
+    await expect(page.getByRole("dialog", { name: "审查依据与任务背景" })).toBeVisible();
     await expect(page.locator(`#${sourceSegmentId}`)).toBeInViewport();
-    await expect
-      .poll(() =>
-        page.locator(`#${sourceSegmentId}`).evaluate((element) => element.matches(":target")),
-      )
-      .toBe(true);
+    await expect(page.locator(`#${sourceSegmentId}`)).toBeVisible();
     const report = await request.get(`/api/tasks/${task.id}/report`);
     expect(await report.text()).toContain("要求依据：补充材料清单.txt v1");
 
@@ -1549,7 +1568,8 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
       formatChecks.execution.results.map((result: { verdict: string }) => result.verdict),
     ).toEqual(["needs_confirmation", "needs_confirmation"]);
 
-    await page.goto(`/tasks/${task.id}`);
+    await page.goto(`/tasks/${task.id}?verdict=all`);
+    await openRequirements(page);
     await page.getByText(/需要人工留意的信息/).click();
     await expect(page.getByText("项目说明至少12页", { exact: true })).toBeVisible();
     await expect(page.getByText("项目说明最多10页", { exact: true })).toBeVisible();

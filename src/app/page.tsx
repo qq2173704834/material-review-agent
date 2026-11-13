@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getReviewStore } from "@/lib/server/review-store";
 import { annotateExecutions } from "@/lib/review-history";
+import { nextTaskAction } from "@/lib/task-flow";
+import { QuickGuide } from "@/components/quick-guide";
 import { DemoControls } from "@/components/demo-controls";
 
 import type { ReactElement } from "react";
@@ -49,6 +51,7 @@ export default async function TasksPage(): Promise<ReactElement> {
       return [
         task.id,
         {
+          next: details ? nextTaskAction(details, latest) : null,
           status: !latest
             ? "尚未开始审查"
             : latest.validity === "needs_recheck"
@@ -100,7 +103,13 @@ export default async function TasksPage(): Promise<ReactElement> {
         </div>
       </div>
 
-      <DemoControls />
+      <div className="mt-5">
+        <QuickGuide />
+      </div>
+      <details className="my-4">
+        <summary className="min-h-11 cursor-pointer text-sm text-primary">体验独立示例</summary>
+        <DemoControls autoRun forceMock />
+      </details>
       {tasks.length > 0 ? (
         <section
           aria-labelledby="task-list-heading"
@@ -117,8 +126,8 @@ export default async function TasksPage(): Promise<ReactElement> {
             {tasks.map((task) => (
               <li key={task.id}>
                 <Link
-                  href={`/tasks/${task.id}`}
-                  className="flex min-w-0 flex-col gap-2 px-5 py-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
+                  href={`/tasks/${task.id}?view=${taskStatuses.get(task.id)?.next?.view ?? "prepare"}`}
+                  className="flex min-w-0 flex-col gap-2 px-5 py-4 transition-colors hover:bg-muted/50 xl:flex-row xl:items-center xl:justify-between"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">{task.name}</span>
@@ -126,7 +135,10 @@ export default async function TasksPage(): Promise<ReactElement> {
                       {task.noticePreview.slice(0, 120) || "暂无通知内容"}
                     </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <span className="font-semibold text-primary">
+                      {taskStatuses.get(task.id)?.next?.label}
+                    </span>
                     <span>{taskStatuses.get(task.id)?.status}</span>
                     {taskStatuses.get(task.id)?.verdicts ? (
                       <span>

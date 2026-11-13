@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTaskActivity, useTaskWorkflow } from "@/components/task-workspace";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 
 import type { ReviewRule, ReviewRuleSet } from "@/domain/review-rule";
@@ -45,6 +46,7 @@ export function RuleReview({
   mode,
 }: RuleReviewProps): ReactElement {
   const router = useRouter();
+  const workflow = useTaskWorkflow();
   const [ruleSets, setRuleSets] = useState(initialRuleSets);
   const [error, setError] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
@@ -53,6 +55,16 @@ export function RuleReview({
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const clearUnsaved = useUnsavedChanges(isDirty && (!!editingRule || isAddingRule));
+  useTaskActivity(
+    "requirements-editor",
+    isExtracting
+      ? "正在整理审查要求"
+      : isSaving
+        ? "正在保存审查要求"
+        : isDirty && (editingRule || isAddingRule)
+          ? "请先保存或取消正在编辑的审查要求"
+          : null,
+  );
   const latestRuleSet = ruleSets[0];
   const currentRuleSet = ruleSets.find(
     (ruleSet) =>
@@ -75,10 +87,21 @@ export function RuleReview({
   });
 
   async function extractRules(): Promise<void> {
+    if (isExtracting) return;
+    if (
+      displayedRuleSet?.rules.some((rule) => rule.generationMethod === "manual") &&
+      !window.confirm(
+        "当前审查要求包含人工调整。重新整理将建立新版本并替换当前编辑结果，历史仍保留。请先核对来源变化，确定要重新整理吗？",
+      )
+    )
+      return;
     setError("");
     setIsExtracting(true);
     try {
-      const response = await fetch(`/api/tasks/${taskId}/rules`, { method: "POST" });
+      const response = await fetch(
+        `/api/tasks/${taskId}/rules${workflow?.mode === "mock" ? "?mode=mock" : ""}`,
+        { method: "POST" },
+      );
       const result: unknown = await response.json();
       if (!response.ok || typeof result !== "object" || result === null || !("ruleSet" in result)) {
         setError(
@@ -303,10 +326,18 @@ export function RuleReview({
       aria-labelledby="rules-heading"
       className="mt-12 max-w-4xl border-t border-border pt-7"
     >
+      {!hasCurrentRuleSet && displayedRuleSet && (
+        <p role="alert" className="mb-4 text-sm text-amber-900">
+          来源已更新：当前来源 v{currentNoticeVersion}，旧要求基于 v{displayedRuleSet.sourceVersion}
+          ，包含{" "}
+          {displayedRuleSet.rules.filter((rule) => rule.generationMethod === "manual").length}{" "}
+          项人工调整。请核对来源后明确选择重新整理，旧检查记录不会被改写。
+        </p>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 id="rules-heading" className="text-sm font-semibold">
-            动态规则草稿
+            审查要求
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             {mode === "live"
@@ -320,7 +351,7 @@ export function RuleReview({
           disabled={isExtracting}
           className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-card px-3 text-xs font-medium hover:bg-muted disabled:opacity-50"
         >
-          {isExtracting ? "正在整理…" : hasCurrentRuleSet ? "重新生成草稿" : "从通知生成草稿"}
+          {isExtracting ? "正在整理…" : hasCurrentRuleSet ? "重新整理审查要求" : "整理审查要求"}
         </button>
         {hasCurrentRuleSet ? (
           <button

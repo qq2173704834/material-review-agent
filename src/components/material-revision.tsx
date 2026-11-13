@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useTaskActivity } from "@/components/task-workspace";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import type { ReactElement } from "react";
 import type { ReviewMaterialSummary } from "@/domain/review";
@@ -24,6 +25,15 @@ export function MaterialRevisionEditor({
   const [message, setMessage] = useState("");
   const originalText =
     material.segments.find((segment) => segment.segmentIndex === segmentIndex)?.text ?? "";
+  useTaskActivity(
+    `material-editor-${material.id}`,
+    isSaving
+      ? "正在保存材料修订"
+      : isOpen &&
+          (text !== originalText || !!note || label !== (material.classification?.label ?? ""))
+        ? "请先保存或取消材料修订"
+        : null,
+  );
   const clearUnsaved = useUnsavedChanges(
     isOpen && (text !== originalText || !!note || label !== (material.classification?.label ?? "")),
   );
