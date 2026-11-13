@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>材料预审 · 三阶段交互原型</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #f7f8fb;
+      color: #202737;
+      font:
+        15px/1.8 "Microsoft YaHei",
+        sans-serif;
+    }
+    main {
+      max-width: 1180px;
+      margin: auto;
+      padding: 28px;
+    }
+    button,
+    select {
+      min-height: 44px;
+      border: 1px solid #d7dce5;
+      background: white;
+      border-radius: 9px;
+      padding: 8px 15px;
+      color: inherit;
+      cursor: pointer;
+    }
+    button:focus-visible,
+    select:focus-visible {
+      outline: 3px solid #5b57d6;
+      outline-offset: 3px;
+    }
+    .primary {
+      background: #5b57d6;
+      color: white;
+      border: 0;
+      font-weight: bold;
+    }
+    .bar,
+    .card {
+      background: white;
+      border: 1px solid #e5e8ef;
+      border-radius: 16px;
+      padding: 22px;
+    }
+    .bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+    .muted {
+      color: #5d687b;
+      font-size: 13px;
+    }
+    nav {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 20px 0;
+    }
+    nav button[aria-current] {
+      color: #5b57d6;
+      border: 2px solid #5b57d6;
+      font-weight: bold;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .drop {
+      border: 2px dashed #aaa6ee;
+      border-radius: 12px;
+      padding: 25px;
+      background: #f5f4ff;
+    }
+    .issue {
+      border-left: 4px solid #c83838;
+      padding: 18px;
+      margin: 14px 0;
+      background: #fff5f3;
+    }
+    .notice {
+      background: #fff5de;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 3px 0;
+    }
+    h2 {
+      font-size: 18px;
+    }
+    .hidden {
+      display: none;
+    }
+    @media (max-width: 650px) {
+      main {
+        padding: 16px;
+      }
+      .bar,
+      .grid {
+        display: block;
+      }
+      .bar button {
+        width: 100%;
+        margin-top: 10px;
+      }
+      .grid .card {
+        margin-bottom: 16px;
+      }
+      nav button {
+        font-size: 12px;
+        padding: 8px 4px;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto;
+      }
+    }
+  </style>
+  <main>
+    <p class="muted">
+      U0 交互原型 ·
+      仅说明布局和操作，不连接模型、不展示实际审查成绩。三个视图与失败/待复检分支均可切换。
+    </p>
+    <div class="bar">
+      <div>
+        <div class="muted" id="state-label">准备开始</div>
+        <h1>我的项目申报材料</h1>
+        <div class="muted">1 份审查依据 · 2 份待审材料</div>
+      </div>
+      <button class="primary" id="main-action">开始审查 →</button>
+    </div>
+    <nav aria-label="原型阶段">
+      <button data-view="prepare" aria-current="step">1. 准备要求与材料</button
+      ><button data-view="review">2. 执行审查</button
+      ><button data-view="results">3. 处理问题与导出</button>
+    </nav>
+    <label class="muted"
+      >查看状态分支
+      <select id="scenario">
+        <option value="normal">正常流程</option>
+        <option value="failure">文件部分读取 / 中断</option>
+        <option value="recheck">修订后待复检</option>
+      </select></label
+    >
+    <p class="notice hidden" id="branch">存在未读取范围；继续会说明影响，独立项仍可检查。</p>
+    <section id="prepare">
+      <div class="grid">
+        <div class="card">
+          <h2>审查依据</h2>
+          <p class="muted">通知、指南、模板：告诉系统按什么检查。</p>
+          <div class="drop">粘贴原文 / 拖入通知文件 / 添加公开网页</div>
+          <p>项目申报通知.txt · 已读取</p>
+          <details>
+            <summary>任务信息与条件背景</summary>
+            项目类型、阶段和个人/团队；必要时集中补充。
+          </details>
+          <button>查看 / 调整审查要求</button>
+        </div>
+        <div class="card">
+          <h2>待审查材料</h2>
+          <p class="muted">申请书、证明等：系统要审查的文件。</p>
+          <div class="drop">选择或拖入文件 → 自动上传并读取</div>
+          <p>申请书.docx · 已读取</p>
+          <p>证明.pdf · 已读取</p>
+          <p class="muted">失败文件保留并可就地重试，已成功文件不清空。</p>
+        </div>
+      </div>
+    </section>
+    <section id="review" hidden>
+      <div class="card">
+        <h2>正在检查材料</h2>
+        <p>已保存输入 → 已整理审查要求 → 检查材料 → 汇总</p>
+        <p class="muted">执行时显示真实完成项数；未知工作量不展示虚构百分比。</p>
+        <div class="notice">需要补充：项目是个人还是团队？集中回答 / 暂时跳过</div>
+        <p class="actions">
+          <button>补充影响判定的信息</button><button>暂时跳过并继续</button
+          ><button>取消检查</button>
+        </p>
+        <p class="muted">取消或中断保留已保存输入和已完成结果；刷新只恢复记录。</p>
+      </div>
+    </section>
+    <section id="results" hidden>
+      <div class="card">
+        <h2>需要处理的问题</h2>
+        <p>通过 3 · 未通过 1 · 待确认 1 · 无法检查 0 · 不适用 0 · 未执行 0</p>
+        <p class="muted">原型示意计数，不代表实际结果。建议项与硬性问题分开。</p>
+        <div class="grid">
+          <div class="issue">
+            <strong>项目名称在两份材料中不一致</strong>
+            <p>申请书与证明使用了不同名称，请核对并修订。</p>
+            <div class="actions">
+              <button>查看双方证据</button><button>上传修订版</button><button>人工复核</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>依据与材料证据</h2>
+            <p>要求原文及准确位置</p>
+            <p>申请书 v1 / 第2段：绿色能源</p>
+            <p>证明 v1 / 第1页：智慧能源</p>
+            <p class="muted">实际应用只显示真实可定位的证据；关闭处理面板后保留选中问题与筛选。</p>
+          </div>
+        </div>
+        <p class="actions">
+          <button>导出完整报告</button><button>整改清单</button><button>材料副本包</button>
+        </p>
+      </div>
+    </section>
+    <p class="muted">
+      设计自查：主动作首屏可见；移动端上下排列；背景与详细记录按需展开；人工处理不改写系统判定；旧检查版本始终可回看。
+    </p>
+  </main>
+  <script>
+    const names = { prepare: "开始审查 →", review: "查看审查进度", results: "查看待处理问题" };
+    let current = "prepare";
+    function show(view) {
+      current = view;
+      for (const name of Object.keys(names)) document.getElementById(name).hidden = name !== view;
+      for (const button of document.querySelectorAll("[data-view]")) {
+        if (button.dataset.view === view) button.setAttribute("aria-current", "step");
+        else button.removeAttribute("aria-current");
+      }
+      document.getElementById("main-action").textContent =
+        document.getElementById("scenario").value === "recheck" ? "复查受影响项 →" : names[view];
+    }
+    for (const button of document.querySelectorAll("[data-view]"))
+      button.addEventListener("click", () => show(button.dataset.view));
+    document
+      .getElementById("main-action")
+      .addEventListener("click", () => show(current === "prepare" ? "review" : "results"));
+    document.getElementById("scenario").addEventListener("change", (event) => {
+      const value = event.target.value;
+      document.getElementById("branch").classList.toggle("hidden", value === "normal");
+      document.getElementById("branch").textContent =
+        value === "recheck"
+          ? "材料已修订，旧结论待复检；展示影响范围，默认复查受影响项，可选全量。"
+          : "存在未读取范围或检查中断；保留成功输入，提供重试和明确继续入口。";
+      document.getElementById("state-label").textContent =
+        value === "recheck"
+          ? "待复检 · 原结论保留"
+          : value === "failure"
+            ? "部分准备 / 中断"
+            : "准备开始";
+      show(current);
+    });
+  </script>
+</html>
