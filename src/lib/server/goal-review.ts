@@ -25,6 +25,8 @@ export function configureGoalReview(
   const item = notice(goal.noticeId);
   if (!item || item.version !== goal.noticeVersion)
     throw new Error("公告已变化或撤回，请先核对关联版本。");
+  if (auto && (item.content.disposition !== "正常" || item.content.textScope === "摘录"))
+    throw new Error("公告状态非正常或仅有摘录，不能开启自动预审；请核对完整适用要求后手动审查。");
   const existing = db
     .prepare<[string, string, string, string], { task_id: string; notice_version: number }>(
       "SELECT task_id,notice_version FROM exam_task_links WHERE user_id=? AND notice_id=? AND stage=? AND target=?",
@@ -142,6 +144,7 @@ export async function goalReviewTick(userId?: string, goalId?: string): Promise<
       if (!goal || !task || store.taskOwner(task.id) !== row.user_id || !goal.noticeId) continue;
       const source = notice(goal.noticeId);
       if (!source || source.version !== goal.noticeVersion) continue;
+      if (source.content.disposition !== "正常" || source.content.textScope === "摘录") continue;
       const rules = store
         .listRuleSets(task.id)
         .find((candidate) =>
@@ -228,6 +231,8 @@ export function goalReviewReadiness(userId: string, goalId: string): string {
   if (!goal.noticeId) return "请关联适用公告。";
   const current = notice(goal.noticeId);
   if (!current) return "公告已撤回或不可读，自动执行暂停。";
+  if (current.content.disposition !== "正常" || current.content.textScope === "摘录")
+    return "公告状态非正常或仅有摘录，自动执行暂停；请核对完整适用要求后手动审查。";
   if (current.version !== goal.noticeVersion)
     return "公告有新版，请先核对差异并明确采用；旧结果需复核。";
   if (goal.edition === "待确认考期") return "请先确认考期。";

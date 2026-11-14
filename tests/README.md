@@ -90,3 +90,11 @@ HTML报告在`playwright-report/boundaries/`；失败截图和轨迹在`test-res
 `pnpm build`后执行`pnpm test:platform`，现共8条平台测试。`identity.spec.ts`覆盖同昵称账号区分、目标/反馈隔离、修改昵称刷新、实际退出/登录切换、匿名门禁和未加载JS时表单禁止提交；`deadline.spec.ts`覆盖首页/列表/详情/收藏的截止提示、仅日期精度、成绩状态、摘录提示、管理员入口、手机无溢出以及虚拟时间跨截止后的状态与倒计时同步变化。
 
 这些测试只使用`.local-data/platform-e2e`及其合成账号。独立专项服务可使用环境变量`REVIEW_POLISH_TEST_DATA_DIR`指定名为`polish-e2e`的隔离目录；不指向真实用户数据库。截图位于忽略的`work/polish-desktop.png`、`work/polish-mobile.png`。
+
+## ENG-050 本轮增量回归
+
+`pnpm build`后运行`pnpm exec playwright test --config playwright.boundaries.config.ts tests/platform-boundaries/portal.spec.ts`：包含明确地区知识检索、不保存模式仅限频/耗用元数据、空考期、取消/摘录禁止自动预审、首页范围/数量、高校原始细则带入及隐藏资料恢复等13项。
+
+`pnpm exec playwright test --config playwright.assistant.config.ts`在独立3145应用与3311受控兼容模型上验证同意门禁、原文引用、幂等、成功/失败耗用及未知Token。数据仅保存在`.local-data/assistant-e2e`，合成密钥、无真实模型计费，不等同独立真实模型效果验收。
+
+`node scripts/check-product-backlog.mjs`只校验EXP/PORT原88条在逐条验收台账无缺漏/重复，不把文档一致性当功能通过。真实来源核验可显式运行`node --experimental-transform-types scripts/audit-exam-sources.mjs --network`，每次建立独立source-audit数据库，草稿不自动发布。

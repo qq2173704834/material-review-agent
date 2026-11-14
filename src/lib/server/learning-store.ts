@@ -116,6 +116,7 @@ export async function publishLearningContent(
 export function learningRecommendations(
   userId: string,
   goalId?: string,
+  includeDismissed = false,
 ): Array<ContentEntry & { reason: string; saved: boolean; seen: boolean; dismissed: boolean }> {
   const goal = goalId ? studentGoal(userId, goalId) : undefined;
   if (goalId && !goal) throw new Error("考试目标不存在。");
@@ -129,7 +130,7 @@ export function learningRecommendations(
     .filter((item) => item.content.kind === "resource")
     .filter((item) => {
       const mark = marks.find((mark) => mark.content_id === item.id);
-      if (mark?.dismissed) return false;
+      if (mark?.dismissed && !includeDismissed) return false;
       if (!goal || !preferences.personalized) return true;
       return (
         item.content.category === goal.category &&
@@ -194,7 +195,7 @@ export function seedPortalReferences(): void {
       title: `${portal.name}官方资料查询入口`,
       category: portal.category,
       kind: "resource",
-      author: "教育部教育考试院",
+      author: portal.name,
       url: portal.url,
       text: "此条为公开官方入口导航，供查询考试介绍、考纲及官方通知。未导入具体课程、完整教材或当期报名安排，请进入原站核对。",
       summary: "官方查询导航；不代表已读取全部资料或正在报名。",

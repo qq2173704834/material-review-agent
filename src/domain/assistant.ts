@@ -1,3 +1,4 @@
+import type { ModelCall } from "./model-call";
 export interface AssistantCitation {
   id: string;
   version: number;
@@ -14,4 +15,5 @@ export interface AssistantAnswer {
   citations: AssistantCitation[];
   conversationId: string | null;
   warning: string;
+  usage?: { modelCall: ModelCall | null; cost: null };
 }

@@ -7,10 +7,12 @@ import {
   askExamAssistant,
   assistantConversations,
   assistantMessages,
+  assistantUsage,
 } from "@/lib/server/exam-assistant";
 import { studentGoals, portalPreferences } from "@/lib/server/student-goals";
 import { platformDb } from "@/lib/server/platform-db";
 import { getAiMode, modelErrorResponse, ModelServiceError } from "@/lib/server/model-client";
+import { assistantPolicy } from "@/lib/assistant-policy";
 export const runtime = "nodejs";
 export async function GET(request: Request): Promise<Response> {
   const account = sessionAccount(request);
@@ -19,6 +21,8 @@ export async function GET(request: Request): Promise<Response> {
     const id = new URL(request.url).searchParams.get("conversation");
     return NextResponse.json({
       mode: getAiMode(),
+      policy: assistantPolicy(process.env),
+      usage: assistantUsage(account.id),
       conversations: assistantConversations(account.id),
       goals: studentGoals(account.id),
       preferences: portalPreferences(account.id),

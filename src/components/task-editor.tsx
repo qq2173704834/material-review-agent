@@ -10,12 +10,13 @@ import type { FormEvent, ReactElement } from "react";
 
 interface TaskEditorProps {
   task?: ReviewTaskDetails;
+  initialSource?: { name: string; url: string };
 }
 
-export function TaskEditor({ task }: TaskEditorProps): ReactElement {
+export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactElement {
   const router = useRouter();
   const workflow = useTaskWorkflow();
-  const [name, setName] = useState(task?.name ?? "");
+  const [name, setName] = useState(task?.name ?? initialSource?.name.slice(0, 100) ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [projectType, setProjectType] = useState(task?.background.projectType ?? "");
   const [projectStage, setProjectStage] = useState(task?.background.projectStage ?? "");
@@ -23,8 +24,10 @@ export function TaskEditor({ task }: TaskEditorProps): ReactElement {
     task?.background.collaborationScope ?? "unknown",
   );
   const [noticeText, setNoticeText] = useState(task?.noticeSource.originalText ?? "");
-  const [sourceMode, setSourceMode] = useState<"text" | "webpage" | "file">("text");
-  const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceMode, setSourceMode] = useState<"text" | "webpage" | "file">(
+    initialSource ? "webpage" : "text",
+  );
+  const [sourceUrl, setSourceUrl] = useState(initialSource?.url ?? "");
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);

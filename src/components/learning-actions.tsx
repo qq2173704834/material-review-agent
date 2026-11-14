@@ -6,10 +6,12 @@ export function LearningActions({
   id,
   saved = false,
   seen = false,
+  dismissed = false,
 }: {
   id: string;
   saved?: boolean;
   seen?: boolean;
+  dismissed?: boolean;
 }): ReactElement {
   const [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
@@ -42,8 +44,12 @@ export function LearningActions({
         <button disabled={busy} className="underline" onClick={() => void act("seen", !seen)}>
           {seen ? "取消已看" : "标记已看"}
         </button>
-        <button disabled={busy} className="underline" onClick={() => void act("dismissed", true)}>
-          不感兴趣
+        <button
+          disabled={busy}
+          className="underline"
+          onClick={() => void act("dismissed", !dismissed)}
+        >
+          {dismissed ? "恢复推荐" : "不感兴趣"}
         </button>
       </div>
       <p role="status">{message}</p>

@@ -4,7 +4,12 @@ export const goalInputSchema = z
   .object({
     category: z.enum(EXAM_CATEGORIES.map((item) => item[0])),
     region: z.enum(EXAM_REGIONS),
-    edition: z.string().trim().max(80).default("待确认考期"),
+    edition: z
+      .string()
+      .trim()
+      .max(80)
+      .default("待确认考期")
+      .transform((value) => value || "待确认考期"),
     subject: z.string().trim().max(120).default(""),
     state: z.enum(["active", "paused", "archived"]).default("active"),
     foundation: z.string().trim().max(200).default(""),

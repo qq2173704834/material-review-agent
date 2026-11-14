@@ -9,7 +9,7 @@ import { isLegacyTestMode } from "@/lib/server/access-config";
 import { listNotices, sources } from "@/lib/server/exam-store";
 import { platformDb } from "@/lib/server/platform-db";
 import { CATEGORY_LABELS } from "@/domain/exam-catalog";
-import { isUpcoming, beijingDay } from "@/lib/portal-feed";
+import { isUpcoming, beijingDay, homepageOptions } from "@/lib/portal-feed";
 export const dynamic = "force-dynamic";
 async function homepageTime(): Promise<number> {
   await connection();
@@ -23,12 +23,13 @@ export default async function Home({
   if (isLegacyTestMode()) return <ReviewTaskHome />;
   const filters = await searchParams,
     now = await homepageTime();
+  const options = homepageOptions(filters);
   const items = listNotices(),
     sourceList = sources();
   const recent = items.filter(
     (item) =>
       item.content.disposition === "正常" &&
-      item.content.timeline.some((node) => isUpcoming(node.value)),
+      item.content.timeline.some((node) => isUpcoming(node.value, now, options.days)),
   );
   const latest = [...items].sort((a, b) => b.created_at.localeCompare(a.created_at));
   const popular = platformDb()
@@ -57,17 +58,18 @@ export default async function Home({
     {
       id: "exam",
       title: "考试临近",
-      description: "未来30天内及今日的已公布考试安排。",
+      description: `未来${options.days}天内及今日的已公布考试安排。`,
       items: recent.filter((item) =>
         item.content.timeline.some(
-          (node) => /^(考试|笔试|面试)$/.test(node.label) && isUpcoming(node.value, now),
+          (node) =>
+            /^(考试|笔试|面试)$/.test(node.label) && isUpcoming(node.value, now, options.days),
         ),
       ),
     },
     {
       id: "recent",
       title: "近期关注",
-      description: "未来30天内有已公布节点的考试。",
+      description: `未来${options.days}天内有已公布节点的考试。`,
       items: recent,
     },
     {
@@ -147,7 +149,7 @@ export default async function Home({
             {sections.map((section) => (
               <Link
                 key={section.id}
-                href={`/?tab=${section.id}#exam-cards`}
+                href={`/?tab=${section.id}&days=${options.days}&size=${options.size}#exam-cards`}
                 aria-current={selected.id === section.id ? "page" : undefined}
                 className={`rounded-full px-4 py-2 text-sm transition-colors ${selected.id === section.id ? "bg-primary font-medium text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
               >
@@ -156,6 +158,40 @@ export default async function Home({
               </Link>
             ))}
           </nav>
+          <form className="flex flex-wrap items-end gap-3" action="/">
+            <input type="hidden" name="tab" value={selected.id} />
+            <label>
+              近期范围
+              <select
+                aria-label="近期范围"
+                name="days"
+                defaultValue={options.days}
+                className="ml-2 rounded border p-2"
+              >
+                {[7, 30, 60, 90].map((days) => (
+                  <option key={days} value={days}>
+                    未来{days}天
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              展示数量
+              <select
+                aria-label="展示数量"
+                name="size"
+                defaultValue={options.size}
+                className="ml-2 rounded border p-2"
+              >
+                {[6, 12, 24].map((size) => (
+                  <option key={size} value={size}>
+                    {size}条
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="rounded border px-3 py-2">应用展示设置</button>
+          </form>
           <div id="exam-cards" className="scroll-mt-5">
             <p className="mb-4 text-sm text-muted-foreground">{selected.description}</p>
             {!selected.items.length ? (
@@ -180,7 +216,7 @@ export default async function Home({
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                {selected.items.slice(0, 12).map((item) => {
+                {selected.items.slice(0, options.size).map((item) => {
                   return (
                     <article
                       key={item.id}
@@ -238,7 +274,7 @@ export default async function Home({
                 })}
               </div>
             )}
-            {selected.items.length > 12 && (
+            {selected.items.length > options.size && (
               <Link href="/exams" className="mt-5 inline-block text-sm text-primary underline">
                 前往考试中心查看其余公告
               </Link>

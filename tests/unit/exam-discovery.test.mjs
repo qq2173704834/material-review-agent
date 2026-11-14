@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { classifyExamTitle, matchesExamSearch, examProfile } from "../../src/lib/exam-discovery.ts";
-import { beijingDay, isUpcoming } from "../../src/lib/portal-feed.ts";
+import { beijingDay, isUpcoming, homepageOptions } from "../../src/lib/portal-feed.ts";
 import { EXAM_CATEGORIES } from "../../src/domain/exam-catalog.ts";
 for (const [title, expected] of [
   ["2027全国计算机四级报名通知", "ncre"],
@@ -14,6 +14,8 @@ for (const [title, expected] of [
   ["PETS-5考试通知", "wsk"],
   ["全国计算机应用水平考试NIT", "nit"],
   ["教师资格认定公告", "teacher"],
+  ["2033年上海注会报名条件", "cpa"],
+  ["教资报名条件", "teacher"],
 ])
   test(`EXP 分类：${title}`, () =>
     assert.equal(classifyExamTitle(title, "education-local"), expected));
@@ -31,4 +33,9 @@ test("PORT 北京日界与日期精度，过去节点不当即将截止", () => 
   assert.ok(isUpcoming("2026-11-14", now));
   assert.equal(isUpcoming("2026-11-13", now), false);
   assert.equal(isUpcoming("", now), false);
+});
+test("首页展示范围与数量有界且无效输入回退", () => {
+  assert.deepEqual(homepageOptions({}), { days: 30, size: 12 });
+  assert.deepEqual(homepageOptions({ days: "90", size: "24" }), { days: 90, size: 24 });
+  assert.deepEqual(homepageOptions({ days: "999999", size: "-1" }), { days: 30, size: 12 });
 });

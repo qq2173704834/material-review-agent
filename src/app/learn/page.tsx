@@ -22,7 +22,7 @@ export default async function Learn({
   const invalid = !!filters.goal && !goal;
   const resources = invalid
     ? []
-    : learningRecommendations(account.id, goal?.id).filter(
+    : learningRecommendations(account.id, goal?.id, filters.hidden === "1").filter(
         (item) =>
           (!filters.q ||
             (item.content.title + item.content.text)
@@ -118,6 +118,15 @@ export default async function Learn({
             <input name="saved" value="1" type="checkbox" defaultChecked={!!filters.saved} />{" "}
             只看我的资料收藏
           </label>
+          <label className="self-center">
+            <input
+              name="hidden"
+              value="1"
+              type="checkbox"
+              defaultChecked={filters.hidden === "1"}
+            />{" "}
+            包含我隐藏的资料（可恢复推荐）
+          </label>
           <div className="flex items-center gap-4">
             <button className="rounded bg-primary px-4 py-2 text-primary-foreground">
               筛选资源
@@ -153,7 +162,12 @@ export default async function Learn({
                 {item.content.author} · {item.content.fee} · {item.content.permission} · 核查
                 {item.content.checkedAt} · {item.content.disposition}
               </p>
-              <LearningActions id={item.id} saved={item.saved} seen={item.seen} />
+              <LearningActions
+                id={item.id}
+                saved={item.saved}
+                seen={item.seen}
+                dismissed={item.dismissed}
+              />
             </article>
           ))}
         </div>

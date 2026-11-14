@@ -7,7 +7,10 @@ import { listNotices, matchesExamCategory } from "./exam-store";
 import { learningEntries } from "./learning-store";
 import { studentGoal, portalPreferences } from "./student-goals";
 import { classifyExamTitle } from "@/lib/exam-discovery";
-import { getAiMode, generateModelJson } from "./model-client";
+import { assistantPolicy } from "@/lib/assistant-policy";
+import type { ModelCall } from "@/domain/model-call";
+import { modelCallSchema } from "@/domain/model-call";
+import { getAiMode, generateModelJson, ModelServiceError } from "./model-client";
 import type { AssistantAnswer, AssistantCitation } from "@/domain/assistant";
 export const assistantInputSchema = z
   .object({
@@ -24,6 +27,46 @@ type AssistantInput = z.infer<typeof assistantInputSchema>;
 interface ContextSource extends Omit<AssistantCitation, "quote"> {
   text: string;
   historical: boolean;
+}
+export function assistantUsage(userId: string): {
+  questions: number;
+  failed: number;
+  modelRequests: number;
+  inputTokens: number;
+  outputTokens: number;
+  unknownTokenCalls: number;
+  cost: null;
+} {
+  const rows = platformDb()
+    .prepare<[string, string], { status: string; response: string | null }>(
+      "SELECT status,response FROM assistant_requests WHERE user_id=? AND created_at>=?",
+    )
+    .all(userId, new Date(Date.now() - 3600000).toISOString());
+  const usage = {
+    questions: rows.length,
+    failed: 0,
+    modelRequests: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    unknownTokenCalls: 0,
+    cost: null,
+  };
+  for (const row of rows) {
+    if (row.status === "failed") usage.failed++;
+    if (!row.response) continue;
+    try {
+      const parsed = modelCallSchema.safeParse(JSON.parse(row.response)?.usage?.modelCall);
+      if (!parsed.success) continue;
+      usage.modelRequests += parsed.data.requestCount;
+      usage.inputTokens += parsed.data.inputTokens ?? 0;
+      usage.outputTokens += parsed.data.outputTokens ?? 0;
+      if (parsed.data.inputTokens === null || parsed.data.outputTokens === null)
+        usage.unknownTokenCalls++;
+    } catch {
+      /* Old metadata cannot be interpreted as zero model consumption. */
+    }
+  }
+  return usage;
 }
 export function assistantSources(userId: string, input: AssistantInput): ContextSource[] {
   const goal = input.useContext && input.goalId ? studentGoal(userId, input.goalId) : undefined;
@@ -63,7 +106,8 @@ export function assistantSources(userId: string, input: AssistantInput): Context
       )
       .filter(
         (item) =>
-          (category !== "education-local" ? item.content.category === category : true) &&
+          (category !== "education-local" ? item.content.category === category : input.learning) &&
+          (!region || item.content.region === "全国" || item.content.region === region) &&
           (!goal || item.content.region === "全国" || item.content.region === goal.region) &&
           (!goal ||
             !item.content.edition ||
@@ -149,15 +193,20 @@ export async function askExamAssistant(
     .get(userId, input.requestId);
   if (previous) {
     if (previous.input_hash !== hash) throw new Error("请求编号不能用于不同问题。");
-    if (previous.response) return JSON.parse(previous.response);
+    if (previous.status === "completed" && previous.response) {
+      const saved = JSON.parse(previous.response);
+      if (typeof saved.answer === "string") return saved;
+    }
     throw new Error(
       previous.status === "running"
         ? "此问题正在生成，请稍候。"
         : "此请求未完成，请使用新的请求编号重试。",
     );
   }
-  if (!consumeRate(`assistant:${userId}`, 20, 3600000))
-    throw new Error("助手每小时最多20个问题，请稍后再试。");
+  const policy = assistantPolicy(process.env);
+  if (!policy.enabled) throw new Error("助手已暂停服务；考试信息和学习资料仍可正常查看。");
+  if (!consumeRate(`assistant:${userId}`, policy.hourlyLimit, 3600000))
+    throw new Error(`助手每小时最多${policy.hourlyLimit}个问题，请稍后再试。`);
   if (input.conversationId) assistantMessages(userId, input.conversationId);
   const sources = assistantSources(userId, input),
     mode = getAiMode(),
@@ -190,6 +239,7 @@ export async function askExamAssistant(
         userId,
       );
   })();
+  let modelCall: ModelCall | null = null;
   try {
     const warning =
       mode === "mock"
@@ -289,6 +339,7 @@ export async function askExamAssistant(
           history,
         }),
       });
+      modelCall = result.call;
       const citations = result.value.citations.map((citation) => {
         const source = sources.find(
           (source) => source.id === citation.id && source.version === citation.version,
@@ -320,6 +371,7 @@ export async function askExamAssistant(
         warning,
       };
     }
+    answer.usage = { modelCall, cost: null };
     if (signal?.aborted) throw new Error("生成已取消；已发生的模型调用可能有耗用。");
     // A concurrent history deletion must not resurrect a conversation or leak it into another account.
     if (
@@ -349,7 +401,11 @@ export async function askExamAssistant(
       }
       db.prepare(
         "UPDATE assistant_requests SET status='completed',response=? WHERE id=? AND user_id=?",
-      ).run(retain ? JSON.stringify(answer) : null, input.requestId, userId);
+      ).run(
+        retain ? JSON.stringify(answer) : JSON.stringify({ usage: answer.usage }),
+        input.requestId,
+        userId,
+      );
       if (!retain)
         db.prepare("DELETE FROM assistant_requests WHERE user_id=? AND created_at<?").run(
           userId,
@@ -358,7 +414,11 @@ export async function askExamAssistant(
     })();
     return answer;
   } catch (error) {
-    db.prepare("UPDATE assistant_requests SET status='failed' WHERE id=? AND user_id=?").run(
+    const failedCall = error instanceof ModelServiceError ? (error.call ?? modelCall) : modelCall;
+    db.prepare(
+      "UPDATE assistant_requests SET status='failed',response=? WHERE id=? AND user_id=?",
+    ).run(
+      JSON.stringify({ usage: { modelCall: failedCall, cost: null } }),
       input.requestId,
       userId,
     );

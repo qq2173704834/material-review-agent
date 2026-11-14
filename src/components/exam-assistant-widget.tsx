@@ -6,13 +6,26 @@ import type { ReactElement } from "react";
 import type { AssistantAnswer } from "@/domain/assistant";
 interface State {
   mode: string;
+  policy: { enabled: boolean; hourlyLimit: number };
+  usage: {
+    questions: number;
+    failed: number;
+    modelRequests: number;
+    inputTokens: number;
+    outputTokens: number;
+    unknownTokenCalls: number;
+  };
   conversations: Array<{ id: string; title: string }>;
   goals: Array<{ id: string; category: string; edition: string }>;
   messages: Array<{ role: string; payload: { question?: string } & Partial<AssistantAnswer> }>;
 }
 export function ExamAssistantWidget(): ReactElement | null {
-  const pathname = usePathname(),
-    [open, setOpen] = useState(false),
+  const pathname = usePathname();
+  if (/^\/(login|register|recover|welcome)(?:\/|$)/.test(pathname)) return null;
+  return <AssistantPanel />;
+}
+function AssistantPanel(): ReactElement {
+  const [open, setOpen] = useState(false),
     [state, setState] = useState<State | null>(null),
     [conversation, setConversation] = useState(""),
     [question, setQuestion] = useState(""),
@@ -25,7 +38,6 @@ export function ExamAssistantWidget(): ReactElement | null {
   const abort = useRef<AbortController | null>(null),
     trigger = useRef<HTMLButtonElement>(null),
     input = useRef<HTMLTextAreaElement>(null);
-  const hidden = /^\/(login|register|recover|welcome)(?:\/|$)/.test(pathname);
   async function load(id = ""): Promise<void> {
     const response = await fetch(
       `/api/assistant${id ? `?conversation=${encodeURIComponent(id)}` : ""}`,
@@ -34,7 +46,7 @@ export function ExamAssistantWidget(): ReactElement | null {
     setState(await response.json());
   }
   useEffect(() => {
-    if (open && !hidden) {
+    if (open) {
       void fetch(
         `/api/assistant${conversation ? `?conversation=${encodeURIComponent(conversation)}` : ""}`,
       )
@@ -45,8 +57,8 @@ export function ExamAssistantWidget(): ReactElement | null {
         .catch(() => setError("无法读取助手，请稍后重试。"));
       input.current?.focus();
     }
-  }, [open, conversation, hidden]);
-  if (hidden) return null;
+  }, [open, conversation]);
+  useEffect(() => () => abort.current?.abort(), []);
   function close(): void {
     setOpen(false);
     trigger.current?.focus();
@@ -101,6 +113,13 @@ export function ExamAssistantWidget(): ReactElement | null {
     } finally {
       setBusy(false);
       abort.current = null;
+      void fetch("/api/assistant")
+        .then(async (response) => {
+          if (!response.ok) return;
+          const latest = await response.json();
+          setState((previous) => (previous ? { ...previous, usage: latest.usage } : previous));
+        })
+        .catch(() => undefined);
     }
   }
   return (
@@ -147,6 +166,23 @@ export function ExamAssistantWidget(): ReactElement | null {
               : "考试信息引用已审核知识；学习建议请自行核对。"}{" "}
             私人材料不会进入公共知识库。
           </p>
+          {state && (
+            <p className="text-xs">
+              {state.policy.enabled
+                ? `每小时最多${state.policy.hourlyLimit}问；模型费用以服务商账单为准。`
+                : "助手已暂停服务，考试和学习资料仍可访问。"}
+            </p>
+          )}
+          {state?.usage && (
+            <p className="text-xs text-muted-foreground">
+              最近1小时：{state.usage.questions}问，失败{state.usage.failed}次；已记录模型请求
+              {state.usage.modelRequests}次，已知输入/输出Token {state.usage.inputTokens}/
+              {state.usage.outputTokens}。
+              {state.usage.unknownTokenCalls > 0
+                ? `另有${state.usage.unknownTokenCalls}次Token不完整，合计仅为已知部分。`
+                : "历史未记录耗用不计入合计，费用未知。"}
+            </p>
+          )}
           <label>
             私有会话
             <select
@@ -208,6 +244,13 @@ export function ExamAssistantWidget(): ReactElement | null {
                 {message.payload.warning && (
                   <p className="mt-2 text-xs">{message.payload.warning}</p>
                 )}
+                {message.payload.usage && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {message.payload.usage.modelCall
+                      ? `模型请求${message.payload.usage.modelCall.requestCount}次 · 输入Token：${message.payload.usage.modelCall.inputTokens ?? "未知"} · 输出Token：${message.payload.usage.modelCall.outputTokens ?? "未知"} · 费用未知，请核对服务商账单`
+                      : "本次未调用外部模型"}
+                  </p>
+                )}
                 {message.payload.answer && (
                   <ContentFeedback
                     answer={message.payload.answer}
@@ -238,6 +281,27 @@ export function ExamAssistantWidget(): ReactElement | null {
               void send();
             }}
           >
+            <div className="flex flex-wrap gap-2" aria-label="示例问题">
+              {[
+                "本考期的报名条件和截止时间是什么？",
+                "请帮我安排一周的基础复习计划。",
+                "我需要准备哪些报名材料？",
+              ].map((example, index) => (
+                <button
+                  key={example}
+                  type="button"
+                  disabled={busy}
+                  className="rounded border px-2 py-1 text-xs"
+                  onClick={() => {
+                    setQuestion(example);
+                    setLearning(index === 1);
+                    input.current?.focus();
+                  }}
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
             <label className="block">
               <input
                 type="checkbox"
@@ -293,7 +357,7 @@ export function ExamAssistantWidget(): ReactElement | null {
             </label>
             <div className="flex gap-4">
               <button
-                disabled={busy || !state}
+                disabled={busy || !state || !state.policy.enabled}
                 className="rounded bg-primary px-4 py-2 text-primary-foreground"
               >
                 {busy ? "正在回答…" : "发送"}
