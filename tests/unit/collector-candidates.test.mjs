@@ -45,6 +45,8 @@ test("其他来源保留其真实文章路径，综合来源过滤低学龄公�
 
 test("省级导航目录不作为公告，已知文章保留且同源HTTPS详情实际核验", () => {
   const examples = [
+    ["www.ahzsks.cn", "/gdjyzxks/9130.htm", "/gdjyzxks/"],
+    ["www.gxeea.cn", "/view/content_1135_33415.htm", "/yjsks/tzgg.htm"],
     ["www.ynzs.cn", "/html/content/8795.html", "/html/web/zkdt-yjsks/index.html"],
     ["www.bjeea.cn", "/html/yk/tzgg/2026/1007/88385.html", "/html/yk/index.html"],
     ["www.sceea.cn", "/Html/202610/Newsdetail_4995.html", "/Html/ExamEnrollment.html"],

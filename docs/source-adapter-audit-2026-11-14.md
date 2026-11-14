@@ -19,3 +19,9 @@ JLPT、TOPIK首页仅介绍/报名导航，本次无匹配公告详情列表，�
 真实查询限制保留：LSAT、CPA、软考、CATTI、JLPT报名、会计和TOPIK等旧登记入口按查询门禁拒绝通用采集；上海、安徽、山东、广西、江西、浙江和旧日语静态页的列表/详情仍未适配，不隐藏失败。研招已有实际文章适配，入口配置同步为candidate。
 
 重跑命令：`node scripts/audit-exam-sources.mjs --network --scope=registered`。只读取当前真实库exam_sources的公开来源ID/名称/URL/类别/地区，其他表不读；只写新隔离库。默认national范围、省级provincial范围仍可单独使用。
+
+## ENG-060 GB2312/GBK编码修复后复核
+
+安徽和广西响应头未声明charset，但HTML内分别声明gb2312和gbk；此前按UTF-8解码使中文乱码。增加BOM/HTTP头/受限HTML meta扫描后，实际标题、正文和链接恢复中文，并增加两种真实文章路径适配。安徽3候选中2详情成功1失败；广西8候选中7成功1失败。具体局部失败保留，不把编码修复写成全部详情成功。
+
+最新43源逐项证据另存data/registered-source-audit-after-encoding-2026-11-14.json，保留上一版历史审计；所有内容仍为隔离待审草稿，来源开关和发布数保持0。91条单元、77条全量边界及构建/类型/ESLint通过。

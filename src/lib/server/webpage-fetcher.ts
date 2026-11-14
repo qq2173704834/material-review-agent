@@ -1,4 +1,5 @@
 import "server-only";
+import { decodeHtml } from "../html-decoding.ts";
 
 import { lookup as dnsLookup } from "node:dns";
 import { isIP } from "node:net";
@@ -146,15 +147,6 @@ async function readLimitedBody(response: UndiciResponse): Promise<Uint8Array> {
     offset += chunk.byteLength;
   }
   return output;
-}
-
-function decodeHtml(bytes: Uint8Array, contentType: string): string {
-  const charset = contentType.match(/charset\s*=\s*["']?([^;"'\s]+)/i)?.[1] ?? "utf-8";
-  try {
-    return new TextDecoder(charset).decode(bytes);
-  } catch {
-    throw new Error("网页使用了暂不支持的文字编码。");
-  }
 }
 
 function findElement(root: HtmlNode, name: string): HtmlNode | undefined {

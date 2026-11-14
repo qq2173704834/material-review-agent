@@ -7,6 +7,8 @@ interface CollectorSource {
   category: string;
 }
 const PROVINCIAL_DETAIL_PATHS: Record<string, RegExp> = {
+  "www.ahzsks.cn": /^\/[a-z0-9_-]+\/\d+\.htm$/i,
+  "www.gxeea.cn": /^\/view\/content_\d+_\d+\.htm$/i,
   "www.ynzs.cn": /^\/html\/content\/\d+\.html$/i,
   "www.bjeea.cn": /^\/html\/.+\/\d{4}\/\d{4}\/\d+\.html$/i,
   "www.sceea.cn": /^\/Html\/\d{6}\/Newsdetail_\d+\.html$/i,
