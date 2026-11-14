@@ -165,13 +165,15 @@ export default async function Home({
                     : `“${selected.title}”的考试信息`}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  可切换“最近更新”，或到考试中心查看目录和官方入口。
+                  {selected.id === "latest"
+                    ? "目前还没有已审核发布的公告，可到考试中心查看目录和官方入口。"
+                    : "可切换“最近更新”，或到考试中心查看目录和官方入口。"}
                 </p>
                 <Link
-                  href="/?tab=latest#exam-cards"
+                  href={selected.id === "latest" ? "/exams" : "/?tab=latest#exam-cards"}
                   className="mt-4 inline-block text-sm text-primary underline"
                 >
-                  查看最近更新
+                  {selected.id === "latest" ? "前往考试中心" : "查看最近更新"}
                 </Link>
               </div>
             ) : (
