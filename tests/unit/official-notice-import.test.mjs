@@ -11,8 +11,17 @@ const { noticeInputSchema, validatePublication } =
 const batch = JSON.parse(
   readFileSync(new URL("../../data/official-notices-2026-11-14.json", import.meta.url), "utf8"),
 );
+const expansion = JSON.parse(
+  readFileSync(
+    new URL("../../data/official-notices-expansion-2026-11-14.json", import.meta.url),
+    "utf8",
+  ),
+);
 test("官方公告批次有日期引用，缺失的地方报名时段不凭空补全", () => {
-  for (const item of batch) validatePublication(noticeInputSchema.parse(item.content));
+  for (const item of [...batch, ...expansion])
+    validatePublication(noticeInputSchema.parse(item.content));
+  for (const item of expansion.filter((item) => item.content.textScope === "摘录"))
+    assert.match(item.content.text, /原文摘录，非全文/);
   const cet = batch.find((item) => item.content.category === "cet4").content;
   assert.equal(
     cet.timeline.some((point) => point.label === "报名截止"),
@@ -29,13 +38,15 @@ test("官方公告批次有日期引用，缺失的地方报名时段不凭空�
 });
 test("本地导入预览不写库，正式导入有备份且重复执行保留原版本及撤回状态", () => {
   const directory = mkdtempSync(join(tmpdir(), "exam-official-import-"));
-  const run = (apply = false) => {
+  const run = (apply = false, batchName = "initial") => {
     const result = spawnSync(
       process.execPath,
       [
         "scripts/import-official-notices.mjs",
         "--data-dir",
         directory,
+        "--batch",
+        batchName,
         ...(apply ? ["--apply"] : []),
       ],
       { cwd: resolve("."), encoding: "utf8" },
@@ -70,6 +81,17 @@ test("本地导入预览不写库，正式导入有备份且重复执行保留�
       db.prepare("SELECT COUNT(*) n FROM exam_notices WHERE status='withdrawn'").get().n,
       1,
     );
+    const originalVersions = db
+      .prepare("SELECT digest FROM exam_notice_versions ORDER BY digest")
+      .all();
+    assert.equal(run(true, "expansion").added, 7);
+    const duplicateExpansion = run(true, "expansion");
+    assert.deepEqual([duplicateExpansion.added, duplicateExpansion.skipped], [0, 7]);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM exam_notices").get().n, 13);
+    for (const row of originalVersions)
+      assert.ok(db.prepare("SELECT 1 FROM exam_notice_versions WHERE digest=?").get(row.digest));
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM accounts").get().n, 0);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM exam_sources WHERE enabled=1").get().n, 0);
   } finally {
     db?.close();
     rmSync(directory, { recursive: true, force: true });

@@ -6,10 +6,18 @@ const args = process.argv.slice(2);
 if (
   args.some(
     (arg) =>
-      !["--apply", "--data-dir"].includes(arg) && args[args.indexOf(arg) - 1] !== "--data-dir",
+      !["--apply", "--data-dir", "--batch"].includes(arg) &&
+      !["--data-dir", "--batch"].includes(args[args.indexOf(arg) - 1]),
   )
 )
-  throw new Error("仅支持 --apply 和 --data-dir <目录>。");
+  throw new Error("仅支持 --apply、--data-dir <目录> 和 --batch initial|expansion。");
+const batchName = args.includes("--batch") ? args[args.indexOf("--batch") + 1] : "initial";
+if (!["initial", "expansion"].includes(batchName))
+  throw new Error("批次仅支持 initial 或 expansion。");
+const batchFile =
+  batchName === "initial"
+    ? "official-notices-2026-11-14.json"
+    : "official-notices-expansion-2026-11-14.json";
 if (args.includes("--data-dir")) {
   const directory = args[args.indexOf("--data-dir") + 1];
   if (!directory || directory.startsWith("--")) throw new Error("缺少数据目录。");
@@ -32,17 +40,20 @@ const batch = z
   )
   .min(1)
   .max(100)
-  .parse(
-    JSON.parse(
-      readFileSync(new URL("../data/official-notices-2026-11-14.json", import.meta.url), "utf8"),
-    ),
-  );
+  .parse(JSON.parse(readFileSync(new URL(`../data/${batchFile}`, import.meta.url), "utf8")));
 const approvedHosts = new Map([
   ["cet.neea.edu.cn", "大学英语四六级考试官网"],
   ["ncre.neea.edu.cn", "全国计算机等级考试官网"],
   ["ntce.neea.edu.cn", "中小学教师资格考试官网"],
   ["pets.neea.edu.cn", "全国英语等级考试官网"],
   ["ccpt.neea.edu.cn", "书画等级考试官网"],
+  ["wsk.neea.edu.cn", "全国外语水平考试官网"],
+  ["nit.neea.edu.cn", "全国计算机应用水平考试官网"],
+  ["www.ruankao.org.cn", "中国计算机技术职业资格网"],
+  ["yz.chsi.com.cn", "中国研究生招生信息网"],
+  ["kzp.mof.gov.cn", "财政部会计财务评价中心"],
+  ["www.cicpa.org.cn", "中国注册会计师协会"],
+  ["www.catticenter.com", "全国翻译人才评价网"],
 ]);
 const urls = new Set();
 for (const item of batch) {
