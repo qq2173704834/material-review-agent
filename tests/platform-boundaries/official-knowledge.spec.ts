@@ -14,7 +14,7 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
   page,
 }) => {
   const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
-  expect(officialKnowledge.entries).toHaveLength(27);
+  expect(officialKnowledge.entries).toHaveLength(35);
   for (const record of officialKnowledge.entries) {
     const id = createHash("sha256")
       .update("official-knowledge:" + record.key)
