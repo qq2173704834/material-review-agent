@@ -14,7 +14,7 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
   page,
 }) => {
   const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
-  expect(officialKnowledge.entries).toHaveLength(95);
+  expect(officialKnowledge.entries).toHaveLength(108);
   for (const record of officialKnowledge.entries) {
     const id = createHash("sha256")
       .update("official-knowledge:" + record.key)
@@ -254,4 +254,26 @@ test("新增学生考试资料可见，官方证书规则与经济师非官方�
         c.title.includes("经济师") && c.sourceType === "非官方参考",
     ),
   ).toBe(true);
+});
+
+test("国际成绩期限与北京证书形态保留范围并显示原始引用", async ({ actors, page }) => {
+  const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
+  await page.context().addCookies((await actors.student.api.storageState()).cookies);
+  for (const [title, quote, scope] of [
+    ["GRE成绩可报告期限", "5 years", "不推断中国考点"],
+    ["TestDaF证书有效期说明", "unbegrenzt gültig", "不保证录取"],
+    ["北京2026统计合格通知书说明", "仅发放电子合格通知书", "不代表报名开放"],
+    ["统计初级学历要求（非官方参考）", "普通高中", "待官方核实"],
+  ]) {
+    const entry = entries.find((e: { content: { title: string } }) => e.content.title === title);
+    expect(entry, title).toBeTruthy();
+    expect(entry.content.text).toContain(quote);
+    expect(entry.content.scope).toContain(scope);
+    await page.goto(`/learn/${entry.id}`);
+    await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "前往原始来源" })).toHaveAttribute(
+      "href",
+      entry.content.url,
+    );
+  }
 });

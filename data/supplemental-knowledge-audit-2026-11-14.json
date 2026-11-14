@@ -5,7 +5,7 @@
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T15:09:32.646Z",
+      "checkedAt": "2026-11-14T15:21:49.064Z",
       "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
       "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     },
@@ -14,7 +14,7 @@
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T15:09:32.647Z",
+      "checkedAt": "2026-11-14T15:21:49.064Z",
       "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
       "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     },
@@ -23,7 +23,7 @@
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T15:09:32.647Z",
+      "checkedAt": "2026-11-14T15:21:49.064Z",
       "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
       "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     },
@@ -32,7 +32,7 @@
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/jingjishi/zhinan/baomingtiaojian.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T15:09:32.871Z",
+      "checkedAt": "2026-11-14T15:21:49.296Z",
       "sourceSha256": "d6822cd22e9364d9383a78706f41b07ce5ea9e2eb945cab8931fbed7a50bbb5b",
       "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     },
@@ -41,7 +41,7 @@
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/jingjishi/zhinan/cjgl.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T15:09:33.088Z",
+      "checkedAt": "2026-11-14T15:21:49.475Z",
       "sourceSha256": "a917f0690291e2a8f01deca2d15de52f0341318b8421f1abb8816759a8f748e2",
       "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     },
@@ -50,8 +50,17 @@
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/jingjishi/zhinan/zigezheng.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T15:09:33.279Z",
+      "checkedAt": "2026-11-14T15:21:49.638Z",
       "sourceSha256": "c611dbc62c95cdb50a2f8726744a26c9ef8d5f7a94c4cdf76f8194d8146b1197",
+      "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
+    },
+    {
+      "key": "statistics-entry-reference",
+      "sourceType": "非官方参考",
+      "url": "https://www.hqwx.com/tjs-kaoshi/news/17742440852538.html",
+      "success": true,
+      "checkedAt": "2026-11-14T15:21:49.959Z",
+      "sourceSha256": "d5df9e7115293f3de02130d98030a81ee2ce30980a2026f3e623378150c3c9bc",
       "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     }
   ]

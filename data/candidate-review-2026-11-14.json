@@ -1,8 +1,8 @@
 {
-  "checkedAt": "2026-11-14T15:08:18.482Z",
+  "checkedAt": "2026-11-14T15:21:38.771Z",
   "total": 39,
   "reviewedFully": 0,
-  "partiallyReviewed": 25,
+  "partiallyReviewed": 32,
   "rows": [
     {
       "category": "tem4",
@@ -240,10 +240,29 @@
     {
       "category": "gre",
       "name": "GRE研究生入学考试",
-      "reviewStatus": "待逐项核实",
+      "reviewStatus": "部分核对",
       "organizerStatus": "主办/受托关系待逐项核实",
-      "currentStatus": "未取得足够当期依据，不据此认定停办",
-      "evidence": []
+      "currentStatus": "已读取官方具体页面；仅覆盖所引事项，当期报名与完整条件另核",
+      "evidence": [
+        {
+          "url": "https://www.ets.org/gre/test-takers/general-test/about.html",
+          "title": "GRE通用考试三个部分",
+          "quote": "Learn more about the three test sections: Verbal Reasoning, Quantitative Reasoning and Analytical Writing.",
+          "sourceType": "官方来源",
+          "sourceSha256": "a99dbe06d0e019fe840ded63b5866387a55bb6d63e5c3ef79ec84601a32a44e2",
+          "checkedAt": "2026-11-14T15:14:54.303Z",
+          "scope": "国际官方通用页面，修订日期未明；不推断中国考点、当期报名开放或院校录取资格。"
+        },
+        {
+          "url": "https://www.ets.org/gre/test-takers/general-test/scores/get-scores.html",
+          "title": "GRE成绩可报告期限",
+          "quote": "GRE scores are reportable for 5 years following your test date.",
+          "sourceType": "官方来源",
+          "sourceSha256": "011c709c65619ecde053b1f4a3f4e254bcd8cdc2e0be774ce43f66635be872fa",
+          "checkedAt": "2026-11-14T15:14:48.135Z",
+          "scope": "国际官方通用页面，修订日期未明；不推断中国考点、当期报名开放或院校录取资格。"
+        }
+      ]
     },
     {
       "category": "gmat",
@@ -256,10 +275,29 @@
     {
       "category": "lsat",
       "name": "LSAT法学院入学考试",
-      "reviewStatus": "待逐项核实",
+      "reviewStatus": "部分核对",
       "organizerStatus": "主办/受托关系待逐项核实",
-      "currentStatus": "未取得足够当期依据，不据此认定停办",
-      "evidence": []
+      "currentStatus": "已读取官方具体页面；仅覆盖所引事项，当期报名与完整条件另核",
+      "evidence": [
+        {
+          "url": "https://www.lsac.org/lsat",
+          "title": "LSAT2026年8月起考试形式说明",
+          "quote": "Starting with the August 2026 LSAT, we will be moving toward in-center testing for almost all U.S. and international test takers, with limited exceptions for certain medical accommodations or extreme distance in getting to a testing center.",
+          "sourceType": "官方来源",
+          "sourceSha256": "dde1644a4d81eda047e87b5f01aada98c339b915f5c78e2207430ebd471057b3",
+          "checkedAt": "2026-11-14T15:10:31.513Z",
+          "scope": "LSAC所述2026年8月起安排；例外、考点和后续变更另核，不套用中国考试日期。"
+        },
+        {
+          "url": "https://www.lsac.org/lsat/frequently-asked-questions-about-lsat",
+          "title": "LSAT写作与选择题分开完成",
+          "quote": "Test takers will complete LSAT Argumentative Writing separately from the multiple-choice portion of the test, at a convenient time and place of their choosing.",
+          "sourceType": "官方来源",
+          "sourceSha256": "ea49dfbbb530b76dea45d331390723736759c61005f048eb093ea40632ea9d92",
+          "checkedAt": "2026-11-14T15:14:55.089Z",
+          "scope": "国际官方通用页面，修订日期未明；不推断中国考点、当期报名开放或院校录取资格。"
+        }
+      ]
     },
     {
       "category": "bec",
@@ -308,10 +346,20 @@
     {
       "category": "testdaf",
       "name": "德福考试",
-      "reviewStatus": "待逐项核实",
+      "reviewStatus": "部分核对",
       "organizerStatus": "主办/受托关系待逐项核实",
-      "currentStatus": "未取得足够当期依据，不据此认定停办",
-      "evidence": []
+      "currentStatus": "已读取官方具体页面；仅覆盖所引事项，当期报名与完整条件另核",
+      "evidence": [
+        {
+          "url": "https://www.testdaf.de/de/",
+          "title": "TestDaF证书有效期说明",
+          "quote": "Das TestDaF-Zeugnis oder -Zertifikat ist unbegrenzt gültig",
+          "sourceType": "官方来源",
+          "sourceSha256": "2443d3300c3a318c698b0301bfe30fe8557c5b3f0c35156d5a28a501d633d8d9",
+          "checkedAt": "2026-11-14T15:10:39.971Z",
+          "scope": "TestDaF官方通用介绍：证书不限有效期；院校具体语言要求和中国考期另核，不保证录取。"
+        }
+      ]
     },
     {
       "category": "delf-dalf",
@@ -539,10 +587,38 @@
     {
       "category": "statistics",
       "name": "统计专业技术资格考试",
-      "reviewStatus": "待逐项核实",
+      "reviewStatus": "部分核对",
       "organizerStatus": "主办/受托关系待逐项核实",
-      "currentStatus": "未取得足够当期依据，不据此认定停办",
-      "evidence": []
+      "currentStatus": "已读取官方具体页面；仅覆盖所引事项，当期报名与完整条件另核",
+      "evidence": [
+        {
+          "url": "https://rsj.beijing.gov.cn/ywsite/bjpta/kszl/zscx/202610/t20261026_4918167.html",
+          "title": "北京2026统计证书领取说明",
+          "quote": "一、初级、中级统计专业技术资格证书采用中国邮政EMS邮寄服务，登录北京市人力资源和社会保障局官网（rsj.beijing.gov.cn）“个人办事”——“专业技术人员资格证书”栏目可申请邮寄证书。",
+          "sourceType": "官方来源",
+          "sourceSha256": "c867853d4e66511d4494b5bada27dd2deab6a4ca62d619ebff79b3ece8d5d24f",
+          "checkedAt": "2026-11-14T15:18:51.011Z",
+          "scope": "北京2026证书发放通知，仅核对证书或合格通知书形态和申领；不代表报名开放、个人符合报名条件或已取得执业注册。"
+        },
+        {
+          "url": "https://rsj.beijing.gov.cn/ywsite/bjpta/kszl/zscx/202610/t20261026_4918167.html",
+          "title": "北京2026统计合格通知书说明",
+          "quote": "二、根据《北京市人力资源和社会保障局关于试点推行专业技术人员考试电子合格通知书的通知》（京人社事业发〔2019〕80号）规定，高级统计专业技术资格考试仅发放电子合格通知书，不再发放纸质合格证明，登录北京市人力资源和社会保障局官网“个人办事”——“专业技术人员资格证书”可下载电子合格通知书。",
+          "sourceType": "官方来源",
+          "sourceSha256": "c867853d4e66511d4494b5bada27dd2deab6a4ca62d619ebff79b3ece8d5d24f",
+          "checkedAt": "2026-11-14T15:18:51.011Z",
+          "scope": "北京2026证书发放通知，仅核对证书或合格通知书形态和申领；不代表报名开放、个人符合报名条件或已取得执业注册。"
+        },
+        {
+          "url": "https://www.hqwx.com/tjs-kaoshi/news/17742440852538.html",
+          "title": "统计初级学历要求（非官方参考）",
+          "quote": "初级报考条件：具备普通高中、中职学校(含技工学校)以上学历，均可报名参加初级统计专业技术资格证书考试，无工作年限要求，无需提供工作证明。",
+          "sourceType": "非官方参考",
+          "sourceSha256": "d5df9e7115293f3de02130d98030a81ee2ce30980a2026f3e623378150c3c9bc",
+          "checkedAt": "2026-11-14T15:18:01.600Z",
+          "scope": "第三方2026-03-23文章；仅供学历与年限参考，基本条件、地区当期要求和证明材料待官方核实，不据此确认个人可报名。"
+        }
+      ]
     },
     {
       "category": "auditing",
@@ -668,10 +744,29 @@
     {
       "category": "health",
       "name": "卫生专业技术资格考试",
-      "reviewStatus": "待逐项核实",
+      "reviewStatus": "部分核对",
       "organizerStatus": "主办/受托关系待逐项核实",
-      "currentStatus": "未取得足够当期依据，不据此认定停办",
-      "evidence": []
+      "currentStatus": "已读取官方具体页面；仅覆盖所引事项，当期报名与完整条件另核",
+      "evidence": [
+        {
+          "url": "https://rsj.beijing.gov.cn/ywsite/bjpta/kszl/zscx/202608/t20260825_4836008.html",
+          "title": "北京2026卫生初中级及护士证书领取说明",
+          "quote": "一、卫生初中级、护士专业技术人员职业资格证书采用中国邮政EMS邮寄服务，登录北京市人力资源和社会保障局官网“个人办事”——“专业技术人员资格证书”栏目可申请邮寄证书。",
+          "sourceType": "官方来源",
+          "sourceSha256": "6dc4ef2dfddad266b55c4ab545b445673968d230132a9b66beb4d63eef6713df",
+          "checkedAt": "2026-11-14T15:18:51.050Z",
+          "scope": "北京2026证书发放通知，仅核对证书或合格通知书形态和申领；不代表报名开放、个人符合报名条件或已取得执业注册。"
+        },
+        {
+          "url": "https://rsj.beijing.gov.cn/ywsite/bjpta/kszl/zscx/202608/t20260825_4836008.html",
+          "title": "北京2026卫生初中级及护士证书邮寄查询",
+          "quote": "二、“EMS中国邮政速递物流”微信公众号可查询邮寄证书实时物流状态，寄往北京地区的证书,约于申请邮寄后的第2个工作日送达；寄往外省市地区的证书，约于申请邮寄后的第2至3个工作日送达。",
+          "sourceType": "官方来源",
+          "sourceSha256": "6dc4ef2dfddad266b55c4ab545b445673968d230132a9b66beb4d63eef6713df",
+          "checkedAt": "2026-11-14T15:18:51.050Z",
+          "scope": "北京2026证书发放通知，仅核对证书或合格通知书形态和申领；不代表报名开放、个人符合报名条件或已取得执业注册。"
+        }
+      ]
     },
     {
       "category": "construction-first",
@@ -694,10 +789,29 @@
     {
       "category": "construction-second",
       "name": "二级建造师资格考试",
-      "reviewStatus": "待逐项核实",
+      "reviewStatus": "部分核对",
       "organizerStatus": "主办/受托关系待逐项核实",
-      "currentStatus": "未取得足够当期依据，不据此认定停办",
-      "evidence": []
+      "currentStatus": "已读取官方具体页面；仅覆盖所引事项，当期报名与完整条件另核",
+      "evidence": [
+        {
+          "url": "https://rsj.beijing.gov.cn/ywsite/bjpta/kszl/zscx/202609/t20260914_4862640.html",
+          "title": "北京2026二级建造师证书领取说明",
+          "quote": "一、按照《北京市人力资源和社会保障局北京市住房和城乡建设委员会关于启用二级建造师、二级造价工程师职业资格电子证书的通知》（京人社事业发〔2021〕4号）规定，北京市二级建造师、二级造价工程师职业资格发放电子证书，登录北京市人力资源和社会保障局官网（rsj.beijing.gov.cn）“个人办事”——“专业技术人员资格证书”栏目可下载电子证书。",
+          "sourceType": "官方来源",
+          "sourceSha256": "6fc53674a82ce901e3f0ec91d18057c3108a5d8f3e5e571d152c30de635c2cf0",
+          "checkedAt": "2026-11-14T15:18:51.023Z",
+          "scope": "北京2026证书发放通知，仅核对证书或合格通知书形态和申领；不代表报名开放、个人符合报名条件或已取得执业注册。"
+        },
+        {
+          "url": "https://rsj.beijing.gov.cn/ywsite/bjpta/kszl/zscx/202609/t20260914_4862640.html",
+          "title": "北京2026二级建造师合格通知书说明",
+          "quote": "二、 根据《北京市人力资源和社会保障局关于试点推行专业技术人员考试电子合格通知书的通知》（京人社事业发〔2019〕80号）规定，二级建造师、二级造价工程师增报专业考试仅发放电子合格通知书，登录北京市人力资源和社会保障局官网“个人办事”——“专业技术人员资格证书”可下载电子合格通知书。",
+          "sourceType": "官方来源",
+          "sourceSha256": "6fc53674a82ce901e3f0ec91d18057c3108a5d8f3e5e571d152c30de635c2cf0",
+          "checkedAt": "2026-11-14T15:18:51.023Z",
+          "scope": "北京2026证书发放通知，仅核对证书或合格通知书形态和申领；不代表报名开放、个人符合报名条件或已取得执业注册。"
+        }
+      ]
     },
     {
       "category": "cost-engineer",
@@ -720,10 +834,29 @@
     {
       "category": "supervision",
       "name": "监理工程师职业资格考试",
-      "reviewStatus": "待逐项核实",
+      "reviewStatus": "部分核对",
       "organizerStatus": "主办/受托关系待逐项核实",
-      "currentStatus": "未取得足够当期依据，不据此认定停办",
-      "evidence": []
+      "currentStatus": "已读取官方具体页面；仅覆盖所引事项，当期报名与完整条件另核",
+      "evidence": [
+        {
+          "url": "https://rsj.beijing.gov.cn/ywsite/bjpta/kszl/zscx/202608/t20260812_4819362.html",
+          "title": "北京2026监理工程师证书领取说明",
+          "quote": "一、监理工程师职业资格证书采用中国邮政EMS邮寄服务，登录北京市人力资源和社会保障局官网“个人办事”——“专业技术人员资格证书”栏目可申请邮寄证书。",
+          "sourceType": "官方来源",
+          "sourceSha256": "152d302e9f430db3bfeb426b6a0623258f059e6ce86164f31244ebf4154045ba",
+          "checkedAt": "2026-11-14T15:18:51.062Z",
+          "scope": "北京2026证书发放通知，仅核对证书或合格通知书形态和申领；不代表报名开放、个人符合报名条件或已取得执业注册。"
+        },
+        {
+          "url": "https://rsj.beijing.gov.cn/ywsite/bjpta/kszl/zscx/202608/t20260812_4819362.html",
+          "title": "北京2026监理工程师合格通知书说明",
+          "quote": "二、根据《北京市人力资源和社会保障局关于试点推行专业技术人员考试电子合格通知书的通知》（京人社事业发〔2019〕80号）规定，监理工程师增报专业考试仅发放电子合格通知书。登录北京市人力资源和社会保障局官网“个人办事”——“专业技术人员资格证书”可下载电子合格通知书。",
+          "sourceType": "官方来源",
+          "sourceSha256": "152d302e9f430db3bfeb426b6a0623258f059e6ce86164f31244ebf4154045ba",
+          "checkedAt": "2026-11-14T15:18:51.062Z",
+          "scope": "北京2026证书发放通知，仅核对证书或合格通知书形态和申领；不代表报名开放、个人符合报名条件或已取得执业注册。"
+        }
+      ]
     },
     {
       "category": "safety",
