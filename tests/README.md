@@ -102,3 +102,13 @@ HTML报告在`playwright-report/boundaries/`；失败截图和轨迹在`test-res
 ## ENG-055 官方PDF与规则片段定位
 
 生产构建后运行 `pnpm exec playwright test --config playwright.goal-sources.config.ts`，使用3146端口和独立SQLite目录。真实读取NCRE公开考纲PDF，合成公告和材料、模拟规则模型；验证目标未读拦截、双来源提取、引用定位、重复导入和跨账号隔离。网络失败真实报错，不用模拟PDF替代。单元回归 `tests/unit/rule-source-segments.test.mjs` 覆盖不连续片段编号和全局偏移。
+
+## ENG-056—ENG-060内容、真实模型与来源
+
+- `node scripts/audit-official-knowledge.mjs --network`：27条公开短引用逐字核对，9类资料；不写应用数据库。
+- `node scripts/audit-source-provenance.mjs --network`：20条网站主办/发布关系原文与总入口链接核对，不解释为国际考试全球主办权。
+- `node scripts/audit-exam-sources.mjs --network --scope=registered`：只读真实库公开来源元数据复制到新隔离库，当前43来源实际列表/详情/持久化/重复去重，不启用和发布；省级可用provincial范围。最新31成功/12查询或失败，156待审草稿版本。
+- `pnpm exec playwright test --config playwright.quality.config.ts`：独立账号、正常加载本地模型凭据、最多3次真实请求且首错停止，不能加入免费日常测试。输出work/real-model-quality.json供独立复核；不以API成功算效果通过。
+- 最新单元91条、全量平台边界77条通过；GB2312/GBK真实字节与编码优先级、14种省级路径及查询门禁有回归。旧158条审查流程通过记录单列，不能替代88条验收。
+
+ENG-061：`student-journey.spec.ts`覆盖1280/390首次登录至个人预审连续UI旅程，模拟回答明确标注；全量边界79条通过。截图保存在忽略的test-results/portal-journey-{1280,390}.png。此项不替代独立学生密度走查或真实模型质量评审。
