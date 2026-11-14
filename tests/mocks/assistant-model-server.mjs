@@ -36,7 +36,14 @@ createServer(async (request, response) => {
       choices: [
         {
           index: 0,
-          message: { role: "assistant", content: JSON.stringify(result) },
+          message: {
+            role: "assistant",
+            content: JSON.stringify(
+              prompt.question.includes("INVALID_STRUCTURE")
+                ? { answer: ["错误数组"], citations: [] }
+                : result,
+            ),
+          },
           finish_reason: "stop",
         },
       ],

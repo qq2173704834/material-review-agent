@@ -92,6 +92,18 @@ test("受控模型：同意门禁、原文引用、成功失败耗用和未知To
         )
         .get(account.id),
     ).toMatchObject({ count: 2 });
+    const beforeStructure = (await (await api.get("/api/assistant")).json()).usage.modelRequests;
+    const malformed = await api.post("/api/assistant", {
+      data: {
+        requestId: randomUUID(),
+        question: question + " INVALID_STRUCTURE",
+        allowExternal: true,
+      },
+    });
+    expect(malformed.status()).toBe(502);
+    expect((await malformed.json()).code).toBe("invalid_response");
+    const afterStructure = (await (await api.get("/api/assistant")).json()).usage.modelRequests;
+    expect(afterStructure - beforeStructure).toBe(1);
   } finally {
     db.close();
     await api.dispose();

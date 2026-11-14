@@ -18,6 +18,7 @@ export default defineConfig({
       reuseExistingServer: false,
       env: {
         AI_MODE: "live",
+        AI_MAX_ATTEMPTS: "1",
         AI_PROVIDER: "controlled-assistant",
         AI_BASE_URL: "http://127.0.0.1:3311",
         AI_MODEL: "synthetic-assistant",

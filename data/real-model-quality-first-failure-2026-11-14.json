@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-11-14T11:31:58.176Z",
+  "maximumModelRequests": 3,
+  "results": [
+    {
+      "sample": {
+        "id": "study-python",
+        "learning": true,
+        "question": "请用一个简单例子解释Python列表与元组的区别，并生成一道练习，标明是AI生成，不是官方真题。"
+      },
+      "start": "2026-11-14T11:31:54.335Z",
+      "status": 502,
+      "payload": {
+        "error": "模型输出结构无效，未采用该结果。",
+        "code": "invalid_response",
+        "status": 502
+      },
+      "independentReview": "待独立人工复核，不以API成功计为效果通过"
+    }
+  ],
+  "actualUsage": [
+    {
+      "modelCall": {
+        "operation": "exam_assistant",
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "startedAt": "2026-11-14T11:31:54.406Z",
+        "completedAt": "2026-11-14T11:31:58.171Z",
+        "status": "failed",
+        "inputTokens": 2668,
+        "outputTokens": 575,
+        "requestCount": 2,
+        "errorCode": "invalid_response"
+      },
+      "cost": null
+    }
+  ]
+}

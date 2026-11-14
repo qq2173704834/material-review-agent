@@ -25,6 +25,7 @@ const modelConfigurationSchema = z.object({
   apiKey: z.string().trim().min(1),
   timeoutMs: z.coerce.number().int().min(1000).max(180000),
   maxCallsPerReview: z.coerce.number().int().min(1).max(30),
+  maxAttempts: z.coerce.number().int().min(1).max(2),
 });
 
 export class ModelServiceError extends Error {
@@ -54,6 +55,7 @@ export function getModelConfiguration(): z.infer<typeof modelConfigurationSchema
     apiKey: process.env.AI_API_KEY?.trim(),
     timeoutMs: process.env.AI_TIMEOUT_MS?.trim() || "60000",
     maxCallsPerReview: process.env.AI_MAX_CALLS_PER_REVIEW?.trim() || "12",
+    maxAttempts: process.env.AI_MAX_ATTEMPTS?.trim() || "2",
   });
   if (!parsed.success)
     throw new ModelServiceError(
@@ -114,7 +116,7 @@ export async function generateModelJson<T>(options: {
         return fetch(input, init);
       },
     });
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < configuration.maxAttempts; attempt++) {
       let usageRecorded = false;
       try {
         const generated = await generateText({
@@ -166,7 +168,7 @@ export async function generateModelJson<T>(options: {
                 /JSON|NoObjectGenerated|NoOutputGenerated/.test(error.name)) ||
               status === 429 ||
               (typeof status === "number" && status >= 500);
-        if (attempt === 0 && canRetry && !signal.aborted) continue;
+        if (attempt + 1 < configuration.maxAttempts && canRetry && !signal.aborted) continue;
         throw error;
       }
     }
