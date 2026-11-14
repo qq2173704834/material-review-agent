@@ -1,5 +1,5 @@
 import { beijingDay } from "@/lib/portal-feed";
-import { classifyExamTitle } from "@/lib/exam-discovery";
+import { classifyExamTitle, classifyExamCategories } from "@/lib/exam-discovery";
 import { dueCollectorSources } from "@/lib/collector-schedule";
 import "server-only";
 import { fetchPublicWebpage } from "./webpage-fetcher";
@@ -56,6 +56,10 @@ export async function collectSource(id: string): Promise<{ drafts: number; messa
           {
             title: detail.title || link.name,
             category: classifyExamTitle(link.name + " " + detail.title, source.category),
+            categories: classifyExamCategories(
+              link.name + " " + detail.title,
+              source.category,
+            ).slice(0, 8),
             region: source.region as "全国",
             edition: "待管理员核对考期",
             year,

@@ -1,4 +1,6 @@
 import { goalReviewReadiness } from "@/lib/server/goal-review";
+import { annotateLinkedExecutions } from "@/lib/server/exam-execution-validity";
+import { goalReviewPolicy } from "@/lib/goal-review-policy";
 import { getReviewStore } from "@/lib/server/review-store";
 import { GoalReviewControls } from "@/components/goal-review-controls";
 import { platformDb } from "@/lib/server/platform-db";
@@ -29,7 +31,11 @@ export default async function GoalPage({
   const task = goal.taskId ? getReviewStore().getTask(goal.taskId) : undefined;
   const last =
     task && getReviewStore().taskOwner(task.id) === account.id
-      ? getReviewStore().listReviewExecutions(task.id)[0]
+      ? annotateLinkedExecutions(
+          task,
+          getReviewStore().listRuleSets(task.id),
+          getReviewStore().listReviewExecutions(task.id),
+        )[0]
       : undefined;
   const jobs = platformDb()
     .prepare<[string, string], { id: string; status: string; reason: string; created_at: string }>(
@@ -67,7 +73,12 @@ export default async function GoalPage({
               查看公告原文、附件与历史
             </Link>
             <ExamActions id={current.id} />
-            <GoalReviewControls goalId={goal.id} enabled={goal.autoReview} taskId={goal.taskId} />
+            <GoalReviewControls
+              goalId={goal.id}
+              enabled={goal.autoReview}
+              taskId={goal.taskId}
+              dailyLimit={goalReviewPolicy(process.env).dailyLimit}
+            />
           </section>
         ) : (
           <section className="rounded border p-5">
@@ -87,6 +98,25 @@ export default async function GoalPage({
               <p>
                 上次实际执行：{last.completedAt || last.createdAt} · {last.status} · 已执行
                 {last.results.length}项，未执行{last.unexecutedCount}项。
+              </p>
+              {last.validity === "needs_recheck" && (
+                <p role="status">结果待复核：{last.invalidationReasons?.join("；")}</p>
+              )}
+              <p className="text-sm">
+                本次模型请求
+                {last.metadata?.modelCalls.reduce((count, call) => count + call.requestCount, 0) ??
+                  0}
+                次；已知输入/输出Token{" "}
+                {last.metadata?.modelCalls.reduce(
+                  (count, call) => count + (call.inputTokens ?? 0),
+                  0,
+                ) ?? 0}
+                /
+                {last.metadata?.modelCalls.reduce(
+                  (count, call) => count + (call.outputTokens ?? 0),
+                  0,
+                ) ?? 0}
+                。未返回Token时合计仅为已知部分，费用未知，以服务商账单为准。
               </p>
               <p>
                 五类结果：通过{last.results.filter((item) => item.verdict === "passed").length} ·

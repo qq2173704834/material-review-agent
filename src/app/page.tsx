@@ -10,6 +10,8 @@ import { listNotices, sources } from "@/lib/server/exam-store";
 import { platformDb } from "@/lib/server/platform-db";
 import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import { isUpcoming, beijingDay, homepageOptions } from "@/lib/portal-feed";
+import { learningEntries } from "@/lib/server/learning-store";
+import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 export const dynamic = "force-dynamic";
 async function homepageTime(): Promise<number> {
   await connection();
@@ -24,7 +26,13 @@ export default async function Home({
   const filters = await searchParams,
     now = await homepageTime();
   const options = homepageOptions(filters);
-  const items = listNotices(),
+  const knowledge = learningEntries();
+  const items = listNotices().map((item) =>
+      catalogLifecycle(knowledge, item.content.category, item.content.region).blocked &&
+      item.content.disposition === "正常"
+        ? { ...item, content: { ...item.content, disposition: "待核实" as const } }
+        : item,
+    ),
     sourceList = sources();
   const recent = items.filter(
     (item) =>

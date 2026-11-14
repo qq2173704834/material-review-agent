@@ -6,6 +6,8 @@ import { notice, matchesExamCategory } from "./exam-store";
 import { getReviewStore } from "./review-store";
 import { runReviewChecks } from "./review-runner";
 import { hasCurrentRuleSources } from "@/domain/review-rule";
+import { examCatalogState } from "./catalog-state";
+import { goalReviewPolicy } from "@/lib/goal-review-policy";
 const state = globalThis as typeof globalThis & {
   __goalReviewControllers?: Map<string, AbortController>;
   __goalReviewTicking?: boolean;
@@ -22,11 +24,15 @@ export function configureGoalReview(
     store = getReviewStore();
   if (!goal || !goal.noticeId || goal.state !== "active")
     throw new Error("请选择有效的活动目标和公告。");
+  if (auto && !goalReviewPolicy(process.env).enabled)
+    throw new Error("自动预审已由服务配置暂停，仍可手动审查。");
   const item = notice(goal.noticeId);
   if (!item || item.version !== goal.noticeVersion)
     throw new Error("公告已变化或撤回，请先核对关联版本。");
   if (auto && (item.content.disposition !== "正常" || item.content.textScope === "摘录"))
     throw new Error("公告状态非正常或仅有摘录，不能开启自动预审；请核对完整适用要求后手动审查。");
+  if (auto && examCatalogState(goal.category, goal.region).blocked)
+    throw new Error("考试目录存在暂停、停办或状态冲突依据，请核对后手动审查。");
   const existing = db
     .prepare<[string, string, string, string], { task_id: string; notice_version: number }>(
       "SELECT task_id,notice_version FROM exam_task_links WHERE user_id=? AND notice_id=? AND stage=? AND target=?",
@@ -123,7 +129,14 @@ export function pauseGoalReview(userId: string, goalId: string): void {
     .all(userId, goalId);
   for (const job of jobs) controllers.get(job.id)?.abort();
 }
-export async function goalReviewTick(userId?: string, goalId?: string): Promise<void> {
+export async function goalReviewTick(
+  userId?: string,
+  goalId?: string,
+  retryFailed = false,
+): Promise<void> {
+  if (retryFailed && (!userId || !goalId)) throw new Error("失败重试必须指定本人考试目标。");
+  const policy = goalReviewPolicy(process.env);
+  if (!policy.enabled) return;
   if (state.__goalReviewTicking) return;
   state.__goalReviewTicking = true;
   const db = platformDb(),
@@ -145,6 +158,7 @@ export async function goalReviewTick(userId?: string, goalId?: string): Promise<
       const source = notice(goal.noticeId);
       if (!source || source.version !== goal.noticeVersion) continue;
       if (source.content.disposition !== "正常" || source.content.textScope === "摘录") continue;
+      if (examCatalogState(goal.category, goal.region).blocked) continue;
       const rules = store
         .listRuleSets(task.id)
         .find((candidate) =>
@@ -161,29 +175,42 @@ export async function goalReviewTick(userId?: string, goalId?: string): Promise<
         )
       )
         continue;
-      const fingerprint = createHash("sha256")
+      const baseFingerprint = createHash("sha256")
         .update(JSON.stringify({ rules, materials: task.materials, background: task.background }))
         .digest("hex");
-      if (
-        db
-          .prepare("SELECT 1 FROM portal_jobs WHERE goal_id=? AND fingerprint=?")
-          .get(goal.id, fingerprint)
-      )
+      const previous = db
+        .prepare<[string, string, string], { status: string }>(
+          "SELECT status FROM portal_jobs WHERE goal_id=? AND (fingerprint=? OR fingerprint LIKE ?) ORDER BY created_at DESC,rowid DESC LIMIT 1",
+        )
+        .get(goal.id, baseFingerprint, `${baseFingerprint}:retry:%`);
+      if (previous && (!retryFailed || !["failed", "cancelled"].includes(previous.status)))
         continue;
+      if (retryFailed && !previous) continue;
+      const fingerprint = retryFailed
+        ? `${baseFingerprint}:retry:${randomUUID()}`
+        : baseFingerprint;
       const recent = db
         .prepare<[string, string], { count: number }>(
           "SELECT COUNT(*) count FROM portal_jobs WHERE user_id=? AND created_at>?",
         )
         .get(row.user_id, new Date(Date.now() - 86400000).toISOString());
-      if ((recent?.count ?? 0) >= 5) continue;
+      if ((recent?.count ?? 0) >= policy.dailyLimit) continue;
       const id = randomUUID(),
         controller = new AbortController();
       controllers.set(id, controller);
       const reserved = db
         .prepare(
-          "INSERT OR IGNORE INTO portal_jobs(id,user_id,goal_id,task_id,fingerprint,status,reason,created_at) VALUES (?,?,?,?,?,'running','已授权目标的规则或材料版本变化',?)",
+          "INSERT OR IGNORE INTO portal_jobs(id,user_id,goal_id,task_id,fingerprint,status,reason,created_at) VALUES (?,?,?,?,?,'running',?,?)",
         )
-        .run(id, row.user_id, goal.id, task.id, fingerprint, new Date().toISOString());
+        .run(
+          id,
+          row.user_id,
+          goal.id,
+          task.id,
+          fingerprint,
+          retryFailed ? "用户明确重试上次失败或取消的自动快照" : "已授权目标的规则或材料版本变化",
+          new Date().toISOString(),
+        );
       if (!reserved.changes) {
         controllers.delete(id);
         continue;
@@ -226,9 +253,13 @@ export async function goalReviewTick(userId?: string, goalId?: string): Promise<
 export function goalReviewReadiness(userId: string, goalId: string): string {
   const goal = studentGoal(userId, goalId);
   if (!goal) return "目标不存在。";
+  const policy = goalReviewPolicy(process.env);
+  if (!policy.enabled) return "自动预审已由服务配置暂停，仍可手动审查。";
   if (goal.state !== "active") return "目标已暂停或归档。";
   if (!goal.autoReview) return "自动执行未开启，保留手动预审。";
   if (!goal.noticeId) return "请关联适用公告。";
+  const catalog = examCatalogState(goal.category, goal.region);
+  if (catalog.blocked) return `${catalog.label}，自动执行暂停。`;
   const current = notice(goal.noticeId);
   if (!current) return "公告已撤回或不可读，自动执行暂停。";
   if (current.content.disposition !== "正常" || current.content.textScope === "摘录")
@@ -262,6 +293,7 @@ export function goalReviewReadiness(userId: string, goalId: string): string {
       "SELECT COUNT(*) count FROM portal_jobs WHERE user_id=? AND created_at>?",
     )
     .get(userId, new Date(Date.now() - 86400000).toISOString());
-  if ((used?.count ?? 0) >= 5) return "最近24小时自动任务已达到5次；可查看历史或手动复检。";
+  if ((used?.count ?? 0) >= policy.dailyLimit)
+    return `最近24小时自动任务已达到${policy.dailyLimit}次；可查看历史或手动复检。`;
   return "自动条件已就绪；约每分钟检测版本，已运行的相同快照不会重复提交。";
 }

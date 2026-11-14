@@ -2,6 +2,9 @@ import { ExamDirectory } from "@/components/exam-directory";
 import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
 import { requestTime } from "@/lib/server/request-time";
 import { matchesExamSearch } from "@/lib/exam-discovery";
+import { matchesExamDimensions } from "@/lib/exam-dimensions";
+import { learningEntries } from "@/lib/server/learning-store";
+import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 import provincialSources from "@/domain/provincial-exam-sources.json";
 import type { ReactElement } from "react";
 import Link from "next/link";
@@ -22,7 +25,13 @@ export default async function Page({
 }): Promise<ReactElement> {
   const filters = await searchParams;
   const now = await requestTime();
-  const all = listNotices();
+  const knowledge = learningEntries();
+  const all = listNotices().map((item) =>
+    catalogLifecycle(knowledge, item.content.category, item.content.region).blocked &&
+    item.content.disposition === "正常"
+      ? { ...item, content: { ...item.content, disposition: "待核实" as const } }
+      : item,
+  );
   const sourceList = sources();
   const results = all.filter(
     (item) =>
@@ -30,15 +39,17 @@ export default async function Page({
         (item.content.title + item.content.text)
           .toLowerCase()
           .includes(filters.q.slice(0, 100).toLowerCase()) ||
-        matchesExamSearch(item.content.category, filters.q.slice(0, 100))) &&
+        matchesExamSearch(item.content.category, filters.q.slice(0, 100)) ||
+        item.content.categories?.some((id) => matchesExamSearch(id, filters.q!.slice(0, 100)))) &&
       (!filters.category || matchesExamCategory(item.content, filters.category)) &&
       (!filters.group ||
         EXAM_CATEGORIES.some(
-          ([id, , group]) => id === item.content.category && group === filters.group,
+          ([id, , group]) => matchesExamCategory(item.content, id) && group === filters.group,
         )) &&
       (!filters.region || item.content.region === filters.region) &&
       (!filters.year || String(item.content.year) === filters.year) &&
-      (!filters.stage || item.content.stage === filters.stage),
+      (!filters.stage || item.content.stage === filters.stage) &&
+      matchesExamDimensions(item.content, filters),
   );
   const page = Math.max(
     1,
@@ -137,6 +148,25 @@ export default async function Page({
               ))}
             </select>
           </label>
+          {(
+            [
+              ["level", "等级"],
+              ["subject", "科目"],
+              ["language", "语种"],
+              ["examForm", "考试形式"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key}>
+              {label}
+              <input
+                name={key}
+                maxLength={120}
+                defaultValue={filters[key]}
+                placeholder="按已审核维度精确筛选"
+                className="mt-1 w-full rounded border p-2"
+              />
+            </label>
+          ))}
           <div className="flex items-end gap-4">
             <button className="rounded bg-primary px-5 py-2 text-primary-foreground">筛选</button>
             <Link href="/exams" className="underline">
@@ -152,6 +182,10 @@ export default async function Page({
             filters.region,
             filters.year,
             filters.stage,
+            filters.level,
+            filters.subject,
+            filters.language,
+            filters.examForm,
           ]
             .filter(Boolean)
             .join(" / ") || "全部"}{" "}
@@ -208,6 +242,7 @@ export default async function Page({
           query={filters.q}
           group={filters.group}
           category={filters.category}
+          region={filters.region}
           sourceList={sourceList}
           notices={all}
         />

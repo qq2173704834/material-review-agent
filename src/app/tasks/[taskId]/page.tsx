@@ -13,7 +13,7 @@ import { RuleReview } from "@/components/rule-review";
 import { MaterialUpload } from "@/components/material-upload";
 import { ReviewExecutionPanel } from "@/components/review-execution";
 import { getRuntimeStatus } from "@/lib/server/runtime-status";
-import { annotateExecutions } from "@/lib/review-history";
+import { annotateLinkedExecutions as annotateExecutions } from "@/lib/server/exam-execution-validity";
 import { TaskDeleteControl } from "@/components/task-delete-control";
 import { TaskCloneControl } from "@/components/task-clone-control";
 import { ClarificationPanel } from "@/components/clarification-panel";

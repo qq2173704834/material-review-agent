@@ -327,24 +327,82 @@ test("目标关联任务、授权开关、自动快照去重及明确采用新�
       }>;
     expect(jobs()).toHaveLength(1);
     expect(jobs()[0]?.status).toBe("completed");
+    db.prepare(
+      "UPDATE portal_jobs SET status='failed',reason='合成服务中断前置条件' WHERE goal_id=?",
+    ).run(goal.id);
+    expect(
+      (await api.post(endpoint, { data: { goalId: goal.id, auto: true, checkNow: true } })).ok(),
+    ).toBeTruthy();
+    expect(jobs()).toHaveLength(1);
+    expect(
+      (
+        await api.post(endpoint, {
+          data: { goalId: goal.id, auto: true, checkNow: true, retryFailed: true },
+        })
+      ).ok(),
+    ).toBeTruthy();
+    expect(jobs()).toHaveLength(2);
+    expect(jobs().filter((job) => job.status === "failed")).toHaveLength(1);
+    expect(jobs().filter((job) => job.status === "completed")).toHaveLength(1);
+    expect(
+      (
+        await api.post(endpoint, {
+          data: { goalId: goal.id, auto: true, checkNow: true, retryFailed: true },
+        })
+      ).status(),
+    ).toBe(200);
+    expect(jobs()).toHaveLength(2);
+    // Synthetic interrupted-job history exercises the rolling quota without external requests.
+    const quotaIds = Array.from({ length: 3 }, () => randomUUID());
+    for (const id of quotaIds) {
+      db.prepare(
+        "INSERT INTO portal_jobs(id,user_id,goal_id,task_id,fingerprint,status,reason,created_at) VALUES (?,?,?,?,?,'failed','合成限额前置条件',?)",
+      ).run(
+        id,
+        actors.student.id,
+        goal.id,
+        taskId,
+        `synthetic-quota:${id}`,
+        new Date().toISOString(),
+      );
+    }
+    try {
+      const count = jobs().length;
+      expect(
+        (
+          await api.post(endpoint, {
+            data: { goalId: goal.id, auto: true, checkNow: true, retryFailed: true },
+          })
+        ).status(),
+      ).toBe(200);
+      expect(jobs()).toHaveLength(count);
+      expect(await (await api.get(`/me/goals/${goal.id}`)).text()).toContain(
+        "最近24小时自动任务已达到5次",
+      );
+    } finally {
+      for (const id of quotaIds) db.prepare("DELETE FROM portal_jobs WHERE id=?").run(id);
+    }
     expect(
       (
         await api.post(endpoint, { data: { goalId: goal.id, auto: true, checkNow: true } })
       ).status(),
     ).toBe(200);
-    expect(jobs()).toHaveLength(1);
+    expect(jobs()).toHaveLength(2);
     await draft(
       actors.admin,
       { ...content, text: content.text + " 新版须补充电子照片。" },
       item.url,
     );
     await publish(actors.admin, item.id, 2);
+    const oldResults = await (await api.get(`/api/tasks/${taskId}/checks`)).json();
+    expect(oldResults.executions[0].validity).toBe("needs_recheck");
+    expect(oldResults.executions[0].invalidationReasons.join("；")).toContain("新发布版本");
     expect(
       (
         await api.post(endpoint, { data: { goalId: goal.id, auto: true, checkNow: true } })
       ).status(),
     ).toBe(200);
-    expect(jobs()).toHaveLength(1);
+    expect(jobs()).toHaveLength(2);
     expect(
       (await api.post(endpoint, { data: { goalId: goal.id, auto: true, adopt: true } })).status(),
     ).toBe(200);

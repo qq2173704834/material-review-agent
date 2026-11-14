@@ -1,4 +1,6 @@
 import { savedLearningItems } from "@/lib/server/learning-store";
+import { learningEntries } from "@/lib/server/learning-store";
+import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 import { LearningActions } from "@/components/learning-actions";
 import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
 import { requestTime } from "@/lib/server/request-time";
@@ -48,7 +50,13 @@ export default async function Page({
       "SELECT id,goal_id,task_id,status,reason,created_at FROM portal_jobs WHERE user_id=? ORDER BY created_at DESC LIMIT 20",
     )
     .all(account.id);
-  const items = favorites(account.id);
+  const knowledge = learningEntries();
+  const items = favorites(account.id).map((item) =>
+    catalogLifecycle(knowledge, item.content.category, item.content.region).blocked &&
+    item.content.disposition === "正常"
+      ? { ...item, content: { ...item.content, disposition: "待核实" as const } }
+      : item,
+  );
   const store = getReviewStore();
   const links = platformDb()
     .prepare<

@@ -6,10 +6,12 @@ export function GoalReviewControls({
   goalId,
   enabled,
   taskId,
+  dailyLimit = 5,
 }: {
   goalId: string;
   enabled: boolean;
   taskId: string | null;
+  dailyLimit?: number;
 }): ReactElement {
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
@@ -20,6 +22,7 @@ export function GoalReviewControls({
     stage = "报名材料准备",
     adopt = false,
     checkNow = false,
+    retryFailed = false,
   ): Promise<void> {
     if (busy) return;
     setBusy(true);
@@ -27,7 +30,7 @@ export function GoalReviewControls({
       const response = await fetch("/api/goals/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goalId, auto, pause, stage, adopt, checkNow }),
+        body: JSON.stringify({ goalId, auto, pause, stage, adopt, checkNow, retryFailed }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
@@ -51,7 +54,9 @@ export function GoalReviewControls({
     <div className="space-y-3 rounded border p-4">
       <h2 className="font-semibold">目标材料预审 · 自动执行{enabled ? "已开启" : "未开启"}</h2>
       <p className="text-sm">
-        开启后，本目标已核对规则及材料版本变化会触发审查，可能调用已配置模型并产生费用。每账号每天最多5次自动任务，同一快照不重复执行；公告新版须先明确采用。附件未导入、规则缺失时不会假装已审查。
+        开启后，本目标已核对规则及材料版本变化会触发审查，可能调用已配置模型并产生费用。每账号最近24小时最多
+        {dailyLimit}
+        次自动任务，同一快照不重复执行；公告新版须先明确采用。附件未导入、规则缺失时不会假装已审查。
       </p>
       <form
         className="space-y-3"
@@ -100,6 +105,13 @@ export function GoalReviewControls({
         onClick={() => void act(enabled, false, "报名材料准备", true)}
       >
         我已核对差异，明确采用当前公告版本
+      </button>
+      <button
+        disabled={busy || !enabled}
+        className="block underline"
+        onClick={() => void act(enabled, false, "报名材料准备", false, true, true)}
+      >
+        重试失败或已取消的自动预审（仍计入24小时{dailyLimit}次限额）
       </button>
       <p role="status">{message}</p>
     </div>

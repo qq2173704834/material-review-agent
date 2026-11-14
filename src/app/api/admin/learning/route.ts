@@ -7,6 +7,7 @@ import {
   learningHistory,
   publishLearningContent,
   saveLearningContent,
+  inspectKnowledgeIndex,
 } from "@/lib/server/learning-store";
 import { platformDb } from "@/lib/server/platform-db";
 import { readSmallJson } from "@/lib/server/request-json";
@@ -30,6 +31,11 @@ export async function GET(request: Request): Promise<Response> {
       )
       .all(),
     runs: platformDb().prepare("SELECT * FROM portal_daily_runs ORDER BY day DESC LIMIT 30").all(),
+    indexCheck: JSON.parse(
+      platformDb()
+        .prepare<[string], { value: string }>("SELECT value FROM portal_settings WHERE key=?")
+        .get("knowledge-index-check")?.value ?? "null",
+    ),
   });
 }
 export async function POST(request: Request): Promise<Response> {
@@ -39,6 +45,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const input = z
       .discriminatedUnion("action", [
+        z.object({ action: z.literal("check-index") }).strict(),
         z.object({ action: z.literal("schedule"), hour: z.number().int().min(0).max(23) }).strict(),
         z
           .object({
@@ -68,6 +75,8 @@ export async function POST(request: Request): Promise<Response> {
           .strict(),
       ])
       .parse(await readSmallJson(request, 100000));
+    if (input.action === "check-index")
+      return NextResponse.json({ ok: true, indexCheck: inspectKnowledgeIndex() });
     if (input.action === "schedule") {
       platformDb()
         .prepare(

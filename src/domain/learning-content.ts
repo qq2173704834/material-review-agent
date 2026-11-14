@@ -27,8 +27,25 @@ export const learningContentSchema = z
     scope: z.string().trim().min(1).max(1000),
     reviewNote: z.string().trim().max(1000).default(""),
     disposition: z.enum(["现行", "历史", "暂停", "停办", "待核实"]).default("待核实"),
+    catalogStatus: z.enum(["待核实", "举办", "暂停", "停办", "更名"]).optional(),
+    catalogEffectiveAt: z.string().date().optional(),
+    renamedTo: z.string().trim().min(1).max(200).optional(),
+    conflictsWith: z
+      .array(z.string().regex(/^[a-f0-9-]{32,36}$/))
+      .max(10)
+      .optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) => !value.catalogStatus || value.kind === "knowledge",
+    "目录状态须登记为带官方依据的知识条目。",
+  )
+  .refine(
+    (value) =>
+      !value.catalogStatus || value.catalogStatus === "待核实" || !!value.catalogEffectiveAt,
+    "目录状态须填写官方生效日期。",
+  )
+  .refine((value) => value.catalogStatus !== "更名" || !!value.renamedTo, "更名须填写新名称。");
 export type LearningContent = z.infer<typeof learningContentSchema>;
 export interface ContentEntry {
   id: string;

@@ -6,10 +6,23 @@ import { z } from "zod";
 import { EXAM_CATEGORIES, EXAM_REGIONS, EXAM_STAGES, TIMELINE_LABELS } from "@/domain/exam-catalog";
 import { digest } from "./account-auth";
 import { platformDb, securityEvent } from "./platform-db";
+import { sourceProvenanceSchema, type SourceProvenance } from "@/domain/source-provenance";
 export const noticeInputSchema = z
   .object({
     title: z.string().trim().min(1).max(300),
     category: z.enum(EXAM_CATEGORIES.map((item) => item[0])),
+    categories: z
+      .array(z.enum(EXAM_CATEGORIES.map((item) => item[0])))
+      .max(8)
+      .refine((items) => new Set(items).size === items.length, "关联考试不能重复。")
+      .optional(),
+    levels: z.array(z.string().trim().min(1).max(80)).max(20).optional(),
+    subjects: z.array(z.string().trim().min(1).max(120)).max(30).optional(),
+    languages: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+    examForms: z
+      .array(z.enum(["笔试", "口试", "面试", "机考", "实操", "材料评审"]))
+      .max(6)
+      .optional(),
     region: z.enum(EXAM_REGIONS),
     edition: z.string().trim().min(1).max(80),
     year: z.number().int().min(2000).max(2100),
@@ -62,6 +75,7 @@ export interface ExamSource {
   next_run: number;
   error: string | null;
   failures: number;
+  provenance?: SourceProvenance;
 }
 export interface ExamNotice {
   id: string;
@@ -106,7 +120,30 @@ export function sources(): ExamSource[] {
       "education-local",
       source.region,
     );
-  return db.prepare<[], ExamSource>("SELECT * FROM exam_sources ORDER BY name").all();
+  const proofs = new Map(
+    db
+      .prepare<[], { key: string; value: string }>(
+        "SELECT key,value FROM portal_settings WHERE key LIKE 'source-proof:%'",
+      )
+      .all()
+      .flatMap((row) => {
+        try {
+          const proof = sourceProvenanceSchema.safeParse(JSON.parse(row.value));
+          return proof.success
+            ? [[row.key.slice("source-proof:".length), proof.data] as const]
+            : [];
+        } catch {
+          return [];
+        }
+      }),
+  );
+  return db
+    .prepare<[], ExamSource>("SELECT * FROM exam_sources ORDER BY name")
+    .all()
+    .map((source) => ({
+      ...source,
+      ...(proofs.has(source.id) ? { provenance: proofs.get(source.id) } : {}),
+    }));
 }
 export function sourceById(id: string): ExamSource | undefined {
   return sources().find((item) => item.id === id);
@@ -342,7 +379,8 @@ export function publishedHistory(id: string): ReturnType<typeof noticeHistory> {
 }
 
 export function matchesExamCategory(content: NoticeContent, category: string): boolean {
-  if (content.category === category) return true;
+  if (content.category === category || content.categories?.some((id) => id === category))
+    return true;
   return (
     (category === "cet4" || category === "cet6") &&
     (content.category === "cet4" || content.category === "cet6") &&

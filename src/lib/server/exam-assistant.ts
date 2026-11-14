@@ -8,6 +8,7 @@ import { learningEntries } from "./learning-store";
 import { studentGoal, portalPreferences } from "./student-goals";
 import { classifyExamTitle } from "@/lib/exam-discovery";
 import { assistantPolicy } from "@/lib/assistant-policy";
+import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 import type { ModelCall } from "@/domain/model-call";
 import { modelCallSchema } from "@/domain/model-call";
 import { getAiMode, generateModelJson, ModelServiceError } from "./model-client";
@@ -27,6 +28,7 @@ type AssistantInput = z.infer<typeof assistantInputSchema>;
 interface ContextSource extends Omit<AssistantCitation, "quote"> {
   text: string;
   historical: boolean;
+  conflicted?: boolean;
 }
 export function assistantUsage(userId: string): {
   questions: number;
@@ -79,6 +81,7 @@ export function assistantSources(userId: string, input: AssistantInput): Context
   const region = EXAM_REGIONS.find(
     (region) => region !== "全国" && input.question.includes(region),
   );
+  const knowledge = learningEntries();
   const records: ContextSource[] = [
     ...listNotices()
       .filter(
@@ -98,9 +101,15 @@ export function assistantSources(userId: string, input: AssistantInput): Context
         text: item.content.text,
         checkedAt: item.last_success ?? item.content.publishedAt,
         scope: `${item.content.region} · ${item.content.edition} · ${item.content.audience}`,
-        historical: item.content.disposition !== "正常",
+        historical:
+          item.content.disposition !== "正常" ||
+          catalogLifecycle(
+            knowledge,
+            item.content.category,
+            region ?? goal?.region ?? item.content.region,
+          ).blocked,
       })),
-    ...learningEntries()
+    ...knowledge
       .filter((item) =>
         input.learning ? item.content.kind !== "school" : item.content.kind === "knowledge",
       )
@@ -128,6 +137,9 @@ export function assistantSources(userId: string, input: AssistantInput): Context
         checkedAt: item.content.checkedAt,
         scope: `${item.content.region} · ${item.content.edition} · ${item.content.scope}`,
         historical: item.content.disposition !== "现行",
+        conflicted: item.content.conflictsWith?.some((id) =>
+          knowledge.some((other) => other.id === id),
+        ),
       })),
   ];
   const grams = [
@@ -248,6 +260,7 @@ export async function askExamAssistant(
     let answer: AssistantAnswer;
     const scopeUnknown = !input.useContext && !/20\d{2}/.test(input.question);
     const scopeConflict =
+      sources.some((source) => source.conflicted) ||
       new Set(
         sources
           .filter((source) => !source.historical)
@@ -256,7 +269,7 @@ export async function askExamAssistant(
     if (!input.learning && sources.length && (scopeUnknown || scopeConflict)) {
       answer = {
         answer:
-          "请确认考试、地区、具体考期和科目后再咨询，或选择明确的考试目标并授权使用。本次资料存在多个范围，不能拼接成确定结论。",
+          "请确认考试、地区、具体考期和科目后再咨询，或选择明确的考试目标并授权使用。本次资料的适用范围尚未统一，或已登记相互冲突，不能拼接成确定结论。",
         kind: "需补充信息",
         mode: "retrieval",
         citations: sources.slice(0, 3).map((source) => ({
@@ -269,7 +282,7 @@ export async function askExamAssistant(
           scope: source.scope,
         })),
         conversationId,
-        warning: "仅展示范围不同的来源以供核对，尚未确认适用政策。",
+        warning: "仅展示范围待核对或存在冲突的来源，尚未确认适用政策。",
       };
     } else if (
       !input.learning &&

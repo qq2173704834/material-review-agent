@@ -3,6 +3,7 @@ import { digest } from "@/lib/server/account-auth";
 import { fetchPublicWebpage } from "@/lib/server/webpage-fetcher";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { sourceProvenanceInputSchema } from "@/domain/source-provenance";
 import { sessionAccount } from "@/lib/server/account-auth";
 import { collectSource } from "@/lib/server/exam-collector";
 import {
@@ -13,7 +14,7 @@ import {
   saveDraft,
   sources,
 } from "@/lib/server/exam-store";
-import { consumeRate, platformDb } from "@/lib/server/platform-db";
+import { consumeRate, platformDb, securityEvent } from "@/lib/server/platform-db";
 import { readSmallJson } from "@/lib/server/request-json";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +37,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const raw = z
       .object({
-        action: z.enum(["draft", "publish", "withdraw", "collect", "source", "register-source"]),
+        action: z.enum([
+          "draft",
+          "publish",
+          "withdraw",
+          "collect",
+          "source",
+          "register-source",
+          "source-proof",
+        ]),
+        provenance: sourceProvenanceInputSchema.optional(),
         id: z.string().max(100).optional(),
         version: z.number().int().positive().optional(),
         sourceId: z.string().max(100).optional(),
@@ -50,6 +60,42 @@ export async function POST(request: Request): Promise<NextResponse> {
       })
       .strict()
       .parse(await readSmallJson(request, 1024 * 1024));
+    if (raw.action === "source-proof") {
+      if (!raw.id || !raw.provenance || !sources().some((source) => source.id === raw.id))
+        throw new Error("请选择已登记来源并完整填写组织关系依据。");
+      if (!consumeRate(`source-proof:${account.id}`, 10, 600000))
+        throw new Error("每10分钟最多核验10条来源依据。");
+      const proof = await fetchPublicWebpage(raw.provenance.referenceUrl);
+      if (!proof.text.includes(raw.provenance.quote))
+        throw new Error("关系依据引用未在实际读取的页面正文中找到，不能保存为已核验。");
+      const db = platformDb();
+      db.transaction(() => {
+        const key = `source-proof:${raw.id}`;
+        const previous = db
+          .prepare<[string], { value: string }>("SELECT value FROM portal_settings WHERE key=?")
+          .get(key);
+        if (previous)
+          db.prepare("INSERT OR IGNORE INTO portal_settings(key,value) VALUES (?,?)").run(
+            `source-proof-history:${raw.id}:${digest(previous.value)}`,
+            previous.value,
+          );
+        db.prepare(
+          "INSERT INTO portal_settings(key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        ).run(
+          `source-proof:${raw.id}`,
+          JSON.stringify({
+            ...raw.provenance,
+            referenceUrl: proof.url,
+            checkedAt: new Date().toISOString(),
+          }),
+        );
+        securityEvent(account.id, "source-proof");
+      })();
+      return NextResponse.json({
+        ok: true,
+        message: "来源组织关系依据已保存，未启用采集或发布公告。",
+      });
+    }
     if (raw.action === "register-source") {
       const input = z
         .object({

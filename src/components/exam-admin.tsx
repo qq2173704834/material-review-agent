@@ -193,6 +193,83 @@ export function ExamAdmin(): ReactElement {
             <p className="w-full text-xs">
               最近成功：{source.last_success || "无"} · 最近失败/部分结果：{source.error || "无"}
             </p>
+            <details className="w-full rounded border p-3">
+              <summary className="cursor-pointer text-sm">
+                组织关系与核验依据 · {source.provenance?.result ?? "尚未登记"}
+              </summary>
+              <form
+                key={source.provenance?.checkedAt ?? "new-proof"}
+                className="mt-3 grid gap-3 sm:grid-cols-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const values = Object.fromEntries(new FormData(event.currentTarget));
+                  void act({ action: "source-proof", id: source.id, provenance: values });
+                }}
+              >
+                <label>
+                  主办方/委托方名称
+                  <input
+                    name="organizer"
+                    required
+                    maxLength={200}
+                    defaultValue={source.provenance?.organizer}
+                    className={field}
+                  />
+                </label>
+                <label>
+                  来源关系
+                  <select
+                    name="relationship"
+                    defaultValue={source.provenance?.relationship ?? "待核实"}
+                    className={field}
+                  >
+                    {["待核实", "主办机构", "受托承办", "官方信息发布"].map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  官方关系依据地址
+                  <input
+                    name="referenceUrl"
+                    required
+                    type="url"
+                    maxLength={2048}
+                    defaultValue={source.provenance?.referenceUrl}
+                    className={field}
+                  />
+                </label>
+                <label>
+                  核验结果
+                  <select
+                    name="result"
+                    defaultValue={source.provenance?.result ?? "待核实"}
+                    className={field}
+                  >
+                    <option>待核实</option>
+                    <option>已核对</option>
+                  </select>
+                </label>
+                <label className="sm:col-span-2">
+                  组织关系原文引用（至少10字，保存时实际读取核对）
+                  <textarea
+                    name="quote"
+                    required
+                    minLength={10}
+                    maxLength={2000}
+                    defaultValue={source.provenance?.quote}
+                    className={field}
+                  />
+                </label>
+                <p className="text-xs">
+                  上次核验：{source.provenance?.checkedAt ?? "无"}
+                  。域名外观或可访问不等于主办授权关系。
+                </p>
+                <button disabled={busy} className="rounded border px-3 py-2">
+                  核验并保存来源依据
+                </button>
+              </form>
+            </details>
           </div>
         ))}
       </section>
@@ -279,6 +356,17 @@ export function ExamAdmin(): ReactElement {
             const next = {
               title: values.title,
               category: values.category,
+              categories: new FormData(form).getAll("categories"),
+              ...Object.fromEntries(
+                ["levels", "subjects", "languages", "examForms"].map((key) => [
+                  key,
+                  String(values[key] ?? "")
+                    .split(/[，,；;]/)
+                    .map((item) => item.trim())
+                    .filter(Boolean),
+                ]),
+              ),
+              ...(values.textScope ? { textScope: values.textScope } : {}),
               region: values.region,
               edition: values.edition,
               year: Number(values.year),
@@ -347,6 +435,48 @@ export function ExamAdmin(): ReactElement {
               {EXAM_REGIONS.map((region) => (
                 <option key={region}>{region}</option>
               ))}
+            </select>
+          </label>
+          <label className="sm:col-span-2">
+            同时适用的其他考试（按Ctrl或Command多选；同一公告只保存一个对象）
+            <select
+              name="categories"
+              multiple
+              defaultValue={content?.categories ?? []}
+              className={field}
+            >
+              {EXAM_CATEGORIES.map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {(
+            [
+              ["levels", "适用等级"],
+              ["subjects", "适用科目"],
+              ["languages", "适用语种"],
+              ["examForms", "考试形式（笔试、口试、面试、机考、实操、材料评审）"],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key}>
+              {label}
+              <input
+                name={key}
+                defaultValue={content?.[key]?.join("，") ?? ""}
+                maxLength={2000}
+                placeholder="可用中文逗号分隔；未知留空"
+                className={field}
+              />
+            </label>
+          ))}
+          <label>
+            原文保存范围
+            <select name="textScope" defaultValue={content?.textScope ?? ""} className={field}>
+              <option value="">沿用未标注范围（需核对）</option>
+              <option value="全文">全文</option>
+              <option value="摘录">摘录</option>
             </select>
           </label>
           <label>

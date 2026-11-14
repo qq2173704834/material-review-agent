@@ -9,6 +9,7 @@ import { ExamActions } from "@/components/exam-actions";
 import { CATEGORY_LABELS, TIMELINE_LABELS } from "@/domain/exam-catalog";
 import { sessionAccount } from "@/lib/server/account-auth";
 import { favorites, notice, publishedHistory } from "@/lib/server/exam-store";
+import { examCatalogState } from "@/lib/server/catalog-state";
 export const dynamic = "force-dynamic";
 export default async function Page({
   params,
@@ -21,7 +22,11 @@ export default async function Page({
   if (!item) notFound();
   const account = sessionAccount(new Request("http://local", { headers: await headers() }));
   const saved = account ? favorites(account.id).some((f) => f.id === noticeId) : false;
-  const content = item.content;
+  const lifecycle = examCatalogState(item.content.category, item.content.region);
+  const content =
+    lifecycle.blocked && item.content.disposition === "正常"
+      ? { ...item.content, disposition: "待核实" as const }
+      : item.content;
   const history = publishedHistory(noticeId).filter((v) => v.version <= item.version);
   return (
     <AppShell activePage="exams">
@@ -35,6 +40,32 @@ export default async function Page({
             {content.stage}
           </p>
           <h1 className="text-3xl font-semibold">{content.title}</h1>
+          {lifecycle.evidence.length > 0 && (
+            <div className="rounded border p-3">
+              <p>{lifecycle.label}；下方保留原公告历史，不据旧安排确认当前可报名。</p>
+              {lifecycle.evidence.map((entry) => (
+                <Link key={entry.id} className="mr-3 underline" href={`/learn/${entry.id}`}>
+                  {entry.content.title} · v{entry.version}
+                </Link>
+              ))}
+            </div>
+          )}
+          {content.categories?.length ||
+          content.levels?.length ||
+          content.subjects?.length ||
+          content.languages?.length ||
+          content.examForms?.length ? (
+            <p className="text-sm text-muted-foreground">
+              适用考试：
+              {[...new Set([content.category, ...(content.categories ?? [])])]
+                .map((id) => CATEGORY_LABELS[id])
+                .join("、")}{" "}
+              · 等级：{content.levels?.join("、") || "未单独确认"} · 科目：
+              {content.subjects?.join("、") || "未单独确认"} · 语种：
+              {content.languages?.join("、") || "未单独确认"} · 形式：
+              {content.examForms?.join("、") || "未单独确认"}
+            </p>
+          ) : null}
           <p>
             {content.organizer} · 发布：{content.publishedAt || "待核实"} · 公告v{item.version}
           </p>

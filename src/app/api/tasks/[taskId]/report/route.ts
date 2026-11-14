@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { reviewTaskIdSchema } from "@/domain/review-task";
-import { annotateExecutions } from "@/lib/review-history";
+import { annotateLinkedExecutions as annotateExecutions } from "@/lib/server/exam-execution-validity";
 import { createRemediationReport, createReviewReport } from "@/lib/review-report";
 import { getReviewStore } from "@/lib/server/review-store";
 import { reportHtml } from "@/lib/report-html";

@@ -3,18 +3,22 @@ import { EXAM_CATEGORIES, EXAM_GROUPS } from "@/domain/exam-catalog";
 import { EXAM_PORTALS } from "@/domain/exam-portals";
 import { examProfile, matchesExamSearch } from "@/lib/exam-discovery";
 import { matchesExamCategory } from "@/lib/server/exam-store";
+import { learningEntries } from "@/lib/server/learning-store";
+import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 import type { ExamSource, ExamNotice } from "@/lib/server/exam-store";
 import type { ReactElement } from "react";
 export function ExamDirectory({
   query = "",
   group,
   category,
+  region = "全国",
   sourceList,
   notices,
 }: {
   query?: string;
   group?: string;
   category?: string;
+  region?: string;
   sourceList: ExamSource[];
   notices: ExamNotice[];
 }): ReactElement {
@@ -24,6 +28,7 @@ export function ExamDirectory({
       (!category || id === category) &&
       matchesExamSearch(id, query),
   );
+  const knowledge = learningEntries();
   return (
     <details
       id="exam-directory"
@@ -49,7 +54,8 @@ export function ExamDirectory({
                     (source) =>
                       source.category === id || (id === "cet6" && source.category === "cet4"),
                   ),
-                  portals = EXAM_PORTALS.filter((portal) => portal.category === id);
+                  portals = EXAM_PORTALS.filter((portal) => portal.category === id),
+                  lifecycle = catalogLifecycle(knowledge, id, region);
                 return (
                   <li
                     key={id}
@@ -67,6 +73,15 @@ export function ExamDirectory({
                       {notices.filter((notice) => matchesExamCategory(notice.content, id)).length}
                       条已发布
                     </p>
+                    <p>{lifecycle.label}</p>
+                    {lifecycle.evidence.map((entry) => (
+                      <p key={entry.id}>
+                        <Link className="underline" href={`/learn/${entry.id}`}>
+                          状态依据：{entry.content.title} · v{entry.version}
+                        </Link>{" "}
+                        · 核验{entry.content.checkedAt}
+                      </p>
+                    ))}
                     <p>
                       {sources.some((source) => source.last_success)
                         ? "已有来源采集成功（公告需逐篇审核）"
@@ -77,6 +92,35 @@ export function ExamDirectory({
                             : "来源待核验接入"}
                     </p>
                     <p className="text-muted-foreground">{profile.audience}</p>
+                    {sources.some((source) => source.error) && (
+                      <p className="text-amber-700">
+                        {sources.filter((source) => source.failures > 0).length}个来源最近采集失败，
+                        {sources.filter((source) => source.error && source.failures === 0).length}
+                        个来源有部分详情异常；保留上次有效信息，不表示没有考试。
+                      </p>
+                    )}
+                    {sources.map((source) => (
+                      <p key={source.id} className="text-xs">
+                        {source.name}：
+                        {source.provenance ? (
+                          <>
+                            {source.provenance.organizer} · {source.provenance.relationship} ·{" "}
+                            {source.provenance.result} · 核验
+                            {source.provenance.checkedAt.slice(0, 10)} ·{" "}
+                            <a
+                              className="underline"
+                              href={source.provenance.referenceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              关系原文依据
+                            </a>
+                          </>
+                        ) : (
+                          "组织关系证据尚待登记，不仅凭域名认定权威。"
+                        )}
+                      </p>
+                    ))}
                     {portals.map((portal) => (
                       <p key={portal.url}>
                         <a className="underline" href={portal.url} target="_blank" rel="noreferrer">

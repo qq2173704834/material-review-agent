@@ -202,6 +202,7 @@ export function StudentGoals({
                 .filter(
                   (item) =>
                     item.content.category === category ||
+                    item.content.categories?.some((id) => id === category) ||
                     ((category === "cet4" || category === "cet6") &&
                       (item.content.category === "cet4" || item.content.category === "cet6") &&
                       /四、六级|四六级|四级.*六级/.test(item.content.title)),

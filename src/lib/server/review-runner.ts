@@ -7,7 +7,7 @@ import { hasCurrentRuleSources } from "@/domain/review-rule";
 import type { ReviewCheckResult, ReviewExecution } from "@/domain/review";
 import { executeReviewRule } from "@/lib/review-checks";
 import { getReviewStore } from "@/lib/server/review-store";
-import { annotateExecutions } from "@/lib/review-history";
+import { annotateLinkedExecutions as annotateExecutions } from "@/lib/server/exam-execution-validity";
 import {
   getAiMode,
   getModelConfiguration,

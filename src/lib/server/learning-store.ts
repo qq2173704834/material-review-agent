@@ -50,6 +50,11 @@ export function saveLearningContent(
     now = new Date().toISOString();
   return db.transaction(() => {
     const previous = id ? learningEntry(id, true) : undefined;
+    for (const conflictId of content.conflictsWith ?? []) {
+      const other = learningEntry(conflictId);
+      if (conflictId === id || !other || other.content.category !== content.category)
+        throw new Error("冲突依据须关联同考试的其他已发布条目，不能引用自身或草稿。");
+    }
     if (id && (!previous || previous.version !== expected))
       throw new Error("内容版本已变化，请刷新核对。");
     if (learningEntries(true).length >= 2000 && !id)
@@ -267,6 +272,43 @@ export function learningHistory(id: string): Array<{ version: number; created_at
       "SELECT version,created_at FROM portal_content_versions WHERE content_id=? ORDER BY version DESC LIMIT 100",
     )
     .all(id);
+}
+
+export function inspectKnowledgeIndex(): {
+  checkedAt: string;
+  strategy: string;
+  entries: number;
+  failures: Array<{ id: string; version: number; message: string }>;
+} {
+  const rows = platformDb()
+    .prepare<[], ContentRow>(
+      "SELECT c.id,c.status,c.updated_at,v.version,v.payload FROM portal_content c JOIN portal_content_versions v ON v.content_id=c.id AND v.version=c.published_version WHERE c.status='published'",
+    )
+    .all();
+  const failures: Array<{ id: string; version: number; message: string }> = [];
+  for (const row of rows) {
+    try {
+      learningContentSchema.parse(JSON.parse(row.payload));
+    } catch {
+      failures.push({
+        id: row.id,
+        version: row.version,
+        message: "已发布快照不符合当前内容结构，需核对修订；未重写原文。",
+      });
+    }
+  }
+  const report = {
+    checkedAt: new Date().toISOString(),
+    strategy: "按已发布快照实时检索，无独立缓存索引；修订发布或撤回即时生效。",
+    entries: rows.length - failures.length,
+    failures,
+  };
+  platformDb()
+    .prepare(
+      "INSERT INTO portal_settings(key,value) VALUES ('knowledge-index-check',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+    )
+    .run(JSON.stringify(report));
+  return report;
 }
 
 export function savedLearningItems(userId: string): Array<ContentEntry & { seen: boolean }> {

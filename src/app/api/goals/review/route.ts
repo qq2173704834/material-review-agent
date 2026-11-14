@@ -21,13 +21,15 @@ export async function POST(request: Request): Promise<Response> {
         pause: z.boolean().optional(),
         adopt: z.boolean().optional(),
         checkNow: z.boolean().optional(),
+        retryFailed: z.boolean().optional(),
       })
       .strict()
       .parse(await readSmallJson(request, 2000));
+    if (input.retryFailed && !input.checkNow) throw new Error("失败重试须明确检查当前目标条件。");
     if (input.checkNow) {
       const goal = studentGoal(account.id, input.goalId);
       if (!goal?.autoReview) throw new Error("目标不存在或自动预审未开启。");
-      await goalReviewTick(account.id, goal.id);
+      await goalReviewTick(account.id, goal.id, input.retryFailed);
       return NextResponse.json({ ok: true });
     }
     if (input.adopt) {

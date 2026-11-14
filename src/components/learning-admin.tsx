@@ -5,6 +5,12 @@ import { EXAM_CATEGORIES, EXAM_REGIONS } from "@/domain/exam-catalog";
 import type { ContentEntry } from "@/domain/learning-content";
 export function LearningAdmin(): ReactElement {
   const [dailyHour, setDailyHour] = useState(8);
+  const [indexCheck, setIndexCheck] = useState<{
+    checkedAt: string;
+    strategy: string;
+    entries: number;
+    failures: Array<{ id: string; version: number; message: string }>;
+  } | null>(null);
   const [feedback, setFeedback] = useState<
     Array<{ id: string; kind: string; payload: string; status: string; response: string }>
   >([]);
@@ -21,6 +27,7 @@ export function LearningAdmin(): ReactElement {
           setEntries(data.entries);
           setFeedback(data.feedback);
           setDailyHour(data.dailyCheckHour);
+          setIndexCheck(data.indexCheck);
         } else setMessage(data.error);
       })
       .catch(() => {
@@ -45,6 +52,7 @@ export function LearningAdmin(): ReactElement {
       setEntries(refreshed.entries);
       setFeedback(refreshed.feedback);
       setDailyHour(refreshed.dailyCheckHour);
+      setIndexCheck(refreshed.indexCheck);
       setEditing(null);
       setMessage("已保存，知识检索按已发布快照即时生效。");
     } catch (error) {
@@ -63,6 +71,32 @@ export function LearningAdmin(): ReactElement {
           资源、知识条目和高校参考先保存草稿。审核时核对来源、费用、授权、适用范围及当前状态；发布/撤回立即改变知识检索范围。
         </p>
       </header>
+      <section className="space-y-2 rounded border p-4">
+        <h2 className="font-semibold">知识检索核查</h2>
+        <p className="text-sm">
+          本地检索直接读取已发布快照，无独立向量索引；内容发布或撤回即时生效，不需要重建缓存。
+        </p>
+        <button
+          disabled={busy}
+          className="underline"
+          onClick={() => void act({ action: "check-index" })}
+        >
+          核查当前知识检索快照
+        </button>
+        {indexCheck && (
+          <div className="text-sm">
+            <p>
+              {indexCheck.checkedAt} · 可检索{indexCheck.entries}条 · 异常
+              {indexCheck.failures.length}条
+            </p>
+            {indexCheck.failures.map((failure) => (
+              <p key={failure.id}>
+                条目{failure.id} · v{failure.version}：{failure.message}
+              </p>
+            ))}
+          </div>
+        )}
+      </section>
       <p role="status">{busy ? "正在处理…" : message}</p>
       <form
         onSubmit={(event) => {
@@ -95,11 +129,24 @@ export function LearningAdmin(): ReactElement {
         onSubmit={(event) => {
           event.preventDefault();
           const values = Object.fromEntries(new FormData(event.currentTarget));
+          for (const key of ["catalogStatus", "catalogEffectiveAt", "renamedTo"])
+            if (!values[key]) delete values[key];
+          const { conflictsWith, ...fields } = values;
           void act({
             action: "draft",
             id: editing?.id,
             version: editing?.version,
-            content: values,
+            content: {
+              ...fields,
+              ...(conflictsWith
+                ? {
+                    conflictsWith: String(conflictsWith)
+                      .split(/[，,；;]/)
+                      .map((id) => id.trim())
+                      .filter(Boolean),
+                  }
+                : {}),
+            },
           });
         }}
       >
@@ -130,6 +177,37 @@ export function LearningAdmin(): ReactElement {
           </select>
         </label>
         <label>
+          目录举办状态（仅知识条目；不填不改变目录）
+          <select
+            name="catalogStatus"
+            defaultValue={content?.catalogStatus ?? ""}
+            className="mt-1 w-full rounded border p-2"
+          >
+            <option value="">不维护目录状态</option>
+            {["待核实", "举办", "暂停", "停办", "更名"].map((state) => (
+              <option key={state}>{state}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          目录状态官方生效日期
+          <input
+            name="catalogEffectiveAt"
+            type="date"
+            defaultValue={content?.catalogEffectiveAt ?? ""}
+            className="mt-1 w-full rounded border p-2"
+          />
+        </label>
+        <label>
+          更名后的官方名称
+          <input
+            name="renamedTo"
+            maxLength={200}
+            defaultValue={content?.renamedTo ?? ""}
+            className="mt-1 w-full rounded border p-2"
+          />
+        </label>
+        <label>
           适用地区
           <select
             name="region"
@@ -140,6 +218,15 @@ export function LearningAdmin(): ReactElement {
               <option key={region}>{region}</option>
             ))}
           </select>
+        </label>
+        <label className="sm:col-span-2">
+          与其他已发布知识存在冲突（条目ID，用逗号分隔；发布前核对双方范围）
+          <input
+            name="conflictsWith"
+            defaultValue={content?.conflictsWith?.join("，") ?? ""}
+            maxLength={400}
+            className="mt-1 w-full rounded border p-2"
+          />
         </label>
         {(
           [

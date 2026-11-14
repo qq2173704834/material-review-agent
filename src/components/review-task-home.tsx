@@ -16,7 +16,7 @@ import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getReviewStore } from "@/lib/server/review-store";
-import { annotateExecutions } from "@/lib/review-history";
+import { annotateLinkedExecutions as annotateExecutions } from "@/lib/server/exam-execution-validity";
 import { nextTaskAction } from "@/lib/task-flow";
 import { QuickGuide } from "@/components/quick-guide";
 import { DemoControls } from "@/components/demo-controls";

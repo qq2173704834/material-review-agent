@@ -200,3 +200,23 @@ export function classifyExamTitle(title: string, fallback: string): ExamCategory
     "education-local"
   );
 }
+export function classifyExamCategories(title: string, fallback: string): ExamCategoryId[] {
+  const text = title.normalize("NFKC");
+  const found = new Set(
+    rules.filter(([pattern]) => pattern.test(text)).map(([, category]) => category),
+  );
+  if (/四、六级|四六级|四级.*六级/.test(text) && found.has("cet4")) found.add("cet6");
+  if (
+    [...found].some((id) =>
+      ["french-specialty", "japanese-specialty", "german-specialty", "russian-specialty"].includes(
+        id,
+      ),
+    )
+  ) {
+    if (!/英语专业.{0,5}四级|英语专四|\bTEM-?4\b/i.test(text)) found.delete("tem4");
+    if (!/英语专业.{0,5}八级|英语专八|\bTEM-?8\b/i.test(text)) found.delete("tem8");
+  }
+  if (found.has("recommendation") || found.has("equivalent-master")) found.delete("graduate");
+  if (found.has("wsk")) found.delete("pets");
+  return found.size ? [...found] : [classifyExamTitle(title, fallback)];
+}

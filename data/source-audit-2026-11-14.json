@@ -1,0 +1,627 @@
+{
+  "checkedAt": "2026-11-14",
+  "scope": "19个全国候选；隔离真实列表/详情采集及重复去重，不启用来源、不发布",
+  "enabledSources": 0,
+  "publishedNotices": 0,
+  "results": [
+    {
+      "url": "https://gmat-main.neea.cn/",
+      "category": "gmat",
+      "checkedAt": "2026-11-14T10:14:29.081Z",
+      "success": true,
+      "message": "检查3条候选，新增/变化草稿3条，详情失败0条；未自动发布。",
+      "draftCount": 3,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查3条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://gmat-main.neea.cn/html1/report/20082/3300-1.htm",
+          "version": 1,
+          "digest": "cd16f3608bab6e6f4748aac0a1485f845b7b16de641b130e545f5ef2bf5fb90c"
+        },
+        {
+          "url": "https://gmat-main.neea.cn/html1/report/20092/1168-1.htm",
+          "version": 1,
+          "digest": "4a34cdc55be17cc5c582a009b90001bc031b41804b736885c73f4c7c378a3865"
+        },
+        {
+          "url": "https://gmat-main.neea.cn/html1/report/21105/726-1.htm",
+          "version": 1,
+          "digest": "ee4f8a1765ac0fce890f72fc61115b407681242acaee0e74f10a7bf1cbe3577a"
+        }
+      ]
+    },
+    {
+      "url": "https://gre-main.neea.cn/",
+      "category": "gre",
+      "checkedAt": "2026-11-14T10:14:31.344Z",
+      "success": true,
+      "message": "检查5条候选，新增/变化草稿5条，详情失败0条；未自动发布。",
+      "draftCount": 5,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查5条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://gre-main.neea.cn/html1/report/20072/1548-1.htm",
+          "version": 1,
+          "digest": "dad2fe4be088225fe1930da7f1fa43760e2fbb6269548e1aaf28aa3cc9946aa3"
+        },
+        {
+          "url": "https://gre-main.neea.cn/html1/report/20082/3317-1.htm",
+          "version": 1,
+          "digest": "cdb0504186f65f512f90c3f6c6e5538f9cd2e0be682da2d2f8b811e50a1b5bdc"
+        },
+        {
+          "url": "https://gre-main.neea.cn/html1/report/20092/1178-1.htm",
+          "version": 1,
+          "digest": "88ecc1108d3fe9cfc2b7fb692092ddab963441ee3703515560b814610cffd90e"
+        },
+        {
+          "url": "https://gre-main.neea.cn/html1/report/21105/719-1.htm",
+          "version": 1,
+          "digest": "27eb3b68c519f0331c37c499e6e07075b592f6de9d514a15eb93a7f80473197e"
+        },
+        {
+          "url": "https://gre-main.neea.cn/html1/report/21121/7923-1.htm",
+          "version": 1,
+          "digest": "f9c312cea090c005b0400bd10dabad7ee85fabddf44d755d5bcd39e8080e3e26"
+        }
+      ]
+    },
+    {
+      "url": "https://lsat.neea.edu.cn/",
+      "category": "lsat",
+      "checkedAt": "2026-11-14T10:14:31.560Z",
+      "success": false,
+      "message": "列表可访问，但未识别到适配的考试公告链接；需调整来源入口或人工导入。",
+      "draftCount": 0,
+      "repeat": null,
+      "details": []
+    },
+    {
+      "url": "https://mhk.neea.edu.cn/",
+      "category": "mhk",
+      "checkedAt": "2026-11-14T10:14:32.855Z",
+      "success": true,
+      "message": "检查2条候选，新增/变化草稿1条，详情失败1条；未自动发布。",
+      "draftCount": 1,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查2条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://mhk.neea.edu.cn/html1/report/2412/150-1.htm",
+          "version": 1,
+          "digest": "6241fdfd6572f553212ef19be919ac24999a19a4f90139a65595e8ba6b04baec"
+        }
+      ]
+    },
+    {
+      "url": "https://yz.chsi.com.cn/",
+      "category": "graduate",
+      "checkedAt": "2026-11-14T10:14:38.141Z",
+      "success": true,
+      "message": "检查8条候选，新增/变化草稿7条，详情失败1条；未自动发布。",
+      "draftCount": 7,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查8条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://yz.chsi.com.cn/apply/cjcx/",
+          "version": 1,
+          "digest": "e0624edcccbd519ef9188b2c1028867fd597b83f6cdbe57a0994da7cac2c0a2a"
+        },
+        {
+          "url": "https://yz.chsi.com.cn/kyzx/jybzc/202609/20260924/2293971511.html",
+          "version": 1,
+          "digest": "5220319d6be570d0990f92517ae841e7ecbd0cb5397dcdcc2128f80cb5ba7076"
+        },
+        {
+          "url": "https://yz.chsi.com.cn/kyzx/jybzc/202611/20261113/2293984092.html",
+          "version": 1,
+          "digest": "21f342e8d5c84e213182ee95c7db70c0b757aae16db3608ab01d8b253ba66934"
+        },
+        {
+          "url": "https://yz.chsi.com.cn/kyzx/kydt/",
+          "version": 1,
+          "digest": "620c0fff7fb07501c1cee6cc2a9a30b6e5e1ed67b77d4766f00be1e3b5b7cabc"
+        },
+        {
+          "url": "https://yz.chsi.com.cn/kyzx/zsjz/",
+          "version": 1,
+          "digest": "a4e815acba549b42442e1e263cebd289b4fd93cca0d6a52c8178d8929f9c0ef4"
+        },
+        {
+          "url": "https://yz.chsi.com.cn/sswbgg/",
+          "version": 1,
+          "digest": "0d33760f37c3f1ebfce7edc79ca444d93f461c587602209c0bad2bc7e77a4a5b"
+        },
+        {
+          "url": "https://yz.chsi.com.cn/tm/",
+          "version": 1,
+          "digest": "1a0f2e709a9167c9defb8db558479a76856ad583601781e1ecbed4ba33f88246"
+        }
+      ]
+    },
+    {
+      "url": "https://ntce.neea.edu.cn/",
+      "category": "teacher",
+      "checkedAt": "2026-11-14T10:14:39.663Z",
+      "success": true,
+      "message": "检查5条候选，新增/变化草稿4条，详情失败1条；未自动发布。",
+      "draftCount": 4,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查5条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://ntce.neea.edu.cn/html1/folder/16013/15-1.htm",
+          "version": 1,
+          "digest": "7d74acab625a4190cf7be9db0f8f48a264800651defa6e6ea93b02b08f042f11"
+        },
+        {
+          "url": "https://ntce.neea.edu.cn/html1/report/2606/25-1.htm",
+          "version": 1,
+          "digest": "8b202ebd4f97755eae848a46f49d1956b24ecfe3dd1b999e5cd6e9a3ee0cbec2"
+        },
+        {
+          "url": "https://ntce.neea.edu.cn/html1/report/2610/12-1.htm",
+          "version": 1,
+          "digest": "a20bad7f359f11b23cf70019d2121ca9463c6599b575f51d6ceaac65856927ad"
+        },
+        {
+          "url": "https://ntce.neea.edu.cn/html1/report/2610/14-1.htm",
+          "version": 1,
+          "digest": "173f1e0e21f3d7cc12bf2d6117bb7cf145dc531389eccd2592d7ae32051d7f69"
+        }
+      ]
+    },
+    {
+      "url": "https://ccpt.neea.edu.cn/",
+      "category": "ccpt",
+      "checkedAt": "2026-11-14T10:14:41.365Z",
+      "success": true,
+      "message": "检查4条候选，新增/变化草稿3条，详情失败1条；未自动发布。",
+      "draftCount": 3,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查4条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://ccpt.neea.edu.cn/html1/report/2603/44-1.htm",
+          "version": 1,
+          "digest": "a1cc65db377eeecacf0ab2e28ab9b8dce768ec73b1b57ccaa4c4fd5940901f59"
+        },
+        {
+          "url": "https://ccpt.neea.edu.cn/html1/report/2607/21-1.htm",
+          "version": 1,
+          "digest": "92c18efa863a24eff86847725abfc374031b31a59d3e9f2929695eaf3026e28d"
+        },
+        {
+          "url": "https://ccpt.neea.edu.cn/html1/report/2609/65-1.htm",
+          "version": 1,
+          "digest": "704180c96dd6e54d606aed07f800179f351b465f18541dea80141081fc1cdd03"
+        }
+      ]
+    },
+    {
+      "url": "https://wsk.neea.edu.cn/",
+      "category": "wsk",
+      "checkedAt": "2026-11-14T10:14:43.854Z",
+      "success": true,
+      "message": "检查5条候选，新增/变化草稿4条，详情失败1条；未自动发布。",
+      "draftCount": 4,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查5条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://wsk.neea.edu.cn/html1/folder/1507/1634-1.htm",
+          "version": 1,
+          "digest": "431be7b74bad7ce65bdeea60e50de3c21ba0946c71b10436d6bb7794e4383790"
+        },
+        {
+          "url": "https://wsk.neea.edu.cn/html1/report/2607/11-1.htm",
+          "version": 1,
+          "digest": "39fab435fd9f68300be6c54cef7588f83d1320f5db69c8c4ae61b510e1131a51"
+        },
+        {
+          "url": "https://wsk.neea.edu.cn/html1/report/2608/23-1.htm",
+          "version": 1,
+          "digest": "c98e0f8d9b4f144c8eb5dee5ae82871b46f956c05a0ec7cdad4c215e091df62b"
+        },
+        {
+          "url": "https://wsk.neea.edu.cn/html1/report/2609/34-1.htm",
+          "version": 1,
+          "digest": "da53f33c72455f7c1d6b0faca6189dd9d1d02bff675854b5635b00aa983a9c90"
+        }
+      ]
+    },
+    {
+      "url": "https://pets.neea.edu.cn/",
+      "category": "pets",
+      "checkedAt": "2026-11-14T10:14:45.118Z",
+      "success": true,
+      "message": "检查4条候选，新增/变化草稿3条，详情失败1条；未自动发布。",
+      "draftCount": 3,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查4条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://pets.neea.edu.cn/html1/report/2605/1-1.htm",
+          "version": 1,
+          "digest": "57ddd7ca704129fddba17b6e1de77e14bdc212ee834983024aba1425f8f5c9b2"
+        },
+        {
+          "url": "https://pets.neea.edu.cn/html1/report/2607/1-1.htm",
+          "version": 1,
+          "digest": "3886e6a6c12318f819dee2768525cb6bd057e0faea4ffd8e269b08d0f34eab15"
+        },
+        {
+          "url": "https://pets.neea.edu.cn/html1/report/2611/19-1.htm",
+          "version": 1,
+          "digest": "a983e7ba13693d83cd1e2e5b45a50c14ae571ceee58028aace9c86fbb85d30ef"
+        }
+      ]
+    },
+    {
+      "url": "https://nit.neea.edu.cn/",
+      "category": "nit",
+      "checkedAt": "2026-11-14T10:14:48.346Z",
+      "success": true,
+      "message": "检查7条候选，新增/变化草稿7条，详情失败0条；未自动发布。",
+      "draftCount": 7,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查7条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://nit.neea.edu.cn/html1/folder/1511/169-1.htm",
+          "version": 1,
+          "digest": "264390cceaa0dac2ec6fac3b0b69ef10e86fdabee8136c1dc19afe12360fa2e7"
+        },
+        {
+          "url": "https://nit.neea.edu.cn/html1/report/17121/5720-1.htm",
+          "version": 1,
+          "digest": "89c8309b947539f29d4124ee5476969e85f2f6b73e47cb26f3b95fd35ae61910"
+        },
+        {
+          "url": "https://nit.neea.edu.cn/html1/report/17121/5721-1.htm",
+          "version": 1,
+          "digest": "5d195b076a6a6800c5960e791fc9ce29600d391aeac333b21bfbca24e9577384"
+        },
+        {
+          "url": "https://nit.neea.edu.cn/html1/report/17121/5723-1.htm",
+          "version": 1,
+          "digest": "9e648e1f92244e3980a801041c47d677b375b1954dd345aea42fd7178d77a398"
+        },
+        {
+          "url": "https://nit.neea.edu.cn/html1/report/2511/102-1.htm",
+          "version": 1,
+          "digest": "ff4c7c25bfc4b036371f43ef4921e878feea95274ef98787514cc86c3f5c791c"
+        },
+        {
+          "url": "https://nit.neea.edu.cn/html1/report/2603/16-1.htm",
+          "version": 1,
+          "digest": "2bb07ad82ffd4d26aefebbfe4cb8e5305f7f2c6a4da8356595e8bc941e762c85"
+        },
+        {
+          "url": "https://nit.neea.edu.cn/html1/report/2607/26-1.htm",
+          "version": 1,
+          "digest": "6d0b2c271ef488550efaef43b8eaca99bd32717b1c9742c4520a115809c2ea2f"
+        }
+      ]
+    },
+    {
+      "url": "https://ncre.neea.edu.cn/",
+      "category": "ncre",
+      "checkedAt": "2026-11-14T10:14:49.741Z",
+      "success": true,
+      "message": "检查4条候选，新增/变化草稿3条，详情失败1条；未自动发布。",
+      "draftCount": 3,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查4条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://ncre.neea.edu.cn/html1/report/2605/5-1.htm",
+          "version": 1,
+          "digest": "32372ced632a0570b00dc56f872ae5e2a7047c108325bcbcfc364d2887b957d8"
+        },
+        {
+          "url": "https://ncre.neea.edu.cn/html1/report/2606/16-1.htm",
+          "version": 1,
+          "digest": "63d52ef6e046c57798fbc8b5402442bbbade1ae11d81a4a6db94b530c4f4977b"
+        },
+        {
+          "url": "https://ncre.neea.edu.cn/html1/report/2611/14-1.htm",
+          "version": 1,
+          "digest": "0d50e66d7863239bb20d01803e2483b848c9e3e0baaae1f60cf7fecf6e93d536"
+        }
+      ]
+    },
+    {
+      "url": "https://bec.neea.cn/",
+      "category": "bec",
+      "checkedAt": "2026-11-14T10:14:51.915Z",
+      "success": true,
+      "message": "检查4条候选，新增/变化草稿4条，详情失败0条；未自动发布。",
+      "draftCount": 4,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查4条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://bec.neea.cn/html1/category/1507/1855-1.htm",
+          "version": 1,
+          "digest": "9ba76c227a39207f63d895666df5454788969a7b878cd09f86017aabc9146563"
+        },
+        {
+          "url": "https://bec.neea.cn/html1/report/2503/76-1.htm",
+          "version": 1,
+          "digest": "be7ec5335040a38f7fe102b1bef2f551e01dd43a6f5b3421fb8983083ce85974"
+        },
+        {
+          "url": "https://bec.neea.cn/html1/report/2505/48-1.htm",
+          "version": 1,
+          "digest": "20ddc01e26ef666ce3fd1bba9f4fce014e02853e3415921aacd432ed3a295362"
+        },
+        {
+          "url": "https://bec.neea.cn/html1/report/2602/3-1.htm",
+          "version": 1,
+          "digest": "c6d8d595ff20f2cc24626e72a6e6ff68ed26f2be140409d91fa1c671f040e72e"
+        }
+      ]
+    },
+    {
+      "url": "https://tdxl.neea.edu.cn/",
+      "category": "equivalent-master",
+      "checkedAt": "2026-11-14T10:14:54.181Z",
+      "success": true,
+      "message": "检查5条候选，新增/变化草稿4条，详情失败1条；未自动发布。",
+      "draftCount": 4,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查5条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://tdxl.neea.edu.cn/html1/category/2210/312-1.htm",
+          "version": 1,
+          "digest": "21fd601d09486c85579b3c88a8c5ef1ecff7bfd06469c2178febae8729a8d7e4"
+        },
+        {
+          "url": "https://tdxl.neea.edu.cn/html1/folder/2210/316-1.htm",
+          "version": 1,
+          "digest": "100f37fe0ca1b3cffdf3624fee485f618c5e3f336434c0e6f2b0b84bd8ab9941"
+        },
+        {
+          "url": "https://tdxl.neea.edu.cn/html1/report/2509/10-1.htm",
+          "version": 1,
+          "digest": "d9bf0c92adf1a62b2e557194289a9b15db15ccf3a91e8c2c70336e1896955c60"
+        },
+        {
+          "url": "https://tdxl.neea.edu.cn/html1/report/2608/35-1.htm",
+          "version": 1,
+          "digest": "23736d9f204b958114331908603b6e93ace3ecd5fe229e0746881007be9c9739"
+        }
+      ]
+    },
+    {
+      "url": "https://cet.neea.edu.cn/",
+      "category": "cet4",
+      "checkedAt": "2026-11-14T10:14:55.403Z",
+      "success": true,
+      "message": "检查4条候选，新增/变化草稿3条，详情失败1条；未自动发布。",
+      "draftCount": 3,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查4条候选，新增/变化草稿0条，详情失败1条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://cet.neea.edu.cn/html1/report/2603/2-1.htm",
+          "version": 1,
+          "digest": "833982371edea924d1e6e43197c068a76d69bef9187fbecc2b93038ea204e96b"
+        },
+        {
+          "url": "https://cet.neea.edu.cn/html1/report/2608/6-1.htm",
+          "version": 1,
+          "digest": "7bcc45833b3372bb5b1005776408e5c01624ccee1a939f1c5f7ec633c834d564"
+        },
+        {
+          "url": "https://cet.neea.edu.cn/html1/report/2609/1-1.htm",
+          "version": 1,
+          "digest": "20feb5ea1b09c97333492172e209ffb26a7f627a079f6dc280be1b695357adf7"
+        }
+      ]
+    },
+    {
+      "url": "https://jlpt-main.neea.cn/",
+      "category": "jlpt",
+      "checkedAt": "2026-11-14T10:14:55.527Z",
+      "success": false,
+      "message": "列表可访问，但未识别到适配的考试公告链接；需调整来源入口或人工导入。",
+      "draftCount": 0,
+      "repeat": null,
+      "details": []
+    },
+    {
+      "url": "https://delf-dalf.neea.cn/",
+      "category": "delf-dalf",
+      "checkedAt": "2026-11-14T10:14:59.497Z",
+      "success": true,
+      "message": "检查7条候选，新增/变化草稿7条，详情失败0条；未自动发布。",
+      "draftCount": 7,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查7条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://delf-dalf.neea.cn/html1/category/16103/1113-1.htm",
+          "version": 1,
+          "digest": "7e01a69118757a941cbc767b6063273e8b605a639acd4814a7acac2ea818ba3d"
+        },
+        {
+          "url": "https://delf-dalf.neea.cn/html1/folder/16103/1132-1.htm",
+          "version": 1,
+          "digest": "336cdd71b30edcbcd7317a833e23bf9bec76cfbc14df3d69bb6a39dadab96c57"
+        },
+        {
+          "url": "https://delf-dalf.neea.cn/html1/report/2304/344-1.htm",
+          "version": 1,
+          "digest": "0aa71854a6c0c6c4e8e25e4798d2607cfa0b74698964468d10c459981331f857"
+        },
+        {
+          "url": "https://delf-dalf.neea.cn/html1/report/2304/345-1.htm",
+          "version": 1,
+          "digest": "771acfb40d0bde2883fbef6c489097ec4466a029fc8a559eb0c13f69f0fe6ed0"
+        },
+        {
+          "url": "https://delf-dalf.neea.cn/html1/report/2604/125-1.htm",
+          "version": 1,
+          "digest": "86a8b8c3ed6431585e411ff2ed06de38719cc7942fbfbd917a2f6c8203702a97"
+        },
+        {
+          "url": "https://delf-dalf.neea.cn/html1/report/2608/16-1.htm",
+          "version": 1,
+          "digest": "1988097fe1797a99cfef3f30290c6cc8dba411c2775724a7ebac7807646d78fa"
+        },
+        {
+          "url": "https://delf-dalf.neea.cn/html1/report/2609/30-1.htm",
+          "version": 1,
+          "digest": "76747eef49cfcacf06560486e7273f44beebeee3590ddcf5e3082d91d961ea45"
+        }
+      ]
+    },
+    {
+      "url": "https://dele.neea.cn/",
+      "category": "dele",
+      "checkedAt": "2026-11-14T10:15:05.439Z",
+      "success": true,
+      "message": "检查7条候选，新增/变化草稿7条，详情失败0条；未自动发布。",
+      "draftCount": 7,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查7条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://dele.neea.cn/html1/category/1610/4-1.htm",
+          "version": 1,
+          "digest": "151bf5682d2616cc7d7d59c88c991ac345e113f1442061f80d482c860d342907"
+        },
+        {
+          "url": "https://dele.neea.cn/html1/report/18062/816-1.htm",
+          "version": 1,
+          "digest": "8b7812d46043910e6a49fe04cee4952de419383036d9d772fbe52e69badb88e8"
+        },
+        {
+          "url": "https://dele.neea.cn/html1/report/18062/817-1.htm",
+          "version": 1,
+          "digest": "ee973460bf580dc20f71877a213442d21b4318ccbb7cf7527b9d78fa777bda14"
+        },
+        {
+          "url": "https://dele.neea.cn/html1/report/18062/818-1.htm",
+          "version": 1,
+          "digest": "cf3a6c1f68f59fa5389e3bc356e0054967dade6a651c50c7e06646c205250d2a"
+        },
+        {
+          "url": "https://dele.neea.cn/html1/report/2509/25-1.htm",
+          "version": 1,
+          "digest": "5f98f93ec0efaf8a86846e88045c75a56a5a10955b8472b4872d20432e7d285b"
+        },
+        {
+          "url": "https://dele.neea.cn/html1/report/2603/31-1.htm",
+          "version": 1,
+          "digest": "303ee2a4ae34db98e248e8c3195ef35a3349ceddcc91647c3c1d6b1fc3314cfb"
+        },
+        {
+          "url": "https://dele.neea.cn/html1/report/2609/31-1.htm",
+          "version": 1,
+          "digest": "9d28a90aa15adbafb1e2065fac63e06b81912c3f5542c35375a7146072acd456"
+        }
+      ]
+    },
+    {
+      "url": "https://topik-main.neea.cn/",
+      "category": "topik",
+      "checkedAt": "2026-11-14T10:15:06.039Z",
+      "success": false,
+      "message": "列表可访问，但未识别到适配的考试公告链接；需调整来源入口或人工导入。",
+      "draftCount": 0,
+      "repeat": null,
+      "details": []
+    },
+    {
+      "url": "https://zikao.neea.edu.cn/",
+      "category": "self-study",
+      "checkedAt": "2026-11-14T10:15:15.933Z",
+      "success": true,
+      "message": "检查8条候选，新增/变化草稿8条，详情失败0条；未自动发布。",
+      "draftCount": 8,
+      "repeat": {
+        "drafts": 0,
+        "message": "检查8条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      },
+      "details": [
+        {
+          "url": "https://zikao.neea.edu.cn/html1/report/20051/8820-1.htm",
+          "version": 1,
+          "digest": "448bbd6f799e117025cc901927d88a8918a149235175add09e219e517cba5665"
+        },
+        {
+          "url": "https://zikao.neea.edu.cn/html1/report/20053/774-1.htm",
+          "version": 1,
+          "digest": "d0d3b9698857b04c24c5db8190d7b5846ee117fdbec00b95e0e66684cc5e870c"
+        },
+        {
+          "url": "https://zikao.neea.edu.cn/html1/report/21115/5193-1.htm",
+          "version": 1,
+          "digest": "9e4f8725ab86680489ff2ebaf4274df314ae3184d4cbdec17d5d4c06d8c9beff"
+        },
+        {
+          "url": "https://zikao.neea.edu.cn/html1/report/21121/2083-1.htm",
+          "version": 1,
+          "digest": "d2ed0aeb12d8f3511bb213ccbbed0ec0af8583119fa1c7d05322c75dcba8e245"
+        },
+        {
+          "url": "https://zikao.neea.edu.cn/html1/report/21121/2114-1.htm",
+          "version": 1,
+          "digest": "5ee0c34136ab3ef7524de8b83279d32c7699590de099670f77bcf267605137bf"
+        },
+        {
+          "url": "https://zikao.neea.edu.cn/html1/report/2402/40-1.htm",
+          "version": 1,
+          "digest": "2bafda6837026e502b1995a6cf3c522d5718160ab2818fe4a7b2d27b90b3cd6f"
+        },
+        {
+          "url": "https://zikao.neea.edu.cn/html1/report/2406/464-1.htm",
+          "version": 1,
+          "digest": "9b061e1661c7eb494852845d1354d197690c4b43ae3a05db30f9cd5941f28367"
+        },
+        {
+          "url": "https://zikao.neea.edu.cn/html1/report/2502/42-1.htm",
+          "version": 1,
+          "digest": "daf0848d65e42e2c4158250e93c8678a4a386ad6b9ca7a11267114e90818865f"
+        }
+      ]
+    }
+  ]
+}
