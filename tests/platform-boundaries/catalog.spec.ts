@@ -350,3 +350,41 @@ test("审定网站关系与考试主办分开，管理员待核实修订优先�
     db.close();
   }
 });
+
+test("省级网站主办版权与主管分开表达且不写管理员设置", async ({ actors }) => {
+  const entries = (await (await actors.admin.api.get("/api/admin/exams")).json()).sources;
+  const proofs = [
+    ["https://www.bjeea.cn/", "北京教育考试院（网站版权主体）"],
+    ["https://www.sceea.cn/", "四川省教育考试院（网站主办）"],
+    ["https://eea.gd.gov.cn/", "广东省教育考试院（网站主办）"],
+    ["https://www.hbea.edu.cn/", "湖北省教育考试院（网站主办）"],
+    ["https://www.ahzsks.cn/index.htm", "安徽省教育招生考试院（网站版权主体）"],
+    ["https://www.gxeea.cn", "广西壮族自治区招生考试院（网站版权主体）"],
+    ["https://www.hebeea.edu.cn", "河北省教育考试院（网站版权主体）"],
+    ["https://www.xjzk.gov.cn/", "新疆维吾尔自治区教育考试院（网站主办）"],
+    ["https://www.lzk.hl.cn", "黑龙江省招生考试院（网站主办）"],
+    [
+      "https://www.lnzsks.com",
+      "辽宁招生考试杂志社（网站主办；主管为辽宁省高中等教育招生考试委员会办公室）",
+    ],
+  ];
+  const db = database();
+  try {
+    for (const [url, organizer] of proofs) {
+      const source = entries.find((entry: { url: string }) => entry.url === url);
+      expect(source, url).toBeDefined();
+      expect(source.provenance).toMatchObject({
+        organizer,
+        relationship: "官方信息发布",
+        result: "已核对",
+      });
+      expect(
+        db
+          .prepare("SELECT value FROM portal_settings WHERE key=?")
+          .get(`source-proof:${source.id}`),
+      ).toBeUndefined();
+    }
+  } finally {
+    db.close();
+  }
+});

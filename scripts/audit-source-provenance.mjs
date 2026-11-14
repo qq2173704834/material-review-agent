@@ -32,7 +32,7 @@ for (const record of batch.results) {
     success,
     checkedAt: new Date().toISOString(),
     message: success
-      ? "网站主办原文及总入口同主机链接均可核对；不代表全球考试所有权、当期举办或报名开放。"
+      ? "网站组织关系原文及教育考试院公开同主机链接均可核对；版权主体、网站主办和主管分别表达，不代表具体考试主办、当期举办或报名开放。"
       : "缺少原文或总入口链接，需复核；不写应用数据库。",
   });
 }

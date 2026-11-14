@@ -1,0 +1,225 @@
+{
+  "checkedAt": "2026-11-14T12:39:39.301Z",
+  "results": [
+    {
+      "sourceUrl": "https://www.bjeea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "北京教育考试院（网站版权主体）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.bjeea.cn/",
+        "quote": "版权所有：北京教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:33.401Z"
+      },
+      "evidence": {
+        "sourceSha256": "0d2dc0a6a9d96890cb53d439e04770e2adb297d08cf274bbaeeac5d4640529e0",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.bjeea.cn/",
+          "name": "北京教育考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://www.sceea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "四川省教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.sceea.cn/",
+        "quote": "主办单位：四川省教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:33.311Z"
+      },
+      "evidence": {
+        "sourceSha256": "5bc48c1912abd1cb9a22c98e532eeab90a20f0bead306156431f721b29ad0e6b",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.sceea.cn/",
+          "name": "四川省教育考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://eea.gd.gov.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "广东省教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://eea.gd.gov.cn/",
+        "quote": "主办单位：广东省教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:33.872Z"
+      },
+      "evidence": {
+        "sourceSha256": "ec34f8e0050e28f962869aafa94cd1690b5e9bd43d52bfc0b344c85dd113aae1",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://eea.gd.gov.cn/",
+          "name": "广东省教育考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://www.hbea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "湖北省教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.hbea.edu.cn/",
+        "quote": "主办单位：湖北省教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:34.258Z"
+      },
+      "evidence": {
+        "sourceSha256": "1926ca306a2f8fab3d78c2817d685a44085e99374d2bfaa62cf92c83693b1dc0",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.hbea.edu.cn/",
+          "name": "湖北省教育考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://www.ahzsks.cn/index.htm",
+      "verified": true,
+      "provenance": {
+        "organizer": "安徽省教育招生考试院（网站版权主体）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.ahzsks.cn/index.htm",
+        "quote": "版权所有：安徽省教育招生考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:34.569Z"
+      },
+      "evidence": {
+        "sourceSha256": "bbe5a7b42bd212f35f0d9e42f0e46007956597b6a63263c69a54b9c4a176f9a6",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.ahzsks.cn/",
+          "name": "安徽省教育招生考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://www.gxeea.cn",
+      "verified": true,
+      "provenance": {
+        "organizer": "广西壮族自治区招生考试院（网站版权主体）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.gxeea.cn/",
+        "quote": "版权所有:广西壮族自治区招生考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:37.024Z"
+      },
+      "evidence": {
+        "sourceSha256": "6bdcad998819a906fa2afe67410d9f8391775c58285a7feeea76af61b10977b9",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.gxeea.cn/",
+          "name": "广西招生考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://www.hebeea.edu.cn",
+      "verified": true,
+      "provenance": {
+        "organizer": "河北省教育考试院（网站版权主体）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.hebeea.edu.cn/",
+        "quote": "版权所有：河北省教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:37.831Z"
+      },
+      "evidence": {
+        "sourceSha256": "632f81bcd31842f387733428cb27666b12292876465acdfad88f984dfebf5d18",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.hebeea.edu.cn/",
+          "name": "河北省教育考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://www.xjzk.gov.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "新疆维吾尔自治区教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.xjzk.gov.cn/",
+        "quote": "新疆维吾尔自治区教育考试院主办",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:37.421Z"
+      },
+      "evidence": {
+        "sourceSha256": "4c98e83ac655de7742c2ffdd6fee7c5be4cd01c920e509ba35ae0a49611e764d",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.xjzk.gov.cn/",
+          "name": "新疆维吾尔自治区教育考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://www.lzk.hl.cn",
+      "verified": true,
+      "provenance": {
+        "organizer": "黑龙江省招生考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.lzk.hl.cn/",
+        "quote": "主办：黑龙江省招生考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:39:38.019Z"
+      },
+      "evidence": {
+        "sourceSha256": "07b23a6d85020a0158a6f04c4a92b042bf2690c90f396f03de1d679d89249576",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.lzk.hl.cn/",
+          "name": "黑龙江省招生考试院"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "省级网站主办或版权原文及教育考试院链接共同核对，仅证明网站发布关系，不是具体考试主办或受托承办认定。"
+    },
+    {
+      "sourceUrl": "https://www.lnzsks.com",
+      "verified": true,
+      "provenance": {
+        "organizer": "辽宁招生考试杂志社（网站主办；主管为辽宁省高中等教育招生考试委员会办公室）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.lnzsks.com/",
+        "quote": "主管单位：辽宁省高中等教育招生考试委员会办公室 主办单位：辽宁招生考试杂志社",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T12:41:15.546Z"
+      },
+      "evidence": {
+        "sourceSha256": "36db9ff10623679fa92b4828ce153596b324b02d1e59e8cde48631dbc6d08e53",
+        "parentUrl": "https://ncre.neea.edu.cn/",
+        "parentLink": {
+          "url": "http://www.lnzsks.com/",
+          "name": "辽宁省高中等教育招生考试委员会办公室"
+        },
+        "parentSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781"
+      },
+      "message": "实际当前页明确区分主管单位与主办单位；不以主管单位替代网站主办，仅证明网站发布关系，不是具体考试主办认定。"
+    }
+  ]
+}
