@@ -14,7 +14,7 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
   page,
 }) => {
   const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
-  expect(officialKnowledge.entries).toHaveLength(81);
+  expect(officialKnowledge.entries).toHaveLength(95);
   for (const record of officialKnowledge.entries) {
     const id = createHash("sha256")
       .update("official-knowledge:" + record.key)
@@ -213,4 +213,45 @@ test("非官方资料显著标识、政策仅参考且不能单独改变举办�
   } finally {
     db.close();
   }
+});
+
+test("新增学生考试资料可见，官方证书规则与经济师非官方参考分别检索", async ({ actors, page }) => {
+  const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
+  for (const title of [
+    "自考报考与本科毕业学历要求",
+    "同等学力2026：在册与资格审查要求",
+    "BEC证书有效期",
+    "上海CATTI2026：一级合格证明与电子证书",
+  ]) {
+    const entry = entries.find((e: { content: { title: string } }) => e.content.title === title);
+    expect(entry.content.sourceType).toBe("官方来源");
+    expect(entry.content.text.length).toBeGreaterThan(10);
+    await page.context().addCookies((await actors.student.api.storageState()).cookies);
+    await page.goto(`/learn/${entry.id}`);
+    await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "前往原始来源" })).toHaveAttribute(
+      "href",
+      entry.content.url,
+    );
+  }
+  const response = await actors.student.api.post("/api/assistant", {
+    data: {
+      requestId: randomUUID(),
+      question: "2026年初中级经济师成绩有效期是什么？",
+      allowExternal: true,
+    },
+  });
+  expect(response.status()).toBe(200);
+  const answer = await response.json();
+  expect(answer).toMatchObject({
+    kind: "需补充信息",
+    mode: "retrieval",
+    usage: { modelCall: null },
+  });
+  expect(
+    answer.citations.some(
+      (c: { title: string; sourceType?: string }) =>
+        c.title.includes("经济师") && c.sourceType === "非官方参考",
+    ),
+  ).toBe(true);
 });

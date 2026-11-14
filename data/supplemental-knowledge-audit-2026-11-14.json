@@ -5,27 +5,54 @@
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T14:08:12.271Z",
+      "checkedAt": "2026-11-14T15:09:32.646Z",
       "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
-      "scope": "仅核对第三方转载原文；不计官方事实核验。"
+      "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     },
     {
       "key": "valuation2026-score",
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T14:08:12.271Z",
+      "checkedAt": "2026-11-14T15:09:32.647Z",
       "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
-      "scope": "仅核对第三方转载原文；不计官方事实核验。"
+      "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     },
     {
       "key": "valuation2026-certificate",
       "sourceType": "非官方参考",
       "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
       "success": true,
-      "checkedAt": "2026-11-14T14:08:12.271Z",
+      "checkedAt": "2026-11-14T15:09:32.647Z",
       "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
-      "scope": "仅核对第三方转载原文；不计官方事实核验。"
+      "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
+    },
+    {
+      "key": "economics-entry-reference",
+      "sourceType": "非官方参考",
+      "url": "https://www.chinaacc.com/jingjishi/zhinan/baomingtiaojian.shtml",
+      "success": true,
+      "checkedAt": "2026-11-14T15:09:32.871Z",
+      "sourceSha256": "d6822cd22e9364d9383a78706f41b07ce5ea9e2eb945cab8931fbed7a50bbb5b",
+      "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
+    },
+    {
+      "key": "economics-score-reference",
+      "sourceType": "非官方参考",
+      "url": "https://www.chinaacc.com/jingjishi/zhinan/cjgl.shtml",
+      "success": true,
+      "checkedAt": "2026-11-14T15:09:33.088Z",
+      "sourceSha256": "a917f0690291e2a8f01deca2d15de52f0341318b8421f1abb8816759a8f748e2",
+      "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
+    },
+    {
+      "key": "economics-certificate-reference",
+      "sourceType": "非官方参考",
+      "url": "https://www.chinaacc.com/jingjishi/zhinan/zigezheng.shtml",
+      "success": true,
+      "checkedAt": "2026-11-14T15:09:33.279Z",
+      "sourceSha256": "c611dbc62c95cdb50a2f8726744a26c9ef8d5f7a94c4cdf76f8194d8146b1197",
+      "message": "仅核对第三方原文命中；不计官方政策核实或个人资格结论。"
     }
   ]
 }
