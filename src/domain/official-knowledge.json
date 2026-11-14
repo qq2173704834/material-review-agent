@@ -1239,6 +1239,216 @@
         "fetchedAt": "2026-11-14T12:22:00.109Z",
         "sourcePage": 6
       }
+    },
+    {
+      "key": "delf-levels",
+      "content": {
+        "title": "DELF与DALF文凭级别",
+        "category": "delf-dalf",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://delf-dalf.neea.cn/html1/folder/1507/1931-1.htm",
+        "text": "其中，DELF文凭包括四个独立的文凭 (A1, A2, B1, B2)，分别对应欧洲语言共同参考框架 (CECRL) 中的前四个级别；DALF文凭包括两个独立的文凭(C1, C2)，分别对应欧洲语言共同参考框架(CECRL)中的两个最高级别。",
+        "summary": "官方介绍少量原文；不代表当前报名开放、学校录取认可或完整条件。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国考试介绍；2026-11-14实际读取。页面更新时间未知，考点、费用、录取认可与具体考期须另核对。",
+        "reviewNote": "逐字核对官方介绍；版本年龄与计算日分开，文凭有效不等于学校认可或录取保证。教育考试院是本页发布方，不作为国际证书全球颁发机构。历史收费和泛化大学录取说法不纳入。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "其中，DELF文凭包括四个独立的文凭 (A1, A2, B1, B2)，分别对应欧洲语言共同参考框架 (CECRL) 中的前四个级别；DALF文凭包括两个独立的文凭(C1, C2)，分别对应欧洲语言共同参考框架(CECRL)中的两个最高级别。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "00c6fe685b6167751f34bbbb99b8c7aaf051c083958c6abc842603c30fd3cc6b",
+        "fetchedAt": "2026-11-14T12:30:09.576Z"
+      }
+    },
+    {
+      "key": "delf-age",
+      "content": {
+        "title": "DELF不同版本年龄条件",
+        "category": "delf-dalf",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://delf-dalf.neea.cn/html1/folder/1507/1931-1.htm",
+        "text": "参加考试日当天（含考试日当天）年龄达到或超过12周岁的考生不能报考少儿版（DELF Prim），年龄达到或超过18周岁的考生不能报考少儿版（DELF Prim）和青少年版（DELF Junior）。成人版（DELF DALF Tout public）报考不受年龄限制。",
+        "summary": "官方介绍少量原文；不代表当前报名开放、学校录取认可或完整条件。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国考试介绍；2026-11-14实际读取。页面更新时间未知，考点、费用、录取认可与具体考期须另核对。",
+        "reviewNote": "逐字核对官方介绍；版本年龄与计算日分开，文凭有效不等于学校认可或录取保证。教育考试院是本页发布方，不作为国际证书全球颁发机构。历史收费和泛化大学录取说法不纳入。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "参加考试日当天（含考试日当天）年龄达到或超过12周岁的考生不能报考少儿版（DELF Prim），年龄达到或超过18周岁的考生不能报考少儿版（DELF Prim）和青少年版（DELF Junior）。成人版（DELF DALF Tout public）报考不受年龄限制。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "00c6fe685b6167751f34bbbb99b8c7aaf051c083958c6abc842603c30fd3cc6b",
+        "fetchedAt": "2026-11-14T12:30:09.576Z"
+      }
+    },
+    {
+      "key": "delf-age-date",
+      "content": {
+        "title": "DELF年龄计算基准",
+        "category": "delf-dalf",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://delf-dalf.neea.cn/html1/folder/1507/1931-1.htm",
+        "text": "上述周岁计算，系统将以考生报考该级考试的笔试日期为判断标准。",
+        "summary": "官方介绍少量原文；不代表当前报名开放、学校录取认可或完整条件。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国考试介绍；2026-11-14实际读取。页面更新时间未知，考点、费用、录取认可与具体考期须另核对。",
+        "reviewNote": "逐字核对官方介绍；版本年龄与计算日分开，文凭有效不等于学校认可或录取保证。教育考试院是本页发布方，不作为国际证书全球颁发机构。历史收费和泛化大学录取说法不纳入。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "上述周岁计算，系统将以考生报考该级考试的笔试日期为判断标准。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "00c6fe685b6167751f34bbbb99b8c7aaf051c083958c6abc842603c30fd3cc6b",
+        "fetchedAt": "2026-11-14T12:30:09.576Z"
+      }
+    },
+    {
+      "key": "delf-validity",
+      "content": {
+        "title": "DELF与DALF文凭有效期",
+        "category": "delf-dalf",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://delf-dalf.neea.cn/html1/folder/1507/1931-1.htm",
+        "text": "DELF和DALF文凭终生有效。",
+        "summary": "官方介绍少量原文；不代表当前报名开放、学校录取认可或完整条件。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国考试介绍；2026-11-14实际读取。页面更新时间未知，考点、费用、录取认可与具体考期须另核对。",
+        "reviewNote": "逐字核对官方介绍；版本年龄与计算日分开，文凭有效不等于学校认可或录取保证。教育考试院是本页发布方，不作为国际证书全球颁发机构。历史收费和泛化大学录取说法不纳入。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "DELF和DALF文凭终生有效。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "00c6fe685b6167751f34bbbb99b8c7aaf051c083958c6abc842603c30fd3cc6b",
+        "fetchedAt": "2026-11-14T12:30:09.576Z"
+      }
+    },
+    {
+      "key": "dele-issuer",
+      "content": {
+        "title": "DELE证书颁发与考试内容",
+        "category": "dele",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://dele.neea.cn/html1/folder/1507/2084-1.htm",
+        "text": "对外西班牙语水平证书（DELE）证书是证明西班牙语能力和掌握水平的官方证书，由塞万提斯学院以西班牙教育文化及体育部的名义颁发，通过DELE考试即可取得证书。考试包括阅读理解、听力理解、书面表达和口语测试。",
+        "summary": "官方介绍少量原文；不代表当前报名开放、学校录取认可或完整条件。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国考试介绍；2026-11-14实际读取。页面更新时间未知，考点、费用、录取认可与具体考期须另核对。",
+        "reviewNote": "逐字核对官方介绍；版本年龄与计算日分开，文凭有效不等于学校认可或录取保证。教育考试院是本页发布方，不作为国际证书全球颁发机构。历史收费和泛化大学录取说法不纳入。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "对外西班牙语水平证书（DELE）证书是证明西班牙语能力和掌握水平的官方证书，由塞万提斯学院以西班牙教育文化及体育部的名义颁发，通过DELE考试即可取得证书。考试包括阅读理解、听力理解、书面表达和口语测试。",
+        "sourceTitle": "项目介绍 - 中国教育考试网",
+        "sourceSha256": "7c92802a4d804aaf9f00f76eb051cad0a03a3c4fe1b44dd72db477f090b33fb4",
+        "fetchedAt": "2026-11-14T12:30:09.292Z"
+      }
+    },
+    {
+      "key": "dele-junior-age",
+      "content": {
+        "title": "DELE青少年A1年龄范围",
+        "category": "dele",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://dele.neea.cn/html1/folder/1507/2084-1.htm",
+        "text": "● 青少年DELE A1\n\n面向11至17岁的学生。证明拥有者的语言水平足以应对简单的交流、即时性需要和日常性的话题。",
+        "summary": "官方介绍少量原文；不代表当前报名开放、学校录取认可或完整条件。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国考试介绍；2026-11-14实际读取。页面更新时间未知，考点、费用、录取认可与具体考期须另核对。",
+        "reviewNote": "逐字核对官方介绍；版本年龄与计算日分开，文凭有效不等于学校认可或录取保证。教育考试院是本页发布方，不作为国际证书全球颁发机构。历史收费和泛化大学录取说法不纳入。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "● 青少年DELE A1\n\n面向11至17岁的学生。证明拥有者的语言水平足以应对简单的交流、即时性需要和日常性的话题。",
+        "sourceTitle": "项目介绍 - 中国教育考试网",
+        "sourceSha256": "7c92802a4d804aaf9f00f76eb051cad0a03a3c4fe1b44dd72db477f090b33fb4",
+        "fetchedAt": "2026-11-14T12:30:09.292Z"
+      }
+    },
+    {
+      "key": "dele-validity",
+      "content": {
+        "title": "DELE证书有效期",
+        "category": "dele",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://dele.neea.cn/html1/folder/1507/2084-1.htm",
+        "text": "● 一经通过，终生有效",
+        "summary": "官方介绍少量原文；不代表当前报名开放、学校录取认可或完整条件。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国考试介绍；2026-11-14实际读取。页面更新时间未知，考点、费用、录取认可与具体考期须另核对。",
+        "reviewNote": "逐字核对官方介绍；版本年龄与计算日分开，文凭有效不等于学校认可或录取保证。教育考试院是本页发布方，不作为国际证书全球颁发机构。历史收费和泛化大学录取说法不纳入。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "● 一经通过，终生有效",
+        "sourceTitle": "项目介绍 - 中国教育考试网",
+        "sourceSha256": "7c92802a4d804aaf9f00f76eb051cad0a03a3c4fe1b44dd72db477f090b33fb4",
+        "fetchedAt": "2026-11-14T12:30:09.292Z"
+      }
     }
   ]
 }

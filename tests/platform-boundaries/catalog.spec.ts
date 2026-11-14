@@ -284,32 +284,38 @@ test("来源组织关系保存与采集开关分离，非法主机和伪引用�
   expect(refreshed.provenance).toEqual(source.provenance);
 });
 
-test("旧登记的仅查询来源不能继续用通用采集把导航保存成公告", async ({ actors }) => {
-  const db = database();
-  const id = randomUUID().replaceAll("-", "").slice(0, 24);
-  try {
-    db.prepare("INSERT INTO exam_sources(id,name,url,category,region) VALUES (?,?,?,?,?)").run(
-      id,
-      "合成旧CPA查询来源",
-      "https://www.cicpa.org.cn/",
-      "cpa",
-      "全国",
-    );
-    const response = await actors.admin.api.post("/api/admin/exams", {
-      data: { action: "collect", id },
-    });
-    expect(response.status()).toBe(400);
-    expect((await response.json()).error).toContain("仅提供官方查询入口");
-    expect(
-      db.prepare("SELECT COUNT(*) count FROM exam_notices WHERE source_id=?").get(id),
-    ).toMatchObject({ count: 0 });
-    expect(
-      db.prepare("SELECT error,locked_until FROM exam_sources WHERE id=?").get(id),
-    ).toMatchObject({ locked_until: 0, error: expect.stringContaining("仅提供官方查询入口") });
-  } finally {
-    db.close();
-  }
-});
+for (const [category, url] of [
+  ["cpa", "https://www.cicpa.org.cn/"],
+  ["gre", "https://gre-main.neea.cn/"],
+  ["gmat", "https://gmat-main.neea.cn/"],
+]) {
+  test(`旧登记${category}查询来源不能继续用通用采集保存旧公告`, async ({ actors }) => {
+    const db = database();
+    const id = randomUUID().replaceAll("-", "").slice(0, 24);
+    try {
+      db.prepare("INSERT INTO exam_sources(id,name,url,category,region) VALUES (?,?,?,?,?)").run(
+        id,
+        `合成旧${category}查询来源`,
+        url,
+        category,
+        "全国",
+      );
+      const response = await actors.admin.api.post("/api/admin/exams", {
+        data: { action: "collect", id },
+      });
+      expect(response.status()).toBe(400);
+      expect((await response.json()).error).toContain("仅提供官方查询入口");
+      expect(
+        db.prepare("SELECT COUNT(*) count FROM exam_notices WHERE source_id=?").get(id),
+      ).toMatchObject({ count: 0 });
+      expect(
+        db.prepare("SELECT error,locked_until FROM exam_sources WHERE id=?").get(id),
+      ).toMatchObject({ locked_until: 0, error: expect.stringContaining("仅提供官方查询入口") });
+    } finally {
+      db.close();
+    }
+  });
+}
 
 test("审定网站关系与考试主办分开，管理员待核实修订优先于静态依据", async ({ actors }) => {
   const initial = (await (await actors.admin.api.get("/api/admin/exams")).json()).sources;

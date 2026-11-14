@@ -1,0 +1,355 @@
+{
+  "checkedAt": "2026-11-14T12:32:10.681Z",
+  "total": 39,
+  "reviewedFully": 0,
+  "partiallyReviewed": 5,
+  "rows": [
+    {
+      "category": "tem4",
+      "name": "英语专业四级",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "tem8",
+      "name": "英语专业八级",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "french-specialty",
+      "name": "法语专业四、八级",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "japanese-specialty",
+      "name": "日语专业四、八级",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "german-specialty",
+      "name": "德语专业四、八级",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "russian-specialty",
+      "name": "俄语专业四、八级",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "nit",
+      "name": "全国计算机应用水平考试",
+      "reviewStatus": "部分核对",
+      "organizerStatus": "已核对教育考试院网站发布关系，全球主办/受托职责仍须单独核实",
+      "currentStatus": "已见2026期次实际详情；不推断持续举办或当前可报名",
+      "evidence": [
+        {
+          "url": "https://nit.neea.edu.cn/html1/report/2603/16-1.htm",
+          "title": "2026年4月全国计算机应用水平考试（NIT）报名工作启动 - 中国教育考试网",
+          "checkedAt": "2026-11-14T12:30:09.180Z",
+          "sourceSha256": "7d551a345aea707db9982f3cc095eb8ff4326a77369b24115123a83d6ec78a22"
+        }
+      ]
+    },
+    {
+      "category": "wsk",
+      "name": "全国外语水平考试",
+      "reviewStatus": "部分核对",
+      "organizerStatus": "已核对教育考试院网站发布关系，全球主办/受托职责仍须单独核实",
+      "currentStatus": "已见2026期次实际详情；不推断持续举办或当前可报名",
+      "evidence": [
+        {
+          "url": "https://wsk.neea.edu.cn/html1/report/2608/23-1.htm",
+          "title": "2026年11月全国外语水平考试（WSK）报名工作启动 - 中国教育考试网",
+          "checkedAt": "2026-11-14T12:30:09.296Z",
+          "sourceSha256": "37e1be114bddab4ad74fa57cae21ac8bfc93cfddc059ce0e4a67ea0b468227c3"
+        }
+      ]
+    },
+    {
+      "category": "ccpt",
+      "name": "书画等级考试",
+      "reviewStatus": "部分核对",
+      "organizerStatus": "已核对教育考试院网站发布关系，全球主办/受托职责仍须单独核实",
+      "currentStatus": "已见2026期次实际详情；不推断持续举办或当前可报名",
+      "evidence": [
+        {
+          "url": "https://ccpt.neea.edu.cn/html1/report/2609/65-1.htm",
+          "title": "2026年下半年书画等级考试（CCPT）报名工作启动 - 中国教育考试网",
+          "checkedAt": "2026-11-14T12:30:09.025Z",
+          "sourceSha256": "3b8582703dfd636d39d957b1750472931b99fd84af82868ec767a8e04e72bba8"
+        }
+      ]
+    },
+    {
+      "category": "mhk",
+      "name": "中国少数民族汉语水平等级考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "self-study",
+      "name": "高等教育自学考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "equivalent-master",
+      "name": "同等学力申请硕士学位考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "gre",
+      "name": "GRE研究生入学考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "gmat",
+      "name": "GMAT管理学研究生入学考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "lsat",
+      "name": "LSAT法学院入学考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "bec",
+      "name": "剑桥商务英语考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "testdaf",
+      "name": "德福考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "delf-dalf",
+      "name": "法语DELF-DALF",
+      "reviewStatus": "部分核对",
+      "organizerStatus": "已核对教育考试院网站发布关系，全球主办/受托职责仍须单独核实",
+      "currentStatus": "已见2026期次实际详情；不推断持续举办或当前可报名",
+      "evidence": [
+        {
+          "url": "https://delf-dalf.neea.cn/html1/report/2609/30-1.htm",
+          "title": "2026年11月法语DELF-DALF考试将于9月9日开始报名 - 中国教育考试网",
+          "checkedAt": "2026-11-14T12:30:09.795Z",
+          "sourceSha256": "04bcc3edb02e57d7d55420549d16e4696d0ab2ebc854223dd26cab9afad3b69b"
+        }
+      ]
+    },
+    {
+      "category": "dele",
+      "name": "西班牙语DELE",
+      "reviewStatus": "部分核对",
+      "organizerStatus": "已核对教育考试院网站发布关系，全球主办/受托职责仍须单独核实",
+      "currentStatus": "已见2026期次实际详情；不推断持续举办或当前可报名",
+      "evidence": [
+        {
+          "url": "https://dele.neea.cn/html1/report/2609/31-1.htm",
+          "title": "2026年11月西班牙语DELE考试将于9月15日开始报名 - 中国教育考试网",
+          "checkedAt": "2026-11-14T12:30:09.374Z",
+          "sourceSha256": "15300465694996d95d699c080e6700fe4b0bc9df99c034d65b3cf202a2ee8e6a"
+        }
+      ]
+    },
+    {
+      "category": "catti",
+      "name": "翻译专业资格（水平）考试CATTI",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "interpretation-shanghai",
+      "name": "上海外语口译证书考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "fund",
+      "name": "基金从业资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "futures",
+      "name": "期货从业人员资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "economics",
+      "name": "经济专业技术资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "statistics",
+      "name": "统计专业技术资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "auditing",
+      "name": "审计专业技术资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "tax",
+      "name": "税务师职业资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "valuation",
+      "name": "资产评估师职业资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "patent",
+      "name": "专利代理师资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "pharmacist",
+      "name": "执业药师职业资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "health",
+      "name": "卫生专业技术资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "construction-first",
+      "name": "一级建造师资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "construction-second",
+      "name": "二级建造师资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "cost-engineer",
+      "name": "造价工程师职业资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "supervision",
+      "name": "监理工程师职业资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "safety",
+      "name": "注册安全工程师职业资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "fire",
+      "name": "注册消防工程师资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "planner",
+      "name": "注册城乡规划师职业资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    },
+    {
+      "category": "surveyor",
+      "name": "注册测绘师资格考试",
+      "reviewStatus": "待逐项核实",
+      "organizerStatus": "主办/受托关系待逐项核实",
+      "currentStatus": "未取得足够当期依据，不据此认定停办",
+      "evidence": []
+    }
+  ]
+}

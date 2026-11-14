@@ -100,7 +100,9 @@ export const EXAM_PORTALS = [
     checkedAt: "2026-11-14",
     status: "accessible",
     title: "GRE®考试（GRE®） - 中国教育考试网",
-    collectionMode: "candidate",
+    collectionMode: "query",
+    collectionNote:
+      "本入口仍展示2020—2021年历史通知；当前考位和安排须到当前官方报名入口核对，不将历史通知视为当期更新。",
   },
   {
     category: "gmat",
@@ -110,7 +112,9 @@ export const EXAM_PORTALS = [
     checkedAt: "2026-11-14",
     status: "accessible",
     title: "GMAT - 中国教育考试网",
-    collectionMode: "candidate",
+    collectionMode: "query",
+    collectionNote:
+      "本入口仍展示2020年安排及历史北京停考通知；不代表当前停办或取消，当前安排须到GMAT官方核对。",
   },
   {
     category: "bec",
