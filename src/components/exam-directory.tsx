@@ -114,6 +114,9 @@ export function ExamDirectory({
                               <Link className="underline" href={`/learn/${entry.id}`}>
                                 {entry.content.title}
                               </Link>
+                              {entry.content.sourceType === "非官方参考" && (
+                                <p className="text-amber-700">非官方参考 · 政策待核实</p>
+                              )}
                               <p className="mt-1">
                                 {entry.content.text.slice(0, 240)}
                                 {entry.content.text.length > 240 ? "…" : ""}
@@ -127,7 +130,7 @@ export function ExamDirectory({
                           ))}
                         </ul>
                         <p className="mt-2 text-xs">
-                          以上为资料摘录，不是个人资格结论。完整范围、官方原文和阅读边界见详情。
+                          以上为资料摘录，不是个人资格结论。完整范围、来源原文和阅读边界见详情。
                         </p>
                       </details>
                     )}

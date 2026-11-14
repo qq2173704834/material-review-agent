@@ -10,6 +10,7 @@ export const learningContentSchema = z
     kind: z.enum(["resource", "knowledge", "school"]),
     format: z.enum(["考纲", "课程", "资料", "练习", "资讯"]).default("资料"),
     studyStage: z.enum(["通用", "入门", "基础", "强化", "冲刺"]).default("通用"),
+    sourceType: z.enum(["官方来源", "非官方参考", "未分类"]).optional(),
     author: z.string().trim().min(1).max(200),
     url: z
       .url()
@@ -44,6 +45,11 @@ export const learningContentSchema = z
     (value) =>
       !value.catalogStatus || value.catalogStatus === "待核实" || !!value.catalogEffectiveAt,
     "目录状态须填写官方生效日期。",
+  )
+  .refine(
+    (value) =>
+      value.sourceType !== "非官方参考" || !value.catalogStatus || value.catalogStatus === "待核实",
+    "非官方参考不能确定举办、停办或更名状态，请保留待核实。",
   )
   .refine((value) => value.catalogStatus !== "更名" || !!value.renamedTo, "更名须填写新名称。");
 export type LearningContent = z.infer<typeof learningContentSchema>;

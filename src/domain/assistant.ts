@@ -7,6 +7,7 @@ export interface AssistantCitation {
   quote: string;
   checkedAt: string;
   scope: string;
+  sourceType?: "官方来源" | "非官方参考" | "未分类";
 }
 export interface AssistantAnswer {
   answer: string;

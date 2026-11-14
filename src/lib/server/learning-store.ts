@@ -1,5 +1,6 @@
 import { EXAM_PORTALS } from "@/domain/exam-portals";
 import officialKnowledge from "@/domain/official-knowledge.json";
+import supplementalKnowledge from "@/domain/supplemental-knowledge.json";
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { platformDb, securityEvent } from "./platform-db";
@@ -191,9 +192,20 @@ export function resourceMark(
 export function seedPortalReferences(): void {
   // Reviewed public navigation resources; no fabricated course or imported private data.
   const seedDb = platformDb();
-  for (const record of officialKnowledge.entries) {
+  for (const { record, prefix, actor } of [
+    ...officialKnowledge.entries.map((record) => ({
+      record,
+      prefix: "official-knowledge:",
+      actor: "curated-official-quote",
+    })),
+    ...supplementalKnowledge.entries.map((record) => ({
+      record,
+      prefix: "supplemental-knowledge:",
+      actor: "curated-secondary-quote",
+    })),
+  ]) {
     const key = createHash("sha256")
-      .update("official-knowledge:" + record.key)
+      .update(prefix + record.key)
       .digest("hex")
       .slice(0, 32);
     // Preserve administrator revisions and withdrawals, including a withdrawn first version.
@@ -208,9 +220,9 @@ export function seedPortalReferences(): void {
         .run(key, content.kind, now);
       seedDb
         .prepare(
-          "INSERT OR IGNORE INTO portal_content_versions(content_id,version,payload,actor,created_at) VALUES (?,1,?,'curated-official-quote',?)",
+          "INSERT OR IGNORE INTO portal_content_versions(content_id,version,payload,actor,created_at) VALUES (?,1,?,?,?)",
         )
-        .run(key, JSON.stringify(content), now);
+        .run(key, JSON.stringify(content), actor, now);
     })();
   }
   for (const portal of EXAM_PORTALS) {

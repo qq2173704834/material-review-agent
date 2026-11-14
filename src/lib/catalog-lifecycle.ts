@@ -4,6 +4,7 @@ interface CatalogRecord {
   status: string;
   content: {
     kind: string;
+    sourceType?: string;
     category: string;
     region: string;
     disposition: string;
@@ -29,6 +30,7 @@ export function catalogLifecycle(
     (entry) =>
       entry.status === "published" &&
       entry.content.kind === "knowledge" &&
+      entry.content.sourceType !== "非官方参考" &&
       entry.content.category === category &&
       (entry.content.region === "全国" || entry.content.region === region) &&
       entry.content.disposition === "现行" &&

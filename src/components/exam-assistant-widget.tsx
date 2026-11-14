@@ -261,6 +261,7 @@ function AssistantPanel(): ReactElement {
                   <details key={citation.id}>
                     <summary>
                       {citation.title} · v{citation.version}
+                      {citation.sourceType === "非官方参考" && " · 非官方参考，政策待核实"}
                     </summary>
                     <blockquote className="whitespace-pre-wrap">{citation.quote}</blockquote>
                     <p>

@@ -92,3 +92,9 @@
 | PORT-14.A2 | 本地工程核对通过 | 每天更新用可控时钟/来源验证无新增、重复、更正、撤回、失败、停机和补查；热门冷启动及低数据量有真实展示，不靠插入虚假热度通过验收。                                                 | src/lib/server/exam-collector.ts；src/lib/portal-feed.ts                                      | tests/unit/collector-daily.test.mjs；tests/platform-e2e/deadline.spec.ts                                                       | 本地工程范围已核对；官方全量事实和独立人工效果不在此项替代验收。                                                                         |
 | PORT-14.A3 | 本地工程核对通过 | 知识问答用独立可追溯样例验证引用、日期/地区正确性、未知/冲突处理、学习建议标识及账号隔离；模拟接口与真实模型分别记录，效果门槛后续按样本确认，不承诺固定准确率。                  | tests/platform-boundaries/portal.spec.ts；tests/assistant-e2e/assistant.spec.ts               | docs/portal-implementation.md；docs/product-acceptance.md                                                                      | ENG-066：5题固定样本逐题官方原文/Python结果复核，保留首次失败与修正；见docs/assistant-quality-v2-review.md，不推断统计准确率或学生体验。 |
 | PORT-14.A4 | 本地工程核对通过 | 推荐与自动预审覆盖多目标、不感兴趣、关闭个性化/自动开关、重复触发、限额和旧版本复检；每条状态关联实际证据，原始114条或CAP/REL通过不能替代这56条验收。                             | src/lib/server/goal-review.ts；src/lib/server/learning-store.ts                               | tests/platform-boundaries/portal.spec.ts；tests/unit/goal-review-policy.test.mjs                                               | 本地工程范围已核对；官方全量事实和独立人工效果不在此项替代验收。                                                                         |
+
+## ENG-069 非官方来源补充
+
+用户已允许缺少官方原文时以非官方资料补充前四项参考覆盖。现已支持来源类型、管理员维护、目录/详情/助手显著标识、官方优先与非官方政策仅检索提示；单靠第三方不能确定目录停办/更名或个人报考结论。
+
+本批3条资产评估师2026非官方转载短引用，分别覆盖学生报名、成绩周期与获证学历/现场审核；3/3命中实际转载原文，不计入81条官方核验。候选表20类部分核对、19类待核对；尚未覆盖的类别不因规则调整视为已完成，83/88统计不变。

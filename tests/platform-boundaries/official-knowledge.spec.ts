@@ -150,3 +150,67 @@ test("北京2026资格原文保留地区年份，其他地区或考期不引用�
     expect(other.citations).toHaveLength(0);
   }
 });
+
+test("非官方资料显著标识、政策仅参考且不能单独改变举办状态", async ({ actors, page }) => {
+  const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
+  const secondary = entries.find(
+    (entry: { content: { sourceType?: string; category: string } }) =>
+      entry.content.sourceType === "非官方参考" && entry.content.category === "valuation",
+  );
+  expect(secondary).toBeTruthy();
+  await page.context().addCookies((await actors.student.api.storageState()).cookies);
+  await page.goto(`/learn/${secondary.id}`);
+  await expect(page.getByRole("note")).toContainText("非官方参考");
+  await page.goto("/exams?category=valuation#exam-directory");
+  const facts = page.getByTestId("exam-facts-valuation");
+  await facts.locator("summary").click();
+  await expect(facts.getByText("非官方参考 · 政策待核实").first()).toBeVisible();
+  const response = await actors.student.api.post("/api/assistant", {
+    data: {
+      requestId: randomUUID(),
+      question: "2026年资产评估师的学生报名条件与获证条件是什么？",
+      allowExternal: true,
+    },
+  });
+  expect(response.status()).toBe(200);
+  const answer = await response.json();
+  expect(answer).toMatchObject({
+    kind: "需补充信息",
+    mode: "retrieval",
+    usage: { modelCall: null },
+  });
+  expect(answer.warning).toContain("非官方参考");
+  expect(answer.citations.length).toBeGreaterThan(0);
+  expect(
+    answer.citations.every((c: { sourceType?: string }) => c.sourceType === "非官方参考"),
+  ).toBe(true);
+  const bad = await actors.admin.api.post("/api/admin/learning", {
+    data: {
+      action: "draft",
+      id: secondary.id,
+      version: secondary.version,
+      content: { ...secondary.content, catalogStatus: "停办", catalogEffectiveAt: "2026-11-14" },
+    },
+  });
+  expect(bad.status()).toBe(400);
+  const db = database();
+  try {
+    const key = randomUUID();
+    const content = { ...secondary.content, category: "ncre", title: "合成第三方NCRE资格参考" };
+    db.prepare(
+      "INSERT INTO portal_content(id,kind,status,version,published_version,updated_at) VALUES (?,'knowledge','published',1,1,?)",
+    ).run(key, new Date().toISOString());
+    db.prepare(
+      "INSERT INTO portal_content_versions(content_id,version,payload,actor,created_at) VALUES (?,1,?,'test',?)",
+    ).run(key, JSON.stringify(content), new Date().toISOString());
+    const official = await actors.student.api.post("/api/assistant", {
+      data: { requestId: randomUUID(), question: "2026年全国计算机等级考试的报名条件是什么？" },
+    });
+    const primary = await official.json();
+    expect(official.status()).toBe(200);
+    expect(primary.citations.length).toBeGreaterThan(0);
+    expect(primary.citations.some((c: { id: string }) => c.id === key)).toBe(false);
+  } finally {
+    db.close();
+  }
+});

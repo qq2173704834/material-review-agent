@@ -1,0 +1,31 @@
+{
+  "results": [
+    {
+      "key": "valuation2026-eligibility",
+      "sourceType": "非官方参考",
+      "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
+      "success": true,
+      "checkedAt": "2026-11-14T14:08:12.271Z",
+      "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
+      "scope": "仅核对第三方转载原文；不计官方事实核验。"
+    },
+    {
+      "key": "valuation2026-score",
+      "sourceType": "非官方参考",
+      "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
+      "success": true,
+      "checkedAt": "2026-11-14T14:08:12.271Z",
+      "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
+      "scope": "仅核对第三方转载原文；不计官方事实核验。"
+    },
+    {
+      "key": "valuation2026-certificate",
+      "sourceType": "非官方参考",
+      "url": "https://www.chinaacc.com/zichanpinggushi/ksdt/ji20260326173056.shtml",
+      "success": true,
+      "checkedAt": "2026-11-14T14:08:12.271Z",
+      "sourceSha256": "20877ff1090042774c4ca2baafba43610730cf606af7e7b4b24dff6508a34678",
+      "scope": "仅核对第三方转载原文；不计官方事实核验。"
+    }
+  ]
+}

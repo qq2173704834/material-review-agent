@@ -30,6 +30,12 @@ export default async function Detail({
         <p>
           {content.author} · v{entry.version} · {content.checkedAt}核查 · {content.disposition}
         </p>
+        {content.sourceType === "非官方参考" && (
+          <p role="note" className="rounded border border-amber-600 p-3">
+            非官方参考 ·
+            考试政策待官方核实。可用于了解考试与学习规划，不作为确定报名、个人资格或注册执业依据。
+          </p>
+        )}
         <p>{content.scope}</p>
         {content.summary && (
           <p className="rounded border p-3 text-sm text-muted-foreground">{content.summary}</p>
