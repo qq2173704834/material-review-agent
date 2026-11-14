@@ -17,6 +17,7 @@ export const noticeInputSchema = z
     organizer: z.string().trim().min(1).max(200),
     publishedAt: z.string().max(40),
     text: z.string().trim().min(1).max(200000),
+    textScope: z.enum(["全文", "摘录"]).optional(),
     summary: z.string().max(10000).default(""),
     audience: z.string().max(3000).default(""),
     timeline: z

@@ -84,3 +84,9 @@ pnpm exec playwright show-report playwright-report/boundaries --host 127.0.0.1
 边界套件用3132端口的生产构建，强制模拟模型、真实账号认证、关闭采集调度，无外网或真实模型调用。每次命令在`.local-data/platform-boundary-e2e/<运行标识>/`创建独立数据库；配置和SQL辅助均检查目录边界，不重置用户数据。少数容量、长历史、限频窗口和会话数量场景直接构造隔离库前置条件，业务行为仍通过真实HTTP接口或浏览器断言，不将这些种子记作采集成功。
 
 HTML报告在`playwright-report/boundaries/`；失败截图和轨迹在`test-results/platform-boundaries/`。新套件已加入GitHub Actions工作流；本轮执行的是本地检查，未宣称远程CI运行成功。覆盖与缺陷复现见[测试扩展记录](../docs/test-expansion-2026-11-13.md)，人工、扩源与上线专项状态继续以原验收表为准。
+
+## 本轮新增回归（ENG-047）
+
+`pnpm build`后执行`pnpm test:platform`，现共8条平台测试。`identity.spec.ts`覆盖同昵称账号区分、目标/反馈隔离、修改昵称刷新、实际退出/登录切换、匿名门禁和未加载JS时表单禁止提交；`deadline.spec.ts`覆盖首页/列表/详情/收藏的截止提示、仅日期精度、成绩状态、摘录提示、管理员入口、手机无溢出以及虚拟时间跨截止后的状态与倒计时同步变化。
+
+这些测试只使用`.local-data/platform-e2e`及其合成账号。独立专项服务可使用环境变量`REVIEW_POLISH_TEST_DATA_DIR`指定名为`polish-e2e`的隔离目录；不指向真实用户数据库。截图位于忽略的`work/polish-desktop.png`、`work/polish-mobile.png`。

@@ -1,5 +1,6 @@
 import { BookOpen, ClipboardCheck, LayoutDashboard, Settings2 } from "lucide-react";
 import Link from "next/link";
+import { AccountNavigation } from "@/components/account-navigation";
 
 import { cn } from "@/lib/utils";
 
@@ -55,26 +56,17 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
               href={href}
               aria-current={activePage === page ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors",
+                "flex flex-col items-center gap-1 rounded-lg px-2 py-3 text-sm transition-colors sm:flex-row sm:gap-3 sm:px-3",
                 activePage === page
                   ? "bg-primary/8 font-medium text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <Icon className="size-4" aria-hidden="true" />
-              <span className="hidden sm:inline">{title}</span>
-              <span className="sr-only sm:hidden">{title}</span>
+              <span className="text-[10px] sm:text-sm">{title}</span>
             </Link>
           ))}
-          <Link href="/admin/exams" className="block px-3 py-3 text-xs text-muted-foreground">
-            内容管理
-          </Link>
-          <Link href="/admin/learning" className="block px-3 py-3 text-xs text-muted-foreground">
-            学习与知识管理
-          </Link>
-          <Link href="/access" className="block px-3 py-3 text-xs text-muted-foreground">
-            账号与访问身份
-          </Link>
+          <AccountNavigation />
         </nav>
       </aside>
 

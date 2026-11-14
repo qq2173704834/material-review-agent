@@ -3,10 +3,12 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
+import { requestTime } from "@/lib/server/request-time";
 import { ExamActions } from "@/components/exam-actions";
 import { CATEGORY_LABELS, TIMELINE_LABELS } from "@/domain/exam-catalog";
 import { sessionAccount } from "@/lib/server/account-auth";
-import { favorites, notice, publishedHistory, registrationState } from "@/lib/server/exam-store";
+import { favorites, notice, publishedHistory } from "@/lib/server/exam-store";
 export const dynamic = "force-dynamic";
 export default async function Page({
   params,
@@ -14,6 +16,7 @@ export default async function Page({
   params: Promise<{ noticeId: string }>;
 }): Promise<ReactElement> {
   const { noticeId } = await params;
+  const now = await requestTime();
   const item = notice(noticeId);
   if (!item) notFound();
   const account = sessionAccount(new Request("http://local", { headers: await headers() }));
@@ -35,7 +38,18 @@ export default async function Page({
           <p>
             {content.organizer} · 发布：{content.publishedAt || "待核实"} · 公告v{item.version}
           </p>
-          <p>{registrationState(content)}</p>
+          <ExamStatus
+            disposition={content.disposition}
+            timeline={content.timeline}
+            stage={content.stage}
+            initialNow={now}
+          />
+          <RegistrationDeadline
+            disposition={content.disposition}
+            timeline={content.timeline}
+            stage={content.stage}
+            initialNow={now}
+          />
           <a
             href={item.canonical_url}
             target="_blank"
@@ -103,7 +117,14 @@ export default async function Page({
           )}
         </section>
         <section>
-          <h2 className="mb-3 text-xl font-semibold">原文快照</h2>
+          <h2 className="mb-3 text-xl font-semibold">
+            {content.textScope === "摘录" ? "原文摘录（非全文）" : "原文快照"}
+          </h2>
+          {content.textScope === "摘录" && (
+            <p className="mb-3 text-sm text-muted-foreground">
+              以下仅保留已核验的部分条款，不覆盖全部资格或考试要求，请同时阅读官方原文。
+            </p>
+          )}
           <pre className="max-h-[800px] overflow-auto rounded border p-5 font-sans text-sm leading-7 whitespace-pre-wrap">
             {content.text}
           </pre>

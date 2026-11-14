@@ -60,6 +60,11 @@ export function StudentGoals({
         可同时关注不同考试；专业、考期和地区条件仍以当期公告为准。
       </p>
       <div className="grid gap-3 md:grid-cols-2">
+        {!goals.length && (
+          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground md:col-span-2">
+            还没有考试目标。展开下方“添加考试目标”，或从考试中心选择公告，即可开始记录备考进度。
+          </p>
+        )}
         {goals.map((goal) => (
           <article key={goal.id} className="space-y-2 rounded-xl border p-4">
             <h3 className="font-semibold">

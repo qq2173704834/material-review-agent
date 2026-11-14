@@ -1,5 +1,7 @@
 import { savedLearningItems } from "@/lib/server/learning-store";
 import { LearningActions } from "@/components/learning-actions";
+import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
+import { requestTime } from "@/lib/server/request-time";
 import { isUpcoming } from "@/lib/portal-feed";
 import { StudentGoals } from "@/components/student-goals";
 import { studentGoals } from "@/lib/server/student-goals";
@@ -11,7 +13,7 @@ import { headers } from "next/headers";
 import { AppShell } from "@/components/app-shell";
 import { ExamActions, LinkVersionActions } from "@/components/exam-actions";
 import { sessionAccount } from "@/lib/server/account-auth";
-import { favorites, notice, registrationState } from "@/lib/server/exam-store";
+import { favorites, notice } from "@/lib/server/exam-store";
 import { platformDb } from "@/lib/server/platform-db";
 import { getReviewStore } from "@/lib/server/review-store";
 export const dynamic = "force-dynamic";
@@ -22,6 +24,7 @@ export default async function Page({
 }): Promise<ReactElement | null> {
   const account = sessionAccount(new Request("http://local", { headers: await headers() }));
   if (!account) redirect("/login?next=%2Fme");
+  const now = await requestTime();
   const filters = await searchParams;
   const goals = studentGoals(account.id);
   const feedback = platformDb()
@@ -77,6 +80,12 @@ export default async function Page({
             </Link>
           </div>
         </header>
+        <StudentGoals
+          goals={goals}
+          notices={listNotices()}
+          newCategory={filters.newCategory}
+          noticeId={filters.noticeId}
+        />
         <section className="space-y-2">
           <h2 className="font-semibold">我的内容反馈</h2>
           {feedback.length ? (
@@ -127,12 +136,6 @@ export default async function Page({
             <p>暂无自动预审执行。未开启时可手动审查。</p>
           )}
         </section>
-        <StudentGoals
-          goals={goals}
-          notices={listNotices()}
-          newCategory={filters.newCategory}
-          noticeId={filters.noticeId}
-        />
         <Link href="/tasks" className="inline-block underline">
           历史与通用材料预审任务
         </Link>
@@ -175,8 +178,20 @@ export default async function Page({
               </h3>
               <p>
                 {item.changed ? "公告已更新 / 状态变化，请核对" : "已阅当前版本"} · v{item.version}{" "}
-                · {registrationState(item.content)}
+                ·{" "}
+                <ExamStatus
+                  disposition={item.withdrawn ? "公告已撤回" : item.content.disposition}
+                  timeline={item.content.timeline}
+                  stage={item.content.stage}
+                  initialNow={now}
+                />
               </p>
+              <RegistrationDeadline
+                disposition={item.withdrawn ? "公告已撤回" : item.content.disposition}
+                timeline={item.content.timeline}
+                stage={item.content.stage}
+                initialNow={now}
+              />
               {item.withdrawn && (
                 <p>
                   公告已撤回，收藏和原任务版本保留。

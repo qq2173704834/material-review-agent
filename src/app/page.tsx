@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { examCardState } from "@/lib/exam-card-state";
+import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { AppShell } from "@/components/app-shell";
@@ -96,13 +97,11 @@ export default async function Home({
         return item ? [item] : [];
       }),
     });
-  const selected = sections.find((section) => section.id === filters.tab) ?? sections[0]!;
-  const tones = {
-    green: "bg-emerald-500",
-    blue: "bg-blue-500",
-    amber: "bg-amber-500",
-    gray: "bg-slate-400",
-  };
+  const defaultSection = sections[0]!.items.length
+    ? sections[0]!
+    : (sections.find((section) => section.id === "exam" && section.items.length) ??
+      sections.find((section) => section.id === "latest")!);
+  const selected = sections.find((section) => section.id === filters.tab) ?? defaultSection;
   return (
     <AppShell activePage="home">
       <div className="space-y-8">
@@ -124,16 +123,19 @@ export default async function Home({
             </Link>
           </div>
         </header>
-        <section className="rounded-xl border p-4 text-sm" aria-label="每日更新状态">
-          <p>
-            北京时间 {beijingDay()} · {daily?.message ?? "今日更新检查尚未完成；只展示已审核信息。"}
+        <details className="rounded-xl border p-4 text-sm" aria-label="每日更新状态">
+          <summary className="cursor-pointer text-muted-foreground">
+            已收录{items.length}条公告 · 北京时间 {beijingDay()} · 查看更新情况
+          </summary>
+          <p className="mt-3">
+            {daily?.message ?? "今日自动检查尚未完成；目前展示已核验收录的信息。"}
           </p>
           <p className="mt-2 text-muted-foreground">
             已启用{sourceList.filter((source) => source.enabled).length}个来源；
             {sourceList.filter((source) => source.error).length}
             个来源存在失败或部分结果。每日检查不等于每天都有新公告。
           </p>
-        </section>
+        </details>
         <section className="space-y-5" aria-label="近期考试">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">近期考试</h2>
@@ -177,31 +179,26 @@ export default async function Home({
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {selected.items.slice(0, 12).map((item) => {
-                  const state = examCardState(item.content, now);
                   return (
                     <article
                       key={item.id}
-                      className="flex min-h-60 flex-col rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md sm:aspect-square"
-                      aria-label={`${item.content.title}，${state.label}`}
+                      className="flex min-h-60 flex-col rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md sm:aspect-square sm:min-h-[22rem]"
+                      aria-label={item.content.title}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="rounded-md bg-primary/5 px-2 py-1 text-xs font-medium text-primary">
                           {CATEGORY_LABELS[item.content.category]}
                         </span>
-                        <span
-                          className="inline-flex shrink-0 items-center gap-1.5 text-xs"
-                          title={state.detail}
-                        >
-                          <span
-                            aria-hidden="true"
-                            className={`size-2 rounded-full ${tones[state.tone]}`}
-                          />
-                          {state.label}
-                        </span>
+                        <ExamStatus
+                          disposition={item.content.disposition}
+                          timeline={item.content.timeline}
+                          stage={item.content.stage}
+                          initialNow={now}
+                        />
                       </div>
-                      <h3 className="mt-4 line-clamp-3 font-semibold leading-6">
+                      <h3 className="mt-4 line-clamp-3 shrink-0 font-semibold leading-6">
                         <Link
                           href={`/exams/${item.id}`}
                           className="hover:text-primary"
@@ -213,9 +210,15 @@ export default async function Home({
                       <p className="mt-2 text-xs text-muted-foreground">
                         {item.content.region} · {item.content.edition}
                       </p>
-                      <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                        {state.detail}
+                      <p className="mt-3 line-clamp-2 shrink-0 text-xs leading-5 text-muted-foreground">
+                        {item.content.summary || "资格条件与具体安排请核对官方原文。"}
                       </p>
+                      <RegistrationDeadline
+                        disposition={item.content.disposition}
+                        timeline={item.content.timeline}
+                        stage={item.content.stage}
+                        initialNow={now}
+                      />
                       <div className="mt-auto flex items-center justify-between gap-2 pt-5 text-sm">
                         <Link
                           href={`/exams/${item.id}`}

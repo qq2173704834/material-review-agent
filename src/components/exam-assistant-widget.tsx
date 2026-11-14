@@ -126,7 +126,7 @@ export function ExamAssistantWidget(): ReactElement | null {
           <circle cx="32" cy="25" r="3" />
           <path d="M20 33Q25 38 30 33" fill="none" stroke="#235578" strokeWidth="2" />
         </svg>
-        <span>考试学习助手</span>
+        <span className="hidden sm:inline">考试学习助手</span>
       </button>
       {open && (
         <section

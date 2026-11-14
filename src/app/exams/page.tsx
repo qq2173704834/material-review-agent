@@ -1,4 +1,6 @@
 import { ExamDirectory } from "@/components/exam-directory";
+import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
+import { requestTime } from "@/lib/server/request-time";
 import { matchesExamSearch } from "@/lib/exam-discovery";
 import provincialSources from "@/domain/provincial-exam-sources.json";
 import type { ReactElement } from "react";
@@ -11,12 +13,7 @@ import {
   EXAM_REGIONS,
   EXAM_STAGES,
 } from "@/domain/exam-catalog";
-import {
-  listNotices,
-  matchesExamCategory,
-  registrationState,
-  sources,
-} from "@/lib/server/exam-store";
+import { listNotices, matchesExamCategory, sources } from "@/lib/server/exam-store";
 export const dynamic = "force-dynamic";
 export default async function Page({
   searchParams,
@@ -24,6 +21,7 @@ export default async function Page({
   searchParams: Promise<Record<string, string | undefined>>;
 }): Promise<ReactElement> {
   const filters = await searchParams;
+  const now = await requestTime();
   const all = listNotices();
   const sourceList = sources();
   const results = all.filter(
@@ -182,7 +180,18 @@ export default async function Page({
                   {item.content.title}
                 </Link>
               </h2>
-              <p className="text-sm">{registrationState(item.content)}</p>
+              <ExamStatus
+                disposition={item.content.disposition}
+                timeline={item.content.timeline}
+                stage={item.content.stage}
+                initialNow={now}
+              />
+              <RegistrationDeadline
+                disposition={item.content.disposition}
+                timeline={item.content.timeline}
+                stage={item.content.stage}
+                initialNow={now}
+              />
               <p className="text-xs text-muted-foreground">
                 发布：{item.content.publishedAt || "待核实"} · {item.source_name} · 最近成功核查：
                 {item.last_success || "手工录入，未自动核查"}

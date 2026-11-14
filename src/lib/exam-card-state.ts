@@ -1,5 +1,6 @@
 import { beijingDay, nodeTimestamp } from "./portal-feed.ts";
 interface ExamSchedule {
+  stage?: string;
   disposition: string;
   timeline: Array<{ label: string; value: string }>;
 }
@@ -19,6 +20,17 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
       detail: "请以最新官方处置公告为准",
       current: false,
     };
+  if (content.stage === "成绩") {
+    const resultDate = content.timeline.find((node) => node.label === "成绩")?.value;
+    const isFuture = !!resultDate && nodeTimestamp(resultDate) > now;
+    return {
+      kind: "upcoming",
+      label: isFuture ? "待公布成绩" : "成绩查询",
+      tone: "blue",
+      detail: isFuture ? `成绩公布：${resultDate}` : "成绩或证书查询公告，请按原文指引查询",
+      current: false,
+    };
+  }
   const start = content.timeline.find((node) => node.label === "报名开始")?.value ?? "",
     end = content.timeline.find((node) => node.label === "报名截止")?.value ?? "";
   const startTime = nodeTimestamp(start),

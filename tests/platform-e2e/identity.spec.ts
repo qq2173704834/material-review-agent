@@ -40,6 +40,8 @@ test("BUG-025 同名昵称不混淆登录账号，目标与反馈按会话隔离
     await pageB.goto("/me");
     await expect(pageA.getByLabel("当前登录身份")).toContainText(alice);
     await expect(pageB.getByLabel("当前登录身份")).toContainText(bob);
+    await expect(pageB.getByRole("link", { name: "账号设置", exact: true })).toBeVisible();
+    await expect(pageB.getByRole("link", { name: "内容管理", exact: true })).toHaveCount(0);
     await expect(pageA.getByLabel("当前登录身份")).toContainText("昵称：test@123");
     await expect(pageA.getByRole("heading", { name: /A账号专属考试目标/ })).toBeVisible();
     await expect(pageB.getByRole("heading", { name: /A账号专属考试目标/ })).toHaveCount(0);
