@@ -14,7 +14,7 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
   page,
 }) => {
   const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
-  expect(officialKnowledge.entries).toHaveLength(15);
+  expect(officialKnowledge.entries).toHaveLength(27);
   for (const record of officialKnowledge.entries) {
     const id = createHash("sha256")
       .update("official-knowledge:" + record.key)
@@ -27,6 +27,14 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
     });
   }
   await page.context().addCookies((await actors.student.api.storageState()).cookies);
+  await page.goto("/exams?category=teacher#exam-directory");
+  const facts = page.getByTestId("exam-facts-teacher");
+  await facts.locator("summary").click();
+  await expect(facts.getByText("通用介绍，非当期公告", { exact: false }).first()).toBeVisible();
+  await expect(
+    facts.getByRole("link", { name: "教师资格考试合格证明与认定", exact: true }),
+  ).toBeVisible();
+  await expect(facts.getByText(/不是个人资格结论/)).toBeVisible();
   await page.goto("/learn?q=NCRE官方考纲");
   await page.getByRole("link", { name: "NCRE官方考纲与教材目录", exact: true }).click();
   await expect(page.getByText(/PDF大纲未下载解析/)).toBeVisible();

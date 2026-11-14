@@ -55,7 +55,17 @@ export function ExamDirectory({
                       source.category === id || (id === "cet6" && source.category === "cet4"),
                   ),
                   portals = EXAM_PORTALS.filter((portal) => portal.category === id),
-                  lifecycle = catalogLifecycle(knowledge, id, region);
+                  lifecycle = catalogLifecycle(knowledge, id, region),
+                  facts = knowledge
+                    .filter(
+                      (entry) =>
+                        entry.content.category === id &&
+                        entry.content.kind === "knowledge" &&
+                        !entry.content.catalogStatus &&
+                        entry.content.disposition === "现行" &&
+                        (entry.content.region === "全国" || entry.content.region === region),
+                    )
+                    .slice(0, 3);
                 return (
                   <li
                     key={id}
@@ -92,6 +102,35 @@ export function ExamDirectory({
                             : "来源待核验接入"}
                     </p>
                     <p className="text-muted-foreground">{profile.audience}</p>
+                    {facts.length > 0 && (
+                      <details
+                        className="rounded-md bg-muted/40 p-2"
+                        data-testid={`exam-facts-${id}`}
+                      >
+                        <summary className="cursor-pointer">报考与证书资料 · 核对适用范围</summary>
+                        <ul className="mt-2 space-y-3">
+                          {facts.map((entry) => (
+                            <li key={entry.id}>
+                              <Link className="underline" href={`/learn/${entry.id}`}>
+                                {entry.content.title}
+                              </Link>
+                              <p className="mt-1">
+                                {entry.content.text.slice(0, 240)}
+                                {entry.content.text.length > 240 ? "…" : ""}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {entry.content.region} ·{" "}
+                                {entry.content.edition || "通用介绍，非当期公告"} · 核验
+                                {entry.content.checkedAt} · v{entry.version}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-2 text-xs">
+                          以上为资料摘录，不是个人资格结论。完整范围、官方原文和阅读边界见详情。
+                        </p>
+                      </details>
+                    )}
                     {sources.some((source) => source.error) && (
                       <p className="text-amber-700">
                         {sources.filter((source) => source.failures > 0).length}个来源最近采集失败，

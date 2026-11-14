@@ -453,6 +453,366 @@
         "fetchedAt": "2026-11-14T10:59:02.247Z",
         "publishedAt": "2016-12-08"
       }
+    },
+    {
+      "key": "wsk-audience",
+      "content": {
+        "title": "WSK用途与考试对象",
+        "category": "wsk",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://wsk.neea.edu.cn/html1/folder/1507/1644-1.htm",
+        "text": "全国外语水平考试（WSK）是为了鉴定非外语专业人员的外语水平而设置的考试，其成绩主要用于选拔国家公派出国留学人员。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "全国外语水平考试（WSK）是为了鉴定非外语专业人员的外语水平而设置的考试，其成绩主要用于选拔国家公派出国留学人员。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "879f9e350de4b506f136ecec63098a4a515256561d3b13158afd17112f0e3dae",
+        "fetchedAt": "2026-11-14T11:26:03.013Z"
+      }
+    },
+    {
+      "key": "wsk-subjects",
+      "content": {
+        "title": "WSK语种设置",
+        "category": "wsk",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://wsk.neea.edu.cn/html1/folder/1507/1644-1.htm",
+        "text": "全国外语水平考试设英语（PETS-5）、法语（TNF）、德语（NTD）、日语（NNS）和俄语（ТПРЯ）五个科目。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "全国外语水平考试设英语（PETS-5）、法语（TNF）、德语（NTD）、日语（NNS）和俄语（ТПРЯ）五个科目。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "879f9e350de4b506f136ecec63098a4a515256561d3b13158afd17112f0e3dae",
+        "fetchedAt": "2026-11-14T11:26:03.013Z"
+      }
+    },
+    {
+      "key": "wsk-certificates",
+      "content": {
+        "title": "WSK合格证书要求",
+        "category": "wsk",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://wsk.neea.edu.cn/html1/folder/1507/1644-1.htm",
+        "text": "口试、笔试分数均合格即可获得《全国英语等级考试五级合格证书》（英语科目）、《全国外语水平考试合格证书》（小语种科目）。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "口试、笔试分数均合格即可获得《全国英语等级考试五级合格证书》（英语科目）、《全国外语水平考试合格证书》（小语种科目）。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "879f9e350de4b506f136ecec63098a4a515256561d3b13158afd17112f0e3dae",
+        "fetchedAt": "2026-11-14T11:26:03.013Z"
+      }
+    },
+    {
+      "key": "ccpt-audience",
+      "content": {
+        "title": "书画等级考试对象",
+        "category": "ccpt",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ccpt.neea.edu.cn/html1/folder/1507/2036-1.htm",
+        "text": "书画等级考试是我院主办、面向全国书画学习者的教育类测评系统。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "书画等级考试是我院主办、面向全国书画学习者的教育类测评系统。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "f876c074ad275f4de021526ec75f4657e31cd5f282ac9c0e98f805dd87390aea",
+        "fetchedAt": "2026-11-14T11:26:03.053Z"
+      }
+    },
+    {
+      "key": "ccpt-certificate",
+      "content": {
+        "title": "书画等级考试证书说明",
+        "category": "ccpt",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ccpt.neea.edu.cn/html1/folder/1507/2036-1.htm",
+        "text": "考试合格者可获得由教育部教育考试院统一颁发的证书，教育部教育考试院负责考试结果的解释。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "考试合格者可获得由教育部教育考试院统一颁发的证书，教育部教育考试院负责考试结果的解释。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "f876c074ad275f4de021526ec75f4657e31cd5f282ac9c0e98f805dd87390aea",
+        "fetchedAt": "2026-11-14T11:26:03.053Z"
+      }
+    },
+    {
+      "key": "ccpt-subjects",
+      "content": {
+        "title": "书画等级考试科目",
+        "category": "ccpt",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ccpt.neea.edu.cn/html1/folder/1507/2036-1.htm",
+        "text": "书画等级考试共开考毛笔书法、硬笔书法、国画花鸟、国画山水、国画人物、素描、动漫画、色彩8个科目，具体设置见下表。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "书画等级考试共开考毛笔书法、硬笔书法、国画花鸟、国画山水、国画人物、素描、动漫画、色彩8个科目，具体设置见下表。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "f876c074ad275f4de021526ec75f4657e31cd5f282ac9c0e98f805dd87390aea",
+        "fetchedAt": "2026-11-14T11:26:03.053Z"
+      }
+    },
+    {
+      "key": "mhk-audience",
+      "content": {
+        "title": "民族汉考考试对象",
+        "category": "mhk",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://mhk.neea.edu.cn/html1/folder/15073/13-1.htm",
+        "text": "少数民族国家通用语言文字学习者。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "少数民族国家通用语言文字学习者。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "5be10e0553a081429b4c79e3c1381aa92c98b1b80d5895f4043855c9b85367ab",
+        "fetchedAt": "2026-11-14T11:26:03.288Z"
+      }
+    },
+    {
+      "key": "mhk-levels",
+      "content": {
+        "title": "民族汉考等级及证书",
+        "category": "mhk",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://mhk.neea.edu.cn/html1/folder/15073/13-1.htm",
+        "text": "民族汉考从低到高分为互相衔接的四个等级。对经考试达到某一等级标准者，授予相应的等级证书。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "民族汉考从低到高分为互相衔接的四个等级。对经考试达到某一等级标准者，授予相应的等级证书。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "5be10e0553a081429b4c79e3c1381aa92c98b1b80d5895f4043855c9b85367ab",
+        "fetchedAt": "2026-11-14T11:26:03.288Z"
+      }
+    },
+    {
+      "key": "mhk-format",
+      "content": {
+        "title": "民族汉考考试形式",
+        "category": "mhk",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://mhk.neea.edu.cn/html1/folder/15073/13-1.htm",
+        "text": "“民族汉考”分为笔试和口试两部分。口试采用“人机对话”的方式在计算机上进行。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "“民族汉考”分为笔试和口试两部分。口试采用“人机对话”的方式在计算机上进行。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "5be10e0553a081429b4c79e3c1381aa92c98b1b80d5895f4043855c9b85367ab",
+        "fetchedAt": "2026-11-14T11:26:03.288Z"
+      }
+    },
+    {
+      "key": "teacher-region-education",
+      "content": {
+        "title": "教师资格报考学历需核对省级要求",
+        "category": "teacher",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ntce.neea.edu.cn/html1/folder/1507/1181-1.htm",
+        "text": "原则上应具备《教师法》规定的相应学历条件，并应符合本省确定并公布的学历要求。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "原则上应具备《教师法》规定的相应学历条件，并应符合本省确定并公布的学历要求。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "44f8bffb1c6ae3d40072d99311e113ece33a7799f9ee556d11842784f8377e69",
+        "fetchedAt": "2026-11-14T11:26:03.025Z"
+      }
+    },
+    {
+      "key": "teacher-written-validity",
+      "content": {
+        "title": "教师资格笔试成绩有效期",
+        "category": "teacher",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ntce.neea.edu.cn/html1/folder/1507/1181-1.htm",
+        "text": "笔试单科成绩两年有效。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "笔试单科成绩两年有效。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "44f8bffb1c6ae3d40072d99311e113ece33a7799f9ee556d11842784f8377e69",
+        "fetchedAt": "2026-11-14T11:26:03.025Z"
+      }
+    },
+    {
+      "key": "teacher-proof-validity",
+      "content": {
+        "title": "教师资格考试合格证明与认定",
+        "category": "teacher",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ntce.neea.edu.cn/html1/folder/1507/1181-1.htm",
+        "text": "教育部教育考试院为笔试、面试均合格考生，提供《中小学教师资格考试合格证明》。该证明是申请教师资格认定的必要条件，有效期3年。",
+        "summary": "公开官方介绍中的少量条款引用，非当期报名通知；页面未注明更新日期。学历、地区与证书用途应继续核对当期公告和使用单位要求，不代表已获报名或任职资格。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国通用介绍；2026-11-14核验，未证明当期报名开放。",
+        "reviewNote": "逐字核对公开官方介绍；仅少量引用与原站链接。MHK首页仍含2024历史日程，不作为本期日期；教师资格介绍含试点历史表述，不据此判断当前免试政策。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "教育部教育考试院为笔试、面试均合格考生，提供《中小学教师资格考试合格证明》。该证明是申请教师资格认定的必要条件，有效期3年。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "44f8bffb1c6ae3d40072d99311e113ece33a7799f9ee556d11842784f8377e69",
+        "fetchedAt": "2026-11-14T11:26:03.025Z"
+      }
     }
   ]
 }
