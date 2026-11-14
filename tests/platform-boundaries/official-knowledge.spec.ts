@@ -14,7 +14,7 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
   page,
 }) => {
   const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
-  expect(officialKnowledge.entries).toHaveLength(50);
+  expect(officialKnowledge.entries).toHaveLength(65);
   for (const record of officialKnowledge.entries) {
     const id = createHash("sha256")
       .update("official-knowledge:" + record.key)
@@ -118,5 +118,35 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
     );
   } finally {
     db.close();
+  }
+});
+
+test("北京2026资格原文保留地区年份，其他地区或考期不引用北京条件", async ({ actors }) => {
+  const local = await actors.student.api.post("/api/assistant", {
+    data: {
+      requestId: randomUUID(),
+      question: "北京2026年执业药师的岗位工作年限条件是什么？",
+      learning: false,
+      allowExternal: false,
+    },
+  });
+  expect(local.status()).toBe(200);
+  const answer = await local.json();
+  expect(answer.mode).toBe("mock");
+  expect(answer.citations.length).toBeGreaterThan(0);
+  expect(
+    answer.citations.every((c: { scope: string }) => c.scope.startsWith("北京 · 2026年 ·")),
+  ).toBe(true);
+  for (const question of [
+    "上海2026年执业药师的岗位工作年限条件是什么？",
+    "北京2027年执业药师的岗位工作年限条件是什么？",
+  ]) {
+    const response = await actors.student.api.post("/api/assistant", {
+      data: { requestId: randomUUID(), question, learning: false, allowExternal: false },
+    });
+    expect(response.status()).toBe(200);
+    const other = await response.json();
+    expect(other.kind).toBe("需补充信息");
+    expect(other.citations).toHaveLength(0);
   }
 });
