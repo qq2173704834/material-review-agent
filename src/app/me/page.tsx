@@ -1,3 +1,9 @@
+import { savedLearningItems } from "@/lib/server/learning-store";
+import { LearningActions } from "@/components/learning-actions";
+import { isUpcoming } from "@/lib/portal-feed";
+import { StudentGoals } from "@/components/student-goals";
+import { studentGoals } from "@/lib/server/student-goals";
+import { listNotices } from "@/lib/server/exam-store";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -8,9 +14,36 @@ import { favorites, notice, registrationState } from "@/lib/server/exam-store";
 import { platformDb } from "@/lib/server/platform-db";
 import { getReviewStore } from "@/lib/server/review-store";
 export const dynamic = "force-dynamic";
-export default async function Page(): Promise<ReactElement | null> {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}): Promise<ReactElement | null> {
   const account = sessionAccount(new Request("http://local", { headers: await headers() }));
   if (!account) return null;
+  const filters = await searchParams;
+  const goals = studentGoals(account.id);
+  const feedback = platformDb()
+    .prepare<[string], { id: string; kind: string; status: string; response: string }>(
+      "SELECT id,kind,status,response FROM portal_feedback WHERE user_id=? ORDER BY created_at DESC LIMIT 30",
+    )
+    .all(account.id);
+  const resources = savedLearningItems(account.id);
+  const jobs = platformDb()
+    .prepare<
+      [string],
+      {
+        id: string;
+        goal_id: string;
+        task_id: string;
+        status: string;
+        reason: string;
+        created_at: string;
+      }
+    >(
+      "SELECT id,goal_id,task_id,status,reason,created_at FROM portal_jobs WHERE user_id=? ORDER BY created_at DESC LIMIT 20",
+    )
+    .all(account.id);
   const items = favorites(account.id);
   const store = getReviewStore();
   const links = platformDb()
@@ -20,9 +53,10 @@ export default async function Page(): Promise<ReactElement | null> {
     >("SELECT * FROM exam_task_links WHERE user_id=?")
     .all(account.id);
   const nodes = items
+    .filter((item) => item.status !== "withdrawn" && item.content.disposition === "正常")
     .flatMap((item) =>
       item.content.timeline
-        .filter((point) => point.value)
+        .filter((point) => isUpcoming(point.value))
         .map((point) => ({ id: item.id, title: item.content.title, ...point })),
     )
     .sort((a, b) => a.value.localeCompare(b.value));
@@ -31,8 +65,69 @@ export default async function Page(): Promise<ReactElement | null> {
       <div className="space-y-7">
         <header>
           <h1 className="text-3xl font-semibold">我的考试工作台</h1>
-          <p className="mt-3">{account.nickname}，这里汇总你主动收藏的公告与关联预审任务。</p>
+          <p className="mt-3">
+            {account.nickname}，这里汇总你的考试目标、学习进度、收藏与材料准备。
+          </p>
         </header>
+        <section className="space-y-2">
+          <h2 className="font-semibold">我的内容反馈</h2>
+          {feedback.length ? (
+            feedback.map((item) => (
+              <p key={item.id}>
+                {item.kind} · {item.status} · {item.response || "等待管理员核对"}
+              </p>
+            ))
+          ) : (
+            <p>暂无反馈。</p>
+          )}
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">收藏的学习资料与更新</h2>
+          {resources.length ? (
+            resources.map((item) => (
+              <article key={item.id} className="rounded border p-3">
+                <Link href={`/learn/${item.id}`} className="underline">
+                  {item.content.title}
+                </Link>
+                <p>
+                  v{item.version} ·{" "}
+                  {item.status === "withdrawn"
+                    ? "已撤回，请核对来源"
+                    : item.seen
+                      ? "当前版本已看（不代表学习完成）"
+                      : "当前版本未读 / 有更新"}
+                </p>
+                <LearningActions id={item.id} saved seen={item.seen} />
+              </article>
+            ))
+          ) : (
+            <p>暂无学习资料收藏，可到学习页选择。</p>
+          )}
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">材料预审执行提示</h2>
+          {jobs.length ? (
+            jobs.map((job) => (
+              <p key={job.id}>
+                <Link href={`/me/goals/${job.goal_id}`} className="underline">
+                  查看对应目标
+                </Link>{" "}
+                · {job.created_at} · {job.status} · {job.reason}
+              </p>
+            ))
+          ) : (
+            <p>暂无自动预审执行。未开启时可手动审查。</p>
+          )}
+        </section>
+        <StudentGoals
+          goals={goals}
+          notices={listNotices()}
+          newCategory={filters.newCategory}
+          noticeId={filters.noticeId}
+        />
+        <Link href="/tasks" className="inline-block underline">
+          历史与通用材料预审任务
+        </Link>
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">收藏时间节点 · Asia/Shanghai</h2>
           {nodes.length ? (

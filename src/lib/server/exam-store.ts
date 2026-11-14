@@ -1,3 +1,4 @@
+import { EXAM_PORTALS } from "@/domain/exam-portals";
 import provincialSources from "@/domain/provincial-exam-sources.json";
 import "server-only";
 import { randomUUID } from "node:crypto";
@@ -84,6 +85,9 @@ const initialSources = [
     "https://www.neea.edu.cn/html1/folder/19093/4844-1.htm",
   ],
   ["pets", "中国教育考试网（综合考试入口）", "https://www.neea.edu.cn/"],
+  ...EXAM_PORTALS.filter((portal) => portal.collectionMode === "candidate").map(
+    (portal) => [portal.category, portal.name, portal.url] as const,
+  ),
 ] as const;
 export function sources(): ExamSource[] {
   const db = platformDb();

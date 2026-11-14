@@ -176,7 +176,7 @@ export function verifyFullBackup(directory) {
       throw new Error("备份文件完整性校验失败。");
   }
   for (const [name, maximum] of [
-    ["platform.sqlite", 3],
+    ["platform.sqlite", 4],
     ["reviews.sqlite", 22],
   ]) {
     if (!paths.has(name)) throw new Error("缺少数据库。");

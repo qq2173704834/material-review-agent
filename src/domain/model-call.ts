@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const modelCallSchema = z.object({
-  operation: z.enum(["connection_test", "rule_extraction", "material_review"]),
+  operation: z.enum(["connection_test", "rule_extraction", "material_review", "exam_assistant"]),
   provider: z.string().max(120),
   model: z.string().max(120),
   startedAt: z.string(),

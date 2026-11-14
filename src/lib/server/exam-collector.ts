@@ -1,3 +1,5 @@
+import { beijingDay } from "@/lib/portal-feed";
+import { classifyExamTitle } from "@/lib/exam-discovery";
 import "server-only";
 import { fetchPublicWebpage } from "./webpage-fetcher";
 import { officialUrl, saveDraft, sourceById, sources } from "./exam-store";
@@ -29,7 +31,7 @@ export async function collectSource(id: string): Promise<{ drafts: number; messa
             !/^(考试动态|考试大纲|成绩证明|成绩核查|报名流程|考试介绍)$/.test(link.name) &&
             !/科研课题|采购|少儿|义务教育|中考|普通高考/.test(link.name) &&
             (source.category !== "education-local" ||
-              /研究生|考研|推免|专升本|专接本|四六级|四、六级|四级|六级|计算机等级|教师资格|普通话|自学考试|同等学力|英语等级|职业资格/.test(
+              /研究生|考研|推免|专升本|专接本|四六级|四、六级|四级|六级|计算机|教师资格|普通话|自学考试|同等学力|英语等级|外语水平|书画|汉语水平|职业资格/.test(
                 link.name,
               )) &&
             new URL(link.url).hostname === new URL(source.url).hostname &&
@@ -52,20 +54,7 @@ export async function collectSource(id: string): Promise<{ drafts: number; messa
           detail.url,
           {
             title: detail.title || link.name,
-            category:
-              /六级/.test(link.name) && !/四/.test(link.name)
-                ? "cet6"
-                : /四级|四、六级|四六级/.test(link.name)
-                  ? "cet4"
-                  : /计算机等级/.test(link.name)
-                    ? "ncre"
-                    : /教师资格/.test(link.name)
-                      ? "teacher"
-                      : /硕士|研究生|考研/.test(link.name)
-                        ? "graduate"
-                        : /专升本|专接本/.test(link.name)
-                          ? "transfer"
-                          : (source.category as "cet4"),
+            category: classifyExamTitle(link.name + " " + detail.title, source.category),
             region: source.region as "全国",
             edition: "待管理员核对考期",
             year,
@@ -131,8 +120,23 @@ export async function collectorTick(): Promise<void> {
   if (ticking) return;
   ticking = true;
   try {
-    for (const source of sources()
-      .filter((s) => s.enabled && s.next_run <= Date.now())
+    const day = beijingDay(),
+      db = platformDb(),
+      enabled = sources().filter((source) => source.enabled);
+    db.prepare(
+      "INSERT OR IGNORE INTO portal_daily_runs(day,status,message,started_at) VALUES (?,'running','正在检查启用来源；新内容仍需审核发布。',?)",
+    ).run(day, new Date().toISOString());
+    const configured = db
+      .prepare<[string], { value: string }>("SELECT value FROM portal_settings WHERE key=?")
+      .get("daily-check-hour");
+    const hour = Number(configured?.value ?? 8),
+      nowHour = new Date(Date.now() + 8 * 3600000).getUTCHours();
+    for (const source of enabled
+      .filter(
+        (s) =>
+          s.next_run <= Date.now() ||
+          (nowHour >= hour && (!s.last_attempt || beijingDay(Date.parse(s.last_attempt)) !== day)),
+      )
       .slice(0, 2)) {
       try {
         await collectSource(source.id);
@@ -140,6 +144,37 @@ export async function collectorTick(): Promise<void> {
         /* Each failure is persisted, and other sources continue. */
       }
     }
+    const current = sources().filter((source) => source.enabled);
+    const checked = current.filter(
+      (source) => source.last_attempt && beijingDay(Date.parse(source.last_attempt)) === day,
+    );
+    const failures = checked.filter((source) => source.error);
+    const done = checked.length === current.length;
+    const count =
+      db
+        .prepare<[string, string], { count: number }>(
+          "SELECT COUNT(*) count FROM exam_notice_versions WHERE actor='collector' AND created_at>=? AND created_at<?",
+        )
+        .get(
+          new Date(Date.parse(day + "T00:00:00+08:00")).toISOString(),
+          new Date(Date.parse(day + "T00:00:00+08:00") + 86400000).toISOString(),
+        )?.count ?? 0;
+    const changes = count
+      ? `今日采集生成${count}个新增或变化版本，仍需审核。`
+      : "今日检查尚无新增或变化草稿；失败来源不代表没有新公告。";
+    const message =
+      (!current.length
+        ? "没有启用自动采集来源；今日未执行采集，保留已审核信息。"
+        : done
+          ? `今日已检查${checked.length}个来源，其中${failures.length}个有失败或部分异常。新增或变化内容仅保存草稿，未自动发布。`
+          : `今日已检查${checked.length}/${current.length}个启用来源；按来源间隔及失败退避继续检查，保留有效信息。`) +
+      (current.length ? changes : "");
+    db.prepare("UPDATE portal_daily_runs SET status=?,message=?,finished_at=? WHERE day=?").run(
+      !current.length ? "none" : done ? (failures.length ? "partial" : "success") : "running",
+      message,
+      done ? new Date().toISOString() : null,
+      day,
+    );
   } finally {
     ticking = false;
   }

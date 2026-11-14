@@ -1,230 +1,149 @@
-import { headers } from "next/headers";
-import { requestIdentity } from "@/lib/server/access-config";
-import {
-  ArrowRight,
-  FileCheck2,
-  FileSearch,
-  Files,
-  FolderOpen,
-  ListChecks,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
 import Link from "next/link";
-
-import { AppShell } from "@/components/app-shell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { getReviewStore } from "@/lib/server/review-store";
-import { annotateExecutions } from "@/lib/review-history";
-import { nextTaskAction } from "@/lib/task-flow";
-import { QuickGuide } from "@/components/quick-guide";
-import { DemoControls } from "@/components/demo-controls";
-
 import type { ReactElement } from "react";
-
-const workflowSteps = [
-  { title: "导入要求", description: "从本次通知中整理提交规范", icon: FileSearch },
-  { title: "匹配材料", description: "将文件与独立检查项关联", icon: Files },
-  { title: "逐项核验", description: "查看结论、原文与材料证据", icon: ListChecks },
-  { title: "整改复检", description: "更新材料，确认问题的变化", icon: RefreshCw },
-];
-
+import { AppShell } from "@/components/app-shell";
+import ReviewTaskHome from "@/components/review-task-home";
+import { isLegacyTestMode } from "@/lib/server/access-config";
+import { listNotices, registrationState, sources } from "@/lib/server/exam-store";
+import { platformDb } from "@/lib/server/platform-db";
+import { CATEGORY_LABELS } from "@/domain/exam-catalog";
+import { isUpcoming, beijingDay } from "@/lib/portal-feed";
 export const dynamic = "force-dynamic";
-
-export default async function TasksPage(): Promise<ReactElement> {
-  const identity = requestIdentity(new Request("http://localhost", { headers: await headers() }));
-  const tasks = getReviewStore()
-    .listTasks()
-    .filter((task) => getReviewStore().canAccessTask(task.id, identity ?? ""));
-  const taskStatuses = new Map(
-    tasks.map((task) => {
-      const store = getReviewStore();
-      const details = store.getTask(task.id);
-      const latest = details
-        ? annotateExecutions(
-            details,
-            store.listRuleSets(task.id),
-            store.listReviewExecutions(task.id),
-          )[0]
-        : undefined;
-      return [
-        task.id,
-        {
-          next: details ? nextTaskAction(details, latest) : null,
-          status: !latest
-            ? "尚未开始审查"
-            : latest.validity === "needs_recheck"
-              ? "待复检"
-              : latest.status === "running"
-                ? "正在审查"
-                : latest.status === "completed"
-                  ? "已有审查结果"
-                  : latest.status === "cancelled"
-                    ? "上次已取消"
-                    : "检查中断",
-          verdicts: latest
-            ? latest.results.reduce(
-                (counts, result) => ({ ...counts, [result.verdict]: counts[result.verdict] + 1 }),
-                {
-                  passed: 0,
-                  failed: 0,
-                  needs_confirmation: 0,
-                  unable_to_check: 0,
-                  not_applicable: 0,
-                },
-              )
-            : null,
-          total: latest?.results.length ?? 0,
-          unexecuted: latest?.unexecutedCount ?? 0,
-        },
-      ];
-    }),
+export default function Home(): ReactElement {
+  if (isLegacyTestMode()) return <ReviewTaskHome />;
+  const items = listNotices(),
+    sourceList = sources();
+  const recent = items.filter(
+    (item) =>
+      item.content.disposition === "正常" &&
+      item.content.timeline.some((node) => isUpcoming(node.value)),
   );
+  const latest = [...items].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const popular = platformDb()
+    .prepare<[], { notice_id: string; count: number }>(
+      "SELECT notice_id,COUNT(*) count FROM exam_favorites GROUP BY notice_id HAVING COUNT(*)>=3 ORDER BY count DESC LIMIT 12",
+    )
+    .all();
+  const daily = platformDb()
+    .prepare<[string], { status: string; message: string; finished_at: string }>(
+      "SELECT * FROM portal_daily_runs WHERE day=?",
+    )
+    .get(beijingDay());
+  const sections = [
+    {
+      title: "报名中",
+      description: "仅展示已核对完整起止时刻的公告，实际报名通道仍需原站核对。",
+      items: items.filter((item) => registrationState(item.content).startsWith("处于公布")),
+    },
+    {
+      title: "考试临近",
+      description: "未来30天内已公布考试节点，不推测未知日期。",
+      items: recent.filter((item) =>
+        item.content.timeline.some(
+          (node) => /考试|笔试|面试/.test(node.label) && isUpcoming(node.value),
+        ),
+      ),
+    },
+    {
+      title: "近期关注",
+      description: "未来30天内有已公布节点的考试，按近期公告展示。",
+      items: recent,
+    },
+    {
+      title: "即将截止",
+      description: "未来7天内公布的报名截止日期；具体时刻与通道以官方为准。",
+      items: recent.filter((item) =>
+        item.content.timeline.some(
+          (node) => node.label === "报名截止" && isUpcoming(node.value, Date.now(), 7),
+        ),
+      ),
+    },
+    {
+      title: "最近更新",
+      description: "已审核发布的公告版本；无新增时保留历史，不编造考试。",
+      items: latest,
+    },
+  ];
+  if (popular.length)
+    sections.unshift({
+      title: "大家在关注",
+      description: "至少3个账号实际收藏的公告，按收藏数排序，不代表报名人数。",
+      items: popular.flatMap((row) => {
+        const item = items.find((item) => item.id === row.notice_id);
+        return item ? [item] : [];
+      }),
+    });
   return (
-    <AppShell activePage="tasks">
-      <div className="flex flex-wrap items-start justify-between gap-5">
-        <div>
-          <div className="mb-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <span className="h-px w-5 bg-primary" /> 审查工作空间
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">我的审查任务</h1>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            把复杂的提交要求，变成有依据、可追踪的逐项核验。
+    <AppShell activePage="home">
+      <div className="space-y-8">
+        <header className="rounded-2xl bg-primary/5 p-7">
+          <p className="text-sm text-primary">为下一场考试做好准备</p>
+          <h1 className="my-3 text-3xl font-semibold">考试信息与学习，一站跟进</h1>
+          <p className="text-muted-foreground">
+            找到近期考试、设定目标、收集资料，遇到问题随时咨询右下角助手。
           </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <Button asChild>
-            <Link href="/tasks/new">
-              <Plus aria-hidden="true" />
-              新建审查任务
+          <div className="mt-5 flex flex-wrap gap-4">
+            <Link href="/exams" className="rounded bg-primary px-4 py-2 text-primary-foreground">
+              找考试
             </Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="mt-5">
-        <QuickGuide />
-      </div>
-      <details className="my-4">
-        <summary className="min-h-11 cursor-pointer text-sm text-primary">体验独立示例</summary>
-        <DemoControls autoRun forceMock />
-      </details>
-      {tasks.length > 0 ? (
-        <section
-          aria-labelledby="task-list-heading"
-          className="mt-8 overflow-hidden rounded-lg border border-border bg-card"
-        >
-          <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-            <h2 id="task-list-heading" className="text-sm font-semibold">
-              全部任务{" "}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">{tasks.length}</span>
-            </h2>
-            <Badge>本地保存</Badge>
+            <Link href="/me#goals" className="rounded border px-4 py-2">
+              我的考试目标
+            </Link>
+            <Link href="/learn" className="rounded border px-4 py-2">
+              开始学习
+            </Link>
           </div>
-          <ul className="divide-y divide-border">
-            {tasks.map((task) => (
-              <li key={task.id}>
-                <Link
-                  href={`/tasks/${task.id}?view=${taskStatuses.get(task.id)?.next?.view ?? "prepare"}`}
-                  className="flex min-w-0 flex-col gap-2 px-5 py-4 transition-colors hover:bg-muted/50 xl:flex-row xl:items-center xl:justify-between"
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium">{task.name}</span>
-                    <span className="mt-1 block truncate text-xs text-muted-foreground">
-                      {task.noticePreview.slice(0, 120) || "暂无通知内容"}
-                    </span>
-                  </span>
-                  <span className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span className="font-semibold text-primary">
-                      {taskStatuses.get(task.id)?.next?.label}
-                    </span>
-                    <span>{taskStatuses.get(task.id)?.status}</span>
-                    {taskStatuses.get(task.id)?.verdicts ? (
-                      <span>
-                        通过 {taskStatuses.get(task.id)?.verdicts?.passed} · 未通过{" "}
-                        {taskStatuses.get(task.id)?.verdicts?.failed} · 待确认{" "}
-                        {taskStatuses.get(task.id)?.verdicts?.needs_confirmation} · 无法检查{" "}
-                        {taskStatuses.get(task.id)?.verdicts?.unable_to_check} · 未执行{" "}
-                        {taskStatuses.get(task.id)?.unexecuted}
-                      </span>
-                    ) : null}
-                    <span>通知 v{task.noticeSourceVersion}</span>
-                    <time dateTime={task.latestUpdatedAt}>
-                      {new Date(task.latestUpdatedAt).toLocaleString("zh-CN", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </time>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        </header>
+        <section className="rounded-xl border p-4 text-sm" aria-label="每日更新状态">
+          <p>
+            北京时间 {beijingDay()} · {daily?.message ?? "今日更新检查尚未完成；只展示已审核信息。"}
+          </p>
+          <p className="mt-2 text-muted-foreground">
+            已启用{sourceList.filter((source) => source.enabled).length}个来源；
+            {sourceList.filter((source) => source.error).length}
+            个来源存在失败或部分结果。每日检查不等于每天都有新公告。
+          </p>
         </section>
-      ) : (
-        <section
-          aria-labelledby="task-list-heading"
-          className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_4px_24px_-16px_#24324a30]"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-5">
-            <h2 id="task-list-heading" className="flex items-center gap-2 text-sm font-semibold">
-              全部任务{" "}
-              <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                0
-              </span>
-            </h2>
-            <Badge>尚未创建任务</Badge>
-          </div>
-          <div className="flex flex-col items-center px-5 py-14 text-center sm:py-20">
-            <div className="relative mb-8 flex size-28 items-center justify-center rounded-full bg-primary/5">
-              <span className="absolute inset-2 rounded-full border border-dashed border-primary/20" />
-              <div className="relative -rotate-6 rounded-xl border border-primary/15 bg-white p-5 shadow-[0_8px_24px_-12px_#5b57d660]">
-                <FolderOpen className="size-10 text-primary" strokeWidth={1.4} aria-hidden="true" />
-              </div>
-              <span className="absolute right-0 bottom-1 rounded-lg border border-border bg-white p-2 text-primary">
-                <FileCheck2 className="size-5" aria-hidden="true" />
-              </span>
-            </div>
-            <h3 className="text-xl font-semibold tracking-tight">从一份通知，开启一次清晰的审查</h3>
-            <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-              在这里管理通知、材料、检查结论与整改记录。
-              <br className="hidden sm:block" />
-              支持多格式材料、规格检查与模型辅助审查。
-            </p>
-            <Button asChild variant="outline" className="mt-7">
-              <Link href="/tasks/new">
-                创建第一个任务 <ArrowRight aria-hidden="true" />
+        {sections.map((section) => (
+          <section key={section.title} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">{section.title}</h2>
+              <Link href="/exams" className="text-sm underline">
+                查看更多
               </Link>
-            </Button>
-            <p className="mt-4 text-xs text-muted-foreground">没有预置任务或演示结论</p>
-          </div>
-        </section>
-      )}
-
-      <section id="workflow" aria-labelledby="workflow-heading" className="mt-10">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h2 id="workflow-heading" className="text-sm font-semibold">
-            从要求到复检，每一步都有记录
-          </h2>
-          <span className="text-xs text-muted-foreground">流程规划</span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {workflowSteps.map(({ title, description, icon: Icon }, index) => (
-            <div key={title} className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-5 flex items-center justify-between">
-                <Icon className="size-5 text-primary" strokeWidth={1.6} aria-hidden="true" />
-                <span className="font-mono text-xs text-muted-foreground/60">0{index + 1}</span>
-              </div>
-              <h3 className="text-sm font-medium">{title}</h3>
-              <p className="mt-2 text-xs leading-6 text-muted-foreground">{description}</p>
             </div>
-          ))}
-        </div>
-      </section>
-      <p className="mt-8 text-xs leading-6 text-muted-foreground">
-        预审应区分通过、未通过、待确认、无法检查与不适用。未核验的内容不会被表示为通过。
-      </p>
+            <p className="text-sm text-muted-foreground">{section.description}</p>
+            {!section.items.length && (
+              <p className="rounded-xl border border-dashed p-6">
+                暂未收录匹配公告，可到考试中心浏览目录和官方入口。
+              </p>
+            )}
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {section.items.slice(0, 6).map((item) => (
+                <article key={item.id} className="space-y-3 rounded-xl border bg-card p-5">
+                  <p className="text-xs text-primary">
+                    {CATEGORY_LABELS[item.content.category]} · {item.content.region}
+                  </p>
+                  <h3 className="font-semibold">
+                    <Link href={`/exams/${item.id}`}>{item.content.title}</Link>
+                  </h3>
+                  <p className="text-sm">
+                    {item.content.edition} · {registrationState(item.content)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.source_name} · 核查{item.last_success || "手工审核，未自动核查"}
+                  </p>
+                  <Link
+                    href={`/me?newCategory=${item.content.category}&noticeId=${item.id}#goals`}
+                    className="inline-block text-sm underline"
+                  >
+                    设为目标
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </AppShell>
   );
 }

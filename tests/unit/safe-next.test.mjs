@@ -14,7 +14,7 @@ for (const [name, value] of [
   ["前置空格", " /exams"],
   ["脚本协议", "javascript:alert(1)"],
 ]) {
-  test(`登录回跳拒绝${name}`, () => assert.equal(safeNext(value), "/exams"));
+  test(`登录回跳拒绝${name}`, () => assert.equal(safeNext(value), "/"));
 }
 for (const value of ["/exams", "/account", "/exams?category=cet4&page=2#results"]) {
   test(`登录回跳保留站内路径 ${value}`, () => assert.equal(safeNext(value), value));

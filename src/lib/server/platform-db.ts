@@ -17,7 +17,7 @@ export function platformDb(): Database.Database {
     const existing = state.__examPlatform;
     if (
       existing.directory === directory &&
-      Number(existing.database.pragma("user_version", { simple: true })) === 3
+      Number(existing.database.pragma("user_version", { simple: true })) === 4
     )
       return existing.database;
     existing.database.close();
@@ -28,7 +28,7 @@ export function platformDb(): Database.Database {
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   db.pragma("busy_timeout = 5000");
-  if (Number(db.pragma("user_version", { simple: true })) > 3) {
+  if (Number(db.pragma("user_version", { simple: true })) > 4) {
     db.close();
     throw new Error("平台数据库版本高于当前程序，请使用对应程序版本。");
   }
@@ -86,7 +86,64 @@ export function platformDb(): Database.Database {
     INSERT INTO exam_publications(notice_id,version,action,actor,created_at)
       SELECT n.id,n.published_version,'publish','schema-upgrade',n.created_at FROM exam_notices n
       WHERE n.published_version IS NOT NULL AND NOT EXISTS(SELECT 1 FROM exam_publications p WHERE p.notice_id=n.id);
-    PRAGMA user_version = 3;
+    CREATE TABLE IF NOT EXISTS student_goals (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      category TEXT NOT NULL, region TEXT NOT NULL, edition TEXT NOT NULL, subject TEXT NOT NULL,
+      state TEXT NOT NULL DEFAULT 'active', payload TEXT NOT NULL, auto_review INTEGER NOT NULL DEFAULT 0,
+      task_id TEXT, notice_id TEXT REFERENCES exam_notices(id), notice_version INTEGER,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS goals_user ON student_goals(user_id);
+    CREATE TABLE IF NOT EXISTS portal_content (
+      id TEXT PRIMARY KEY, kind TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'draft',
+      version INTEGER NOT NULL, published_version INTEGER, updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS portal_content_versions (
+      content_id TEXT NOT NULL REFERENCES portal_content(id) ON DELETE CASCADE,
+      version INTEGER NOT NULL, payload TEXT NOT NULL, actor TEXT NOT NULL, created_at TEXT NOT NULL,
+      PRIMARY KEY(content_id,version)
+    );
+    CREATE TABLE IF NOT EXISTS resource_marks (
+      user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      content_id TEXT NOT NULL REFERENCES portal_content(id) ON DELETE CASCADE,
+      saved INTEGER NOT NULL DEFAULT 0, seen INTEGER NOT NULL DEFAULT 0, dismissed INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY(user_id,content_id)
+    );
+    CREATE TABLE IF NOT EXISTS portal_preferences (
+      user_id TEXT PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE, personalized INTEGER NOT NULL DEFAULT 1,
+      retain_chat INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE IF NOT EXISTS assistant_conversations (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      title TEXT NOT NULL, created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS assistant_messages (
+      id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+      role TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS assistant_requests (
+      id TEXT NOT NULL, user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      conversation_id TEXT REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+      input_hash TEXT NOT NULL, status TEXT NOT NULL, response TEXT, created_at TEXT NOT NULL,
+      PRIMARY KEY(user_id,id)
+    );
+    CREATE TABLE IF NOT EXISTS portal_daily_runs (
+      day TEXT PRIMARY KEY, status TEXT NOT NULL, message TEXT NOT NULL, started_at TEXT NOT NULL, finished_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS portal_feedback (
+        id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL, payload TEXT NOT NULL, status TEXT NOT NULL DEFAULT '待处理',
+        response TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS portal_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS portal_jobs (
+      id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      goal_id TEXT NOT NULL REFERENCES student_goals(id) ON DELETE CASCADE, task_id TEXT NOT NULL,
+      fingerprint TEXT NOT NULL, status TEXT NOT NULL, reason TEXT NOT NULL,
+      created_at TEXT NOT NULL, completed_at TEXT, execution_id TEXT,
+      UNIQUE(goal_id,fingerprint)
+    );
+    PRAGMA user_version = 4;
   `),
   )();
   state.__examPlatform = { directory, database: db };

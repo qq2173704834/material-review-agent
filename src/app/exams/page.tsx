@@ -1,8 +1,16 @@
+import { ExamDirectory } from "@/components/exam-directory";
+import { matchesExamSearch } from "@/lib/exam-discovery";
 import provincialSources from "@/domain/provincial-exam-sources.json";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { CATEGORY_LABELS, EXAM_CATEGORIES, EXAM_REGIONS, EXAM_STAGES } from "@/domain/exam-catalog";
+import {
+  CATEGORY_LABELS,
+  EXAM_CATEGORIES,
+  EXAM_GROUPS,
+  EXAM_REGIONS,
+  EXAM_STAGES,
+} from "@/domain/exam-catalog";
 import {
   listNotices,
   matchesExamCategory,
@@ -20,8 +28,16 @@ export default async function Page({
   const sourceList = sources();
   const results = all.filter(
     (item) =>
-      (!filters.q || (item.content.title + item.content.text).includes(filters.q.slice(0, 100))) &&
+      (!filters.q ||
+        (item.content.title + item.content.text)
+          .toLowerCase()
+          .includes(filters.q.slice(0, 100).toLowerCase()) ||
+        matchesExamSearch(item.content.category, filters.q.slice(0, 100))) &&
       (!filters.category || matchesExamCategory(item.content, filters.category)) &&
+      (!filters.group ||
+        EXAM_CATEGORIES.some(
+          ([id, , group]) => id === item.content.category && group === filters.group,
+        )) &&
       (!filters.region || item.content.region === filters.region) &&
       (!filters.year || String(item.content.year) === filters.year) &&
       (!filters.stage || item.content.stage === filters.stage),
@@ -57,6 +73,19 @@ export default async function Page({
               maxLength={100}
               placeholder="考试名 / 公告关键词"
             />
+          </label>
+          <label>
+            考试方向
+            <select
+              name="group"
+              defaultValue={filters.group ?? ""}
+              className="mt-1 w-full rounded border p-2"
+            >
+              <option value="">全部方向</option>
+              {EXAM_GROUPS.map((group) => (
+                <option key={group}>{group}</option>
+              ))}
+            </select>
           </label>
           <label>
             考试类别
@@ -166,24 +195,13 @@ export default async function Page({
           <span>第{page}页</span>
           {page * 20 < results.length && <Link href={pageUrl(page + 1)}>下一页</Link>}
         </nav>
-        <details className="rounded-xl border p-5">
-          <summary className="cursor-pointer font-medium">查看考试目录与实际覆盖</summary>
-          <p className="my-3 text-sm">
-            全国31个省级地区及港澳台可筛选；各地制度、报名方式与考试安排分别核对。目录存在不表示已经收齐公告，也不保证在校生均满足报考条件。
-          </p>
-          <ul className="grid gap-2 text-sm sm:grid-cols-2">
-            {EXAM_CATEGORIES.map(([id, name]) => (
-              <li key={id}>
-                {name} · {all.filter((n) => matchesExamCategory(n.content, id)).length}条已发布 ·{" "}
-                {sourceList.some(
-                  (s) => s.category === id || (id === "cet6" && s.category === "cet4"),
-                )
-                  ? "已登记来源"
-                  : "来源待接入"}
-              </li>
-            ))}
-          </ul>
-        </details>
+        <ExamDirectory
+          query={filters.q}
+          group={filters.group}
+          category={filters.category}
+          sourceList={sourceList}
+          notices={all}
+        />
         <details className="rounded-xl border p-5">
           <summary className="cursor-pointer font-medium">31省级考试机构目录及本次访问核验</summary>
           <p className="my-3 text-sm">

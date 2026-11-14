@@ -112,7 +112,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     page.on("pageerror", (error) => runtimeErrors.push(error.message));
 
     await page.goto("/");
-    await expect(page).toHaveTitle("材料预审工作台");
+    await expect(page).toHaveTitle("考试与学习");
     await page.getByRole("link", { name: "新建审查任务" }).click();
     await page.getByLabel("任务名称").fill("E2E 合成任务 ENG-004");
     await page.getByLabel("项目类型").fill("合成项目");

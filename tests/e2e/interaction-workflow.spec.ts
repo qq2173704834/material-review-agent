@@ -391,7 +391,7 @@ test("准备、结果、处理面板与引导的自动无障碍扫描 UX-09.A4",
   await upload(request, task.id, "乙.txt", "项目名称：智慧能源");
   await page.goto(`/tasks/${task.id}?view=prepare`);
   const scan = async (): Promise<void> => {
-    await expect(page).toHaveTitle(/材料预审工作台/);
+    await expect(page).toHaveTitle(/考试与学习/);
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
       .analyze();

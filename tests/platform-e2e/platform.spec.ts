@@ -134,7 +134,16 @@ test("真实账号门禁、恢复、隔离、发布收藏和公告预审版本�
   expect(bad.status()).toBe(400);
   expect((await a.post(`/api/exams/${id}`, { data: { action: "favorite" } })).ok()).toBeTruthy();
   expect(await (await a.get("/me")).text()).toContain(content.title);
-  expect(await (await b.get("/me")).text()).not.toContain(content.title);
+  const peerContext = await browser.newContext({ storageState: await b.storageState() });
+  const peerPage = await peerContext.newPage();
+  await peerPage.goto("/me");
+  const peerFavorites = peerPage
+    .locator("section")
+    .filter({ has: peerPage.getByRole("heading", { name: /^我的收藏/ }) });
+  await expect(peerFavorites.getByRole("link", { name: content.title, exact: true })).toHaveCount(
+    0,
+  );
+  await peerContext.close();
   const linked = await a.post(`/api/exams/${id}`, {
     data: { action: "task", stage: "报名", target: "待确认" },
   });
@@ -218,7 +227,7 @@ test("真实账号门禁、恢复、隔离、发布收藏和公告预审版本�
   await loginPage.getByRole("textbox", { name: /^用户名/ }).fill(bob);
   await loginPage.getByLabel("密码", { exact: true }).fill(password);
   await loginPage.getByRole("button", { name: "登录", exact: true }).click();
-  await expect(loginPage).toHaveURL(/\/exams$/);
+  await expect(loginPage).toHaveURL(/\/$/);
   await context.close();
   await a.dispose();
   await b.dispose();
@@ -290,12 +299,12 @@ test("账号设置、会话期限、禁用与迁移预演及数据库备份恢�
   upgradeDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(200);
   const futureDb = new Database(resolve(".local-data/platform-e2e/platform.sqlite"));
-  expect(futureDb.pragma("user_version", { simple: true })).toBe(3);
-  futureDb.pragma("user_version=4");
+  expect(futureDb.pragma("user_version", { simple: true })).toBe(4);
+  futureDb.pragma("user_version=5");
   futureDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(503);
   const restoreVersionDb = new Database(resolve(".local-data/platform-e2e/platform.sqlite"));
-  restoreVersionDb.pragma("user_version=3");
+  restoreVersionDb.pragma("user_version=4");
   restoreVersionDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(200);
   execFileSync(process.execPath, [
@@ -384,8 +393,8 @@ test("手机注册、恢复码保存提示和登录页面可访问性", async ({
   await page.getByRole("textbox", { name: /^用户名/ }).fill(username);
   await page.getByLabel("密码", { exact: true }).fill(password);
   await page.getByRole("button", { name: "登录", exact: true }).click();
-  await expect(page).toHaveURL(/\/exams$/);
-  await expect(page.getByRole("heading", { name: "下一场考试，从这里准备" })).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "考试信息与学习，一站跟进" })).toBeVisible();
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
   ).toBeTruthy();

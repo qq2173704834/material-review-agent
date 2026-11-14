@@ -48,6 +48,12 @@ export default async function Page({
             本站版本保存：{item.created_at} · 最近来源成功核查：{item.last_success || "未自动核查"}
           </p>
         </header>
+        <Link
+          className="inline-block rounded bg-primary px-4 py-2 text-primary-foreground"
+          href={`/me?newCategory=${content.category}&noticeId=${item.id}#goals`}
+        >
+          设为我的考试目标并准备材料
+        </Link>
         <ExamActions id={item.id} saved={saved} />
         <section>
           <h2 className="mb-3 text-xl font-semibold">考试时间线 · Asia/Shanghai</h2>

@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   ArrowUpRight,
   ClipboardCheck,
   LayoutDashboard,
@@ -13,14 +14,16 @@ import { cn } from "@/lib/utils";
 import type { ReactElement, ReactNode } from "react";
 
 interface AppShellProps {
-  activePage: "tasks" | "setup" | "task-detail" | "exams" | "me" | "admin";
+  activePage: "home" | "learn" | "tasks" | "setup" | "task-detail" | "exams" | "me" | "admin";
   children: ReactNode;
 }
 
 const navigationItems = [
+  { page: "home", href: "/", title: "首页", icon: LayoutDashboard },
+  { page: "learn", href: "/learn", title: "学习", icon: BookOpen },
   { page: "exams", href: "/exams", title: "考试中心", icon: LayoutDashboard },
   { page: "me", href: "/me", title: "我的考试", icon: ClipboardCheck },
-  { page: "tasks", href: "/", title: "审查任务", icon: LayoutDashboard },
+  { page: "tasks", href: "/tasks", title: "材料预审", icon: LayoutDashboard },
   { page: "setup", href: "/setup", title: "本地环境", icon: Settings2 },
 ] as const;
 
@@ -37,15 +40,15 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
         <Link
           href="/"
           className="flex items-center gap-3 px-5 py-6 lg:px-6 lg:py-8"
-          aria-label="材料预审工作台首页"
+          aria-label="考试与学习平台首页"
         >
           <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
             <ClipboardCheck className="size-5" aria-hidden="true" />
           </span>
           <span>
-            <span className="block text-sm font-semibold tracking-wide">材料预审工作台</span>
+            <span className="block text-sm font-semibold tracking-wide">考试与学习</span>
             <span className="mt-0.5 block text-[10px] tracking-[0.18em] text-muted-foreground">
-              MATERIAL REVIEW
+              EXAMS & LEARNING
             </span>
           </span>
         </Link>
@@ -74,6 +77,9 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
           <Link href="/admin/exams" className="block px-3 py-3 text-xs text-muted-foreground">
             内容管理
           </Link>
+          <Link href="/admin/learning" className="block px-3 py-3 text-xs text-muted-foreground">
+            学习与知识管理
+          </Link>
           <Link href="/access" className="block px-3 py-3 text-xs text-muted-foreground">
             账号与访问身份
           </Link>
@@ -101,15 +107,19 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
         <header className="flex h-20 items-center justify-between border-b border-border bg-card/60 px-6 lg:px-10">
           <p className="text-sm text-muted-foreground">
             工作空间 <span className="mx-2 text-border">/</span>{" "}
-            {activePage === "setup"
-              ? "本地环境"
-              : activePage === "exams"
-                ? "考试中心"
-                : activePage === "me"
-                  ? "我的考试"
-                  : activePage === "admin"
-                    ? "内容管理"
-                    : "审查任务"}
+            {activePage === "home"
+              ? "首页"
+              : activePage === "learn"
+                ? "学习"
+                : activePage === "setup"
+                  ? "本地环境"
+                  : activePage === "exams"
+                    ? "考试中心"
+                    : activePage === "me"
+                      ? "我的考试"
+                      : activePage === "admin"
+                        ? "内容管理"
+                        : "审查任务"}
           </p>
           <Badge className="border-primary/15 bg-primary/5 text-primary">
             <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
