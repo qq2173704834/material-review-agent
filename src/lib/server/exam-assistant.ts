@@ -259,12 +259,18 @@ export async function askExamAssistant(
         : "AI学习建议需自行核对，考试规定以适用的官方原文为准。费用未返回时不估算为零。";
     let answer: AssistantAnswer;
     const scopeUnknown = !input.useContext && !/20\d{2}/.test(input.question);
+    const currentScopes = sources
+      .filter((source) => !source.historical)
+      .map((source) => source.scope.split(" · ").slice(0, 2));
     const scopeConflict =
       sources.some((source) => source.conflicted) ||
       new Set(
-        sources
-          .filter((source) => !source.historical)
-          .map((source) => source.scope.split(" · ").slice(0, 2).join(" · ")),
+        currentScopes.map(([region]) => region).filter((region) => region && region !== "全国"),
+      ).size > 1 ||
+      new Set(
+        currentScopes
+          .map(([, edition]) => edition)
+          .filter((edition) => edition && edition !== "待确认考期"),
       ).size > 1;
     if (!input.learning && sources.length && (scopeUnknown || scopeConflict)) {
       answer = {

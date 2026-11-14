@@ -1,0 +1,458 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "ncre-intro",
+      "content": {
+        "title": "NCRE报考条件与考试形式",
+        "category": "ncre",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ncre.neea.edu.cn/html1/folder/1507/909-1.htm",
+        "text": "报名者不受年龄、职业、学历等限制，均可根据自己学习情况和实际能力选考相应的级别和科目。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "报名者不受年龄、职业、学历等限制，均可根据自己学习情况和实际能力选考相应的级别和科目。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "414b88ab6d4f88c40b9e8a42a431c6882dca2cc210c40e05d5a95e446cd0a1db",
+        "fetchedAt": "2026-11-14T10:50:03.430Z"
+      }
+    },
+    {
+      "key": "ncre-form",
+      "content": {
+        "title": "NCRE考试方式",
+        "category": "ncre",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ncre.neea.edu.cn/html1/folder/1507/909-1.htm",
+        "text": "统一命题，统一考试，考试形式为上机考试。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "统一命题，统一考试，考试形式为上机考试。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "414b88ab6d4f88c40b9e8a42a431c6882dca2cc210c40e05d5a95e446cd0a1db",
+        "fetchedAt": "2026-11-14T10:50:03.430Z"
+      }
+    },
+    {
+      "key": "ncre-id",
+      "content": {
+        "title": "NCRE考试证件准备",
+        "category": "ncre",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ncre.neea.edu.cn/html1/folder/1510/864-1.htm",
+        "text": "考生应携带本人准考证和报名时使用的有效身份证件参加考试。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "考生应携带本人准考证和报名时使用的有效身份证件参加考试。",
+        "sourceTitle": "考生须知 - 中国教育考试网",
+        "sourceSha256": "366ae93d832bd7c1d3b7fe821ac62cd266dcaf8192bfdbff8f9d9ba22bd934d3",
+        "fetchedAt": "2026-11-14T10:50:03.772Z"
+      }
+    },
+    {
+      "key": "pets-eligibility",
+      "content": {
+        "title": "PETS报考对象限制",
+        "category": "pets",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://pets.neea.edu.cn/html1/folder/1507/1557-1.htm",
+        "text": "PETS考生报考资格不受职业、户籍以及受教育程度的限制（因政策原因，暂不面向仍在接受九年义务教育的学生），考生可以根据自己的英语水平选择参加任一级别的考试（一次只可报考一个级别）。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "PETS考生报考资格不受职业、户籍以及受教育程度的限制（因政策原因，暂不面向仍在接受九年义务教育的学生），考生可以根据自己的英语水平选择参加任一级别的考试（一次只可报考一个级别）。",
+        "sourceTitle": "考生须知 - 中国教育考试网",
+        "sourceSha256": "c3a0af89dc289c7eda9e215f69de466f5bb32f6329da8db9c64a22d082bf5f21",
+        "fetchedAt": "2026-11-14T10:50:04.536Z"
+      }
+    },
+    {
+      "key": "pets-certificate",
+      "content": {
+        "title": "PETS笔口试合格与获证条件",
+        "category": "pets",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://pets.neea.edu.cn/html1/folder/1507/1557-1.htm",
+        "text": "同一次考试或相邻两次考试中，相同级别的笔试和口试成绩均合格的考生，可以获得由教育部教育考试院核发的相应级别的《全国英语等级考试合格证书》。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "同一次考试或相邻两次考试中，相同级别的笔试和口试成绩均合格的考生，可以获得由教育部教育考试院核发的相应级别的《全国英语等级考试合格证书》。",
+        "sourceTitle": "考生须知 - 中国教育考试网",
+        "sourceSha256": "c3a0af89dc289c7eda9e215f69de466f5bb32f6329da8db9c64a22d082bf5f21",
+        "fetchedAt": "2026-11-14T10:50:04.536Z"
+      }
+    },
+    {
+      "key": "cet4-oral",
+      "content": {
+        "title": "CET四级笔试与口试报名关系",
+        "category": "cet4",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://cet.neea.edu.cn/html1/folder/16033/247-1.htm",
+        "text": "报考口试的考生必须先报考当次相应级别的笔试。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "报考口试的考生必须先报考当次相应级别的笔试。",
+        "sourceTitle": "关于CET - 中国教育考试网",
+        "sourceSha256": "1e406062e84c407eeacbbc1a4053dfa80a70b0529ce14d0aa6c905bcb9b0814a",
+        "fetchedAt": "2026-11-14T10:50:06.559Z"
+      }
+    },
+    {
+      "key": "cet6-oral",
+      "content": {
+        "title": "CET六级笔试与口试报名关系",
+        "category": "cet6",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://cet.neea.edu.cn/html1/folder/16033/247-1.htm",
+        "text": "报考口试的考生必须先报考当次相应级别的笔试。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "报考口试的考生必须先报考当次相应级别的笔试。",
+        "sourceTitle": "关于CET - 中国教育考试网",
+        "sourceSha256": "1e406062e84c407eeacbbc1a4053dfa80a70b0529ce14d0aa6c905bcb9b0814a",
+        "fetchedAt": "2026-11-14T10:50:06.559Z"
+      }
+    },
+    {
+      "key": "nit-subjects",
+      "content": {
+        "title": "NIT基础科目与专业科目",
+        "category": "nit",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://nit.neea.edu.cn/html1/folder/1507/1631-1.htm",
+        "text": "目前，NIT考试科目分为基础科目与专业科目。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "目前，NIT考试科目分为基础科目与专业科目。",
+        "sourceTitle": "考试介绍 - 中国教育考试网",
+        "sourceSha256": "06400c658e448d9a079b52c1d49e5c81809cb75fc7ab2c2d6ef1fb18880e22e0",
+        "fetchedAt": "2026-11-14T10:50:05.575Z"
+      }
+    },
+    {
+      "key": "cet4-writing",
+      "content": {
+        "title": "CET四级笔试考核内容与结构",
+        "category": "cet4",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "resource",
+        "format": "考纲",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://cet.neea.edu.cn/html1/folder/16113/1586-1.htm",
+        "text": "英语四级和六级考核内容如下：",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "英语四级和六级考核内容如下：",
+        "sourceTitle": "CET笔试 - 中国教育考试网",
+        "sourceSha256": "ad69ed695e9966f4a848b80768b714ec3315efae9a728bf020c77a35abb3d8a1",
+        "fetchedAt": "2026-11-14T10:50:06.709Z"
+      }
+    },
+    {
+      "key": "cet6-oral-practice",
+      "content": {
+        "title": "CET六级口语考试任务说明",
+        "category": "cet6",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "resource",
+        "format": "考纲",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://cet.neea.edu.cn/html1/folder/16113/1587-1.htm",
+        "text": "口语考试采用机考形式，凡已经报考笔试科目的考生均可报考对应级别的口试科目。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "口语考试采用机考形式，凡已经报考笔试科目的考生均可报考对应级别的口试科目。",
+        "sourceTitle": "CET口试 - 中国教育考试网",
+        "sourceSha256": "837293d89a970f6b77797b11f65e33f30375463ae5c02584541ededcb22b9b3a",
+        "fetchedAt": "2026-11-14T10:50:06.839Z"
+      }
+    },
+    {
+      "key": "ncre-syllabus",
+      "content": {
+        "title": "NCRE官方考纲与教材目录",
+        "category": "ncre",
+        "region": "全国",
+        "edition": "",
+        "subject": "Python",
+        "kind": "resource",
+        "format": "考纲",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ncre.neea.edu.cn/html1/report/2412/185-1.htm",
+        "text": "二级Python语言程序设计考试大纲（2025年版）",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "NCRE二级Python；官方目录中2025年版。仅核对目录，PDF大纲未下载解析，适用考期以最新通知为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "二级Python语言程序设计考试大纲（2025年版）",
+        "sourceTitle": "全国计算机等级考试考试大纲 - 中国教育考试网",
+        "sourceSha256": "ffd5e140054cc60794b766f0fdf7597fd53ccd8f558815d40b5705c217427593",
+        "fetchedAt": "2026-11-14T10:59:02.360Z"
+      }
+    },
+    {
+      "key": "pets-syllabus",
+      "content": {
+        "title": "PETS官方大纲与教材说明",
+        "category": "pets",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "resource",
+        "format": "考纲",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://pets.neea.edu.cn/html1/folder/16093/1175-1.htm",
+        "text": "二级、三级、四级、五级考试大纲（2025版）自2026年下半年考试启用。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；截至2026-11-14公开页面核验。具体考期、地区与科目以当期官方原文为准。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "二级、三级、四级、五级考试大纲（2025版）自2026年下半年考试启用。",
+        "sourceTitle": "大纲教材 - 中国教育考试网",
+        "sourceSha256": "6085af52f4302a45c4b83f961ff670532bb30dbcdd06a3cb6596b36661dad51d",
+        "fetchedAt": "2026-11-14T10:50:03.917Z"
+      }
+    },
+    {
+      "key": "ncre-validity",
+      "content": {
+        "title": "NCRE官方FAQ：证书有效期",
+        "category": "ncre",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://ncre.neea.edu.cn/html1/report/1712/4330-1.htm",
+        "text": "NCRE所有证书均无时效限制。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；官方FAQ页面发布于2017-12-08，2026-11-14仍可公开读取；当期资格须结合所在学校与最新公告核对。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "NCRE所有证书均无时效限制。",
+        "sourceTitle": "NCRE证书的有效期是多久？ - 中国教育考试网",
+        "sourceSha256": "6920366f4bfc735960d51db7a4aff0a9a48c718aeb4e5f44e97bf21308bb367b",
+        "fetchedAt": "2026-11-14T10:59:02.009Z",
+        "publishedAt": "2017-12-08"
+      }
+    },
+    {
+      "key": "cet4-eligibility",
+      "content": {
+        "title": "CET官方FAQ：四级报考对象",
+        "category": "cet4",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://cet.neea.edu.cn/html1/report/16123/180-1.htm",
+        "text": "CET笔试报考资格为全日制普通高等院校本科、专科在校生，全日制成人高等院校本科、专科在校生，在籍研究生。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；官方FAQ页面发布于2016-12-08，2026-11-14仍可公开读取；当期资格须结合所在学校与最新公告核对。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "CET笔试报考资格为全日制普通高等院校本科、专科在校生，全日制成人高等院校本科、专科在校生，在籍研究生。",
+        "sourceTitle": "CET笔试报考资格及如何报名？ - 中国教育考试网",
+        "sourceSha256": "1cf55c99c7e73ab586a49227ae2de0bc56ad2d78a087441b0600e9eea02b7d28",
+        "fetchedAt": "2026-11-14T10:59:02.247Z",
+        "publishedAt": "2016-12-08"
+      }
+    },
+    {
+      "key": "cet6-eligibility",
+      "content": {
+        "title": "CET官方FAQ：六级课程与四级成绩要求",
+        "category": "cet6",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "教育部教育考试院",
+        "url": "https://cet.neea.edu.cn/html1/report/16123/180-1.htm",
+        "text": "修完大学英语四级课程的学生可报考英语四级，修完大学英语六级课程且英语四级成绩达到425分及以上的学生可报考英语六级。",
+        "summary": "官方页面少量条款引用与原站链接，非完整考纲或当期报名通知。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；官方FAQ页面发布于2016-12-08，2026-11-14仍可公开读取；当期资格须结合所在学校与最新公告核对。",
+        "reviewNote": "已逐条核对官方原文及主办单位；仅少量事实引用并提供原站链接，不复制课程、教材或题库，不推断报名开放。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "修完大学英语四级课程的学生可报考英语四级，修完大学英语六级课程且英语四级成绩达到425分及以上的学生可报考英语六级。",
+        "sourceTitle": "CET笔试报考资格及如何报名？ - 中国教育考试网",
+        "sourceSha256": "1cf55c99c7e73ab586a49227ae2de0bc56ad2d78a087441b0600e9eea02b7d28",
+        "fetchedAt": "2026-11-14T10:59:02.247Z",
+        "publishedAt": "2016-12-08"
+      }
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "results": [
+    {
+      "key": "ncre-intro",
+      "url": "https://ncre.neea.edu.cn/html1/folder/1507/909-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:40.032Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "414b88ab6d4f88c40b9e8a42a431c6882dca2cc210c40e05d5a95e446cd0a1db"
+    },
+    {
+      "key": "ncre-form",
+      "url": "https://ncre.neea.edu.cn/html1/folder/1507/909-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:40.033Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "414b88ab6d4f88c40b9e8a42a431c6882dca2cc210c40e05d5a95e446cd0a1db"
+    },
+    {
+      "key": "ncre-id",
+      "url": "https://ncre.neea.edu.cn/html1/folder/1510/864-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:40.203Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "366ae93d832bd7c1d3b7fe821ac62cd266dcaf8192bfdbff8f9d9ba22bd934d3"
+    },
+    {
+      "key": "pets-eligibility",
+      "url": "https://pets.neea.edu.cn/html1/folder/1507/1557-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:40.336Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "c3a0af89dc289c7eda9e215f69de466f5bb32f6329da8db9c64a22d082bf5f21"
+    },
+    {
+      "key": "pets-certificate",
+      "url": "https://pets.neea.edu.cn/html1/folder/1507/1557-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:40.336Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "c3a0af89dc289c7eda9e215f69de466f5bb32f6329da8db9c64a22d082bf5f21"
+    },
+    {
+      "key": "cet4-oral",
+      "url": "https://cet.neea.edu.cn/html1/folder/16033/247-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:40.506Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "1e406062e84c407eeacbbc1a4053dfa80a70b0529ce14d0aa6c905bcb9b0814a"
+    },
+    {
+      "key": "cet6-oral",
+      "url": "https://cet.neea.edu.cn/html1/folder/16033/247-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:40.506Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "1e406062e84c407eeacbbc1a4053dfa80a70b0529ce14d0aa6c905bcb9b0814a"
+    },
+    {
+      "key": "nit-subjects",
+      "url": "https://nit.neea.edu.cn/html1/folder/1507/1631-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:40.999Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "06400c658e448d9a079b52c1d49e5c81809cb75fc7ab2c2d6ef1fb18880e22e0"
+    },
+    {
+      "key": "cet4-writing",
+      "url": "https://cet.neea.edu.cn/html1/folder/16113/1586-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:41.261Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "ad69ed695e9966f4a848b80768b714ec3315efae9a728bf020c77a35abb3d8a1"
+    },
+    {
+      "key": "cet6-oral-practice",
+      "url": "https://cet.neea.edu.cn/html1/folder/16113/1587-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:41.721Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "837293d89a970f6b77797b11f65e33f30375463ae5c02584541ededcb22b9b3a"
+    },
+    {
+      "key": "ncre-syllabus",
+      "url": "https://ncre.neea.edu.cn/html1/report/2412/185-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:42.032Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "ffd5e140054cc60794b766f0fdf7597fd53ccd8f558815d40b5705c217427593"
+    },
+    {
+      "key": "pets-syllabus",
+      "url": "https://pets.neea.edu.cn/html1/folder/16093/1175-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:42.104Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "6085af52f4302a45c4b83f961ff670532bb30dbcdd06a3cb6596b36661dad51d"
+    },
+    {
+      "key": "ncre-validity",
+      "url": "https://ncre.neea.edu.cn/html1/report/1712/4330-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:42.611Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "6920366f4bfc735960d51db7a4aff0a9a48c718aeb4e5f44e97bf21308bb367b"
+    },
+    {
+      "key": "cet4-eligibility",
+      "url": "https://cet.neea.edu.cn/html1/report/16123/180-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:42.814Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "1cf55c99c7e73ab586a49227ae2de0bc56ad2d78a087441b0600e9eea02b7d28"
+    },
+    {
+      "key": "cet6-eligibility",
+      "url": "https://cet.neea.edu.cn/html1/report/16123/180-1.htm",
+      "success": true,
+      "checkedAt": "2026-11-14T11:07:42.814Z",
+      "message": "少量引用逐字命中公开原文；不表示已读取其PDF或全部资料。",
+      "sourceSha256": "1cf55c99c7e73ab586a49227ae2de0bc56ad2d78a087441b0600e9eea02b7d28"
+    }
+  ]
+}

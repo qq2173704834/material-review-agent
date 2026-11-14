@@ -31,6 +31,9 @@ export default async function Detail({
           {content.author} · v{entry.version} · {content.checkedAt}核查 · {content.disposition}
         </p>
         <p>{content.scope}</p>
+        {content.summary && (
+          <p className="rounded border p-3 text-sm text-muted-foreground">{content.summary}</p>
+        )}
         <p>
           {CATEGORY_LABELS[content.category]} · {content.region} ·{" "}
           {content.edition || "通用版本，具体考期待核对"} · {content.subject || "通用科目"} ·{" "}
