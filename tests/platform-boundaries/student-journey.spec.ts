@@ -37,7 +37,7 @@ for (const viewport of [
     await page.getByLabel("密码", { exact: true }).fill(password);
     await page.getByRole("button", { name: "登录", exact: true }).focus();
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("heading", { name: "考试信息与学习，一站跟进" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "下一场考试，从这里出发" })).toBeVisible();
     await page
       .getByRole("navigation", { name: "主导航" })
       .getByRole("link", { name: "考试中心", exact: true })
@@ -62,6 +62,7 @@ for (const viewport of [
     await trigger.focus();
     await page.keyboard.press("Enter");
     const dialog = page.getByRole("dialog", { name: "考试学习AI助手" });
+    await dialog.getByText("回答设置", { exact: true }).click();
     await dialog.getByRole("combobox", { name: "考试目标", exact: true }).selectOption(goal.id);
     await dialog.getByLabel("本次使用所选目标的考试、地区、考期", { exact: true }).check();
     await dialog
@@ -69,8 +70,12 @@ for (const viewport of [
       .fill("2027年大学英语四级报名材料要求是什么？");
     await dialog.getByRole("button", { name: "发送", exact: true }).click();
     await expect(dialog.getByText(/模拟助手：未调用真实模型/)).toBeVisible();
-    await dialog.locator("details").filter({ hasText: "v1" }).first().locator("summary").click();
-    await expect(dialog.locator("blockquote").first()).toBeVisible();
+    const citation = dialog
+      .locator("details")
+      .filter({ has: page.locator("blockquote") })
+      .first();
+    await citation.locator("summary").click();
+    await expect(citation.locator("blockquote")).toBeVisible();
     await expect(dialog.getByRole("link", { name: "核对来源详情" }).first()).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();

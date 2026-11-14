@@ -29,6 +29,9 @@ export default async function Page({
   if (!account) redirect("/login?next=%2Fme");
   const now = await requestTime();
   const filters = await searchParams;
+  const view = ["overview", "favorites", "feedback", "reviews"].includes(filters.view ?? "")
+    ? filters.view
+    : "overview";
   const goals = studentGoals(account.id);
   const feedback = platformDb()
     .prepare<[string], { id: string; kind: string; status: string; response: string }>(
@@ -69,191 +72,233 @@ export default async function Page({
   return (
     <AppShell activePage="me">
       <div className="space-y-7">
-        <header>
-          <h1 className="text-3xl font-semibold">我的考试工作台</h1>
+        <header className="page-heading">
+          <h1 className="text-3xl font-semibold">我的考试</h1>
           <p className="mt-3">这里汇总你的考试目标、学习进度、收藏与材料准备。</p>
-          <div className="mt-4 space-y-2 rounded-xl border bg-card p-4" aria-label="当前登录身份">
-            <p>
+          <div className="identity-bar" aria-label="当前登录身份">
+            <span>
               当前登录用户名：<strong>{account.username}</strong>
-            </p>
-            <p className="text-sm text-muted-foreground">昵称：{account.nickname}</p>
-            <Link href="/account" className="inline-block text-sm text-primary underline">
+            </span>
+            <span className="text-muted-foreground">昵称：{account.nickname}</span>
+            <Link href="/account" className="text-primary">
               账号设置与退出登录
             </Link>
           </div>
         </header>
-        <StudentGoals
-          goals={goals}
-          notices={listNotices()}
-          newCategory={filters.newCategory}
-          noticeId={filters.noticeId}
-        />
-        <section className="space-y-2">
-          <h2 className="font-semibold">我的内容反馈</h2>
-          {feedback.length ? (
-            feedback.map((item) => (
-              <p key={item.id}>
-                {item.kind} · {item.status} · {item.response || "等待管理员核对"}
-              </p>
-            ))
-          ) : (
-            <p>暂无反馈。</p>
-          )}
-        </section>
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold">收藏的学习资料与更新</h2>
-          {resources.length ? (
-            resources.map((item) => (
-              <article key={item.id} className="rounded border p-3">
-                <Link href={`/learn/${item.id}`} className="underline">
-                  {item.content.title}
-                </Link>
-                <p>
-                  v{item.version} ·{" "}
-                  {item.status === "withdrawn"
-                    ? "已撤回，请核对来源"
-                    : item.seen
-                      ? "当前版本已看（不代表学习完成）"
-                      : "当前版本未读 / 有更新"}
+        <nav className="page-tabs" aria-label="个人内容导航">
+          {[
+            ["overview", "考试与日程"],
+            ["favorites", `我的收藏 ${items.length + resources.length}`],
+            ["feedback", "我的反馈"],
+            ["reviews", "材料记录"],
+          ].map(([key, label]) => (
+            <Link
+              key={key}
+              href={`/me?view=${key}`}
+              aria-current={view === key ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+        {view === "overview" && (
+          <>
+            <StudentGoals
+              goals={goals}
+              notices={listNotices()}
+              newCategory={filters.newCategory}
+              noticeId={filters.noticeId}
+            />
+          </>
+        )}
+        {view === "feedback" && (
+          <section className="surface space-y-3">
+            <h2 className="font-semibold">我的内容反馈</h2>
+            {feedback.length ? (
+              feedback.map((item) => (
+                <p key={item.id}>
+                  {item.kind} · {item.status} · {item.response || "等待管理员核对"}
                 </p>
-                <LearningActions id={item.id} saved seen={item.seen} />
-              </article>
-            ))
-          ) : (
-            <p>暂无学习资料收藏，可到学习页选择。</p>
-          )}
-        </section>
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold">材料预审执行提示</h2>
-          {jobs.length ? (
-            jobs.map((job) => (
-              <p key={job.id}>
-                <Link href={`/me/goals/${job.goal_id}`} className="underline">
-                  查看对应目标
-                </Link>{" "}
-                · {job.created_at} · {job.status} · {job.reason}
-              </p>
-            ))
-          ) : (
-            <p>暂无自动预审执行。未开启时可手动审查。</p>
-          )}
-        </section>
-        <Link href="/tasks" className="inline-block underline">
-          历史与通用材料预审任务
-        </Link>
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold">我的考试时间节点 · Asia/Shanghai</h2>
-          <p className="text-sm text-muted-foreground">
-            汇总进行中的目标与收藏，展示未来30天的已确认节点；提醒已读不表示完成报名。
-          </p>
-          {nodes.length ? (
-            nodes.map((node, index) => (
-              <p key={`${node.id}-${index}`}>
-                <Link className="text-primary underline" href={`/exams/${node.id}`}>
-                  {node.title}
-                </Link>{" "}
-                · {node.label}：{node.value}
-                {Date.parse(node.value) < new Date().getTime() ? "（已到日期，请核对时刻）" : ""}
-                {node.value.length === 10 ? "（仅日期）" : ""}
-                {node.read ? " · 提醒已读" : <ReminderRead id={node.id} version={node.version} />}
-              </p>
-            ))
-          ) : (
-            <p>暂无已确认节点，未知日期不会自动估算。</p>
-          )}
-        </section>
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">我的收藏 · {items.length}</h2>
-          {!items.length && (
-            <p>
-              还没有收藏，
-              <Link href="/exams" className="text-primary underline">
-                前往考试中心
-              </Link>
-              。
-            </p>
-          )}
-          {items.map((item) => (
-            <article className="space-y-3 rounded-xl border p-5" key={item.id}>
-              <h3 className="font-semibold">
-                {item.withdrawn ? (
-                  item.content.title
-                ) : (
-                  <Link href={`/exams/${item.id}`}>{item.content.title}</Link>
-                )}
-              </h3>
+              ))
+            ) : (
+              <p>暂无反馈。</p>
+            )}
+          </section>
+        )}
+        {view === "favorites" && (
+          <section className="surface space-y-3">
+            <h2 className="text-xl font-semibold">收藏的学习资料</h2>
+            {resources.length ? (
+              resources.map((item) => (
+                <article key={item.id} className="rounded border p-3">
+                  <Link href={`/learn/${item.id}`} className="underline">
+                    {item.content.title}
+                  </Link>
+                  <p>
+                    v{item.version} ·{" "}
+                    {item.status === "withdrawn"
+                      ? "已撤回，请核对来源"
+                      : item.seen
+                        ? "当前版本已看（不代表学习完成）"
+                        : "当前版本未读 / 有更新"}
+                  </p>
+                  <LearningActions id={item.id} saved seen={item.seen} />
+                </article>
+              ))
+            ) : (
+              <p>暂无学习资料收藏，可到学习页选择。</p>
+            )}
+          </section>
+        )}
+        {view === "overview" && (
+          <section className="surface space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-xl font-semibold">考试日程</h2>
+              <span className="text-xs text-muted-foreground">未来30天 · 北京时间</span>
+            </div>
+
+            {nodes.length ? (
+              nodes.map((node, index) => (
+                <p key={`${node.id}-${index}`}>
+                  <Link className="text-primary underline" href={`/exams/${node.id}`}>
+                    {node.title}
+                  </Link>{" "}
+                  · {node.label}：{node.value}
+                  {Date.parse(node.value) < now ? "（已到日期，请核对时刻）" : ""}
+                  {node.value.length === 10 ? "（仅日期）" : ""}
+                  {node.read ? " · 提醒已读" : <ReminderRead id={node.id} version={node.version} />}
+                </p>
+              ))
+            ) : (
+              <p>近期暂无考试安排。关注考试后，在这里查看重要日期。</p>
+            )}
+          </section>
+        )}
+        {view === "favorites" && (
+          <section className="surface space-y-4">
+            <h2 className="text-xl font-semibold">收藏的考试 · {items.length}</h2>
+            {!items.length && (
               <p>
-                {item.changed ? "公告已更新 / 状态变化，请核对" : "已阅当前版本"} · v{item.version}{" "}
-                ·{" "}
-                <ExamStatus
+                还没有收藏，
+                <Link href="/exams" className="text-primary underline">
+                  前往考试中心
+                </Link>
+                。
+              </p>
+            )}
+            {items.map((item) => (
+              <article className="space-y-3 rounded-xl border p-5" key={item.id}>
+                <h3 className="font-semibold">
+                  {item.withdrawn ? (
+                    item.content.title
+                  ) : (
+                    <Link href={`/exams/${item.id}`}>{item.content.title}</Link>
+                  )}
+                </h3>
+                <p>
+                  {item.changed ? "公告已更新 / 状态变化，请核对" : "已阅当前版本"} · v
+                  {item.version} ·{" "}
+                  <ExamStatus
+                    disposition={item.withdrawn ? "公告已撤回" : item.content.disposition}
+                    timeline={item.content.timeline}
+                    stage={item.content.stage}
+                    initialNow={now}
+                  />
+                </p>
+                <RegistrationDeadline
                   disposition={item.withdrawn ? "公告已撤回" : item.content.disposition}
                   timeline={item.content.timeline}
                   stage={item.content.stage}
                   initialNow={now}
                 />
-              </p>
-              <RegistrationDeadline
-                disposition={item.withdrawn ? "公告已撤回" : item.content.disposition}
-                timeline={item.content.timeline}
-                stage={item.content.stage}
-                initialNow={now}
-              />
-              {item.withdrawn && (
-                <p>
-                  公告已撤回，收藏和原任务版本保留。
-                  <a href={item.canonical_url} className="underline">
-                    查看官方来源
-                  </a>
-                </p>
-              )}
-              <p className="text-xs">最近成功核查：{item.last_success || "未自动核查"}</p>
-              <ExamActions id={item.id} saved withdrawn={item.withdrawn} />
-              <form action={`/api/exams/${item.id}`}>
-                <SeenButton id={item.id} />
-              </form>
-            </article>
-          ))}
-        </section>
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">关联预审任务</h2>
-          {links.map((link) => {
-            const task = store.canAccessTask(link.task_id, account.id)
-              ? store.getTask(link.task_id)
-              : undefined;
-            const item = notice(link.notice_id);
-            return (
-              <article className="space-y-3 rounded border p-4" key={link.task_id}>
-                <p>
-                  {task ? (
-                    <Link href={`/tasks/${link.task_id}`} className="text-primary underline">
-                      {task.name}
+                {item.withdrawn && (
+                  <p>
+                    公告已撤回，收藏和原任务版本保留。
+                    <a href={item.canonical_url} className="underline">
+                      查看官方来源
+                    </a>
+                  </p>
+                )}
+                <p className="text-xs">最近成功核查：{item.last_success || "未自动核查"}</p>
+                <ExamActions id={item.id} saved withdrawn={item.withdrawn} />
+                <form action={`/api/exams/${item.id}`}>
+                  <SeenButton id={item.id} />
+                </form>
+              </article>
+            ))}
+          </section>
+        )}
+        {view === "reviews" && (
+          <section className="surface space-y-4">
+            <h2 className="text-xl font-semibold">我的材料记录</h2>
+            <Link href="/tasks" className="button-primary inline-flex">
+              查看全部材料预审任务
+            </Link>
+            {jobs.length > 0 && (
+              <details>
+                <summary>自动检查记录</summary>
+                <div className="mt-3 space-y-3">
+                  {jobs.map((job) => (
+                    <p key={job.id}>
+                      <Link href={`/me/goals/${job.goal_id}`} className="text-primary">
+                        查看对应目标
+                      </Link>{" "}
+                      ·{" "}
+                      {new Date(job.created_at).toLocaleString("zh-CN", {
+                        timeZone: "Asia/Shanghai",
+                      })}{" "}
+                      ·{" "}
+                      {job.status === "completed"
+                        ? "已完成"
+                        : job.status === "running"
+                          ? "处理中"
+                          : job.status === "failed"
+                            ? "未完成，请查看目标"
+                            : "等待处理"}
+                    </p>
+                  ))}
+                </div>
+              </details>
+            )}
+            {links.map((link) => {
+              const task = store.canAccessTask(link.task_id, account.id)
+                ? store.getTask(link.task_id)
+                : undefined;
+              const item = notice(link.notice_id);
+              return (
+                <article className="space-y-3 rounded border p-4" key={link.task_id}>
+                  <p>
+                    {task ? (
+                      <Link href={`/tasks/${link.task_id}`} className="text-primary underline">
+                        {task.name}
+                      </Link>
+                    ) : (
+                      "任务已删除或无访问权限"
+                    )}{" "}
+                    · {link.stage} · {link.target || "具体对象待确认"} · 依据公告v
+                    {link.notice_version}
+                  </p>
+                  {item ? (
+                    <Link href={`/exams/${item.id}`} className="underline">
+                      返回考试公告
                     </Link>
                   ) : (
-                    "任务已删除或无访问权限"
-                  )}{" "}
-                  · {link.stage} · {link.target || "具体对象待确认"} · 依据公告v
-                  {link.notice_version}
-                </p>
-                {item ? (
-                  <Link href={`/exams/${item.id}`} className="underline">
-                    返回考试公告
-                  </Link>
-                ) : (
-                  <p>公告已撤回，原任务快照保留。</p>
-                )}
-                {item && item.version !== link.notice_version && task && (
-                  <>
-                    <p>
-                      来源已有v{item.version}
-                      ，请查看新旧原文，确认后采用。采用后需要重新核对规则并复检。
-                    </p>
-                    <LinkVersionActions noticeId={item.id} taskId={link.task_id} />
-                  </>
-                )}
-              </article>
-            );
-          })}
-        </section>
+                    <p>公告已撤回，原任务快照保留。</p>
+                  )}
+                  {item && item.version !== link.notice_version && task && (
+                    <>
+                      <p>
+                        来源已有v{item.version}
+                        ，请查看新旧原文，确认后采用。采用后需要重新核对规则并复检。
+                      </p>
+                      <LinkVersionActions noticeId={item.id} taskId={link.task_id} />
+                    </>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+        )}
       </div>
     </AppShell>
   );

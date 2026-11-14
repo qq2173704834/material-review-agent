@@ -29,6 +29,9 @@ export function AccountNavigation(): ReactElement {
     <>
       {canManage && (
         <>
+          <Link href="/admin/system" className="block px-3 py-3 text-xs text-muted-foreground">
+            服务维护
+          </Link>
           <Link href="/admin/exams" className="block px-3 py-3 text-xs text-muted-foreground">
             内容管理
           </Link>

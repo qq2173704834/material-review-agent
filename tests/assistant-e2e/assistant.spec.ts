@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import Database from "better-sqlite3";
 
-test("受控模型：同意门禁、原文引用、成功失败耗用和未知Token分别记录", async ({ playwright }) => {
+test("受控模型：偏好门禁、原文引用、成功失败耗用和未知Token分别记录", async ({ playwright }) => {
   const api = await playwright.request.newContext({ baseURL: "http://127.0.0.1:3145" });
   const username = `assistant_${Date.now()}`,
     password = "Assistant-regression-2026!";
@@ -39,13 +39,13 @@ test("受控模型：同意门禁、原文引用、成功失败耗用和未知To
     );
     const question = "2040年注会合成申请条件";
     const blocked = await api.post("/api/assistant", {
-      data: { requestId: randomUUID(), question },
+      data: { requestId: randomUUID(), question, allowExternal: false },
     });
-    expect(blocked.status()).toBe(400);
-    expect((await blocked.json()).error).toContain("允许");
+    expect(blocked.status()).toBe(200);
+    expect(await blocked.json()).toMatchObject({ mode: "retrieval", usage: { modelCall: null } });
     expect((await (await api.get("/api/assistant")).json()).usage.modelRequests).toBe(0);
     const requestId = randomUUID();
-    const input = { requestId, question, allowExternal: true };
+    const input = { requestId, question };
     const response = await api.post("/api/assistant", { data: input });
     expect(response.status(), await response.text()).toBe(200);
     const answer = await response.json();
@@ -77,7 +77,7 @@ test("受控模型：同意门禁、原文引用、成功失败耗用和未知To
     expect(unknownAnswer.usage.modelCall.inputTokens).toBeNull();
     const usage = (await (await api.get("/api/assistant")).json()).usage;
     expect(usage).toMatchObject({
-      questions: 4,
+      questions: 5,
       failed: 2,
       inputTokens: 200,
       outputTokens: 60,
@@ -104,6 +104,36 @@ test("受控模型：同意门禁、原文引用、成功失败耗用和未知To
     expect((await malformed.json()).code).toBe("invalid_response");
     const afterStructure = (await (await api.get("/api/assistant")).json()).usage.modelRequests;
     expect(afterStructure - beforeStructure).toBe(1);
+    expect(
+      (
+        await api.post("/api/learning", {
+          data: {
+            action: "preferences",
+            personalized: true,
+            retainChat: false,
+            externalEnabled: false,
+          },
+        })
+      ).ok(),
+    ).toBeTruthy();
+    expect(
+      (
+        await api.post("/api/learning", {
+          data: { action: "preferences", personalized: false, retainChat: false },
+        })
+      ).ok(),
+    ).toBeTruthy();
+    const privateAnswer = await api.post("/api/assistant", {
+      data: { requestId: randomUUID(), question, allowExternal: true },
+    });
+    expect(privateAnswer.status()).toBe(200);
+    expect(await privateAnswer.json()).toMatchObject({
+      mode: "retrieval",
+      usage: { modelCall: null },
+    });
+    expect((await (await api.get("/api/assistant")).json()).usage.modelRequests).toBe(
+      afterStructure,
+    );
   } finally {
     db.close();
     await api.dispose();

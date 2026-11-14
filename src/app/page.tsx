@@ -6,10 +6,10 @@ import type { ReactElement } from "react";
 import { AppShell } from "@/components/app-shell";
 import ReviewTaskHome from "@/components/review-task-home";
 import { isLegacyTestMode } from "@/lib/server/access-config";
-import { listNotices, sources } from "@/lib/server/exam-store";
+import { listNotices } from "@/lib/server/exam-store";
 import { platformDb } from "@/lib/server/platform-db";
 import { CATEGORY_LABELS } from "@/domain/exam-catalog";
-import { isUpcoming, beijingDay, homepageOptions } from "@/lib/portal-feed";
+import { isUpcoming, homepageOptions } from "@/lib/portal-feed";
 import { learningEntries } from "@/lib/server/learning-store";
 import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 export const dynamic = "force-dynamic";
@@ -28,12 +28,11 @@ export default async function Home({
   const options = homepageOptions(filters);
   const knowledge = learningEntries();
   const items = listNotices().map((item) =>
-      catalogLifecycle(knowledge, item.content.category, item.content.region).blocked &&
-      item.content.disposition === "正常"
-        ? { ...item, content: { ...item.content, disposition: "待核实" as const } }
-        : item,
-    ),
-    sourceList = sources();
+    catalogLifecycle(knowledge, item.content.category, item.content.region).blocked &&
+    item.content.disposition === "正常"
+      ? { ...item, content: { ...item.content, disposition: "待核实" as const } }
+      : item,
+  );
   const recent = items.filter(
     (item) =>
       item.content.disposition === "正常" &&
@@ -45,11 +44,6 @@ export default async function Home({
       "SELECT notice_id,COUNT(*) count FROM exam_favorites GROUP BY notice_id HAVING COUNT(*)>=3 ORDER BY count DESC LIMIT 12",
     )
     .all();
-  const daily = platformDb()
-    .prepare<[string], { status: string; message: string; finished_at: string }>(
-      "SELECT * FROM portal_daily_runs WHERE day=?",
-    )
-    .get(beijingDay());
   const sections = [
     {
       id: "current",
@@ -115,12 +109,12 @@ export default async function Home({
   return (
     <AppShell activePage="home">
       <div className="space-y-8">
-        <header className="rounded-2xl bg-primary/5 p-7">
+        <header className="home-hero">
           <p className="text-sm text-primary">为下一场考试做好准备</p>
-          <h1 className="my-3 text-3xl font-semibold">考试信息与学习，一站跟进</h1>
-          <p className="text-muted-foreground">
-            找到近期考试、设定目标、收集资料，遇到问题随时咨询右下角助手。
-          </p>
+          <h1 className="my-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+            下一场考试，从这里出发
+          </h1>
+          <p className="text-muted-foreground">关注考试动态，让每一步备考都有方向。</p>
           <div className="mt-5 flex flex-wrap gap-4">
             <Link href="/exams" className="rounded bg-primary px-4 py-2 text-primary-foreground">
               找考试
@@ -133,19 +127,6 @@ export default async function Home({
             </Link>
           </div>
         </header>
-        <details className="rounded-xl border p-4 text-sm" aria-label="每日更新状态">
-          <summary className="cursor-pointer text-muted-foreground">
-            已收录{items.length}条公告 · 北京时间 {beijingDay()} · 查看更新情况
-          </summary>
-          <p className="mt-3">
-            {daily?.message ?? "今日自动检查尚未完成；目前展示已核验收录的信息。"}
-          </p>
-          <p className="mt-2 text-muted-foreground">
-            已启用{sourceList.filter((source) => source.enabled).length}个来源；
-            {sourceList.filter((source) => source.error).length}
-            个来源存在失败或部分结果。每日检查不等于每天都有新公告。
-          </p>
-        </details>
         <section className="space-y-5" aria-label="近期考试">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">近期考试</h2>
@@ -166,7 +147,7 @@ export default async function Home({
               </Link>
             ))}
           </nav>
-          <form className="flex flex-wrap items-end gap-3" action="/">
+          <form className="content-toolbar flex flex-wrap items-end gap-3" action="/">
             <input type="hidden" name="tab" value={selected.id} />
             <label>
               近期范围
@@ -223,16 +204,12 @@ export default async function Home({
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+              <div className="exam-card-grid">
                 {selected.items.slice(0, options.size).map((item) => {
                   return (
-                    <article
-                      key={item.id}
-                      className="flex min-h-60 flex-col rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md sm:aspect-square sm:min-h-[22rem]"
-                      aria-label={item.content.title}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="rounded-md bg-primary/5 px-2 py-1 text-xs font-medium text-primary">
+                    <article key={item.id} className="exam-card" aria-label={item.content.title}>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <span className="max-w-full rounded-md bg-primary/8 px-2 py-1 text-xs font-medium text-primary">
                           {CATEGORY_LABELS[item.content.category]}
                         </span>
                         <ExamStatus
@@ -263,7 +240,7 @@ export default async function Home({
                         stage={item.content.stage}
                         initialNow={now}
                       />
-                      <div className="mt-auto flex items-center justify-between gap-2 pt-5 text-sm">
+                      <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4 text-sm">
                         <Link
                           href={`/exams/${item.id}`}
                           className="font-medium text-primary hover:underline"

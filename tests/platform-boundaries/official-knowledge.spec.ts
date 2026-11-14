@@ -132,7 +132,7 @@ test("北京2026资格原文保留地区年份，其他地区或考期不引用�
   });
   expect(local.status()).toBe(200);
   const answer = await local.json();
-  expect(answer.mode).toBe("mock");
+  expect(answer.mode).toBe("retrieval");
   expect(answer.citations.length).toBeGreaterThan(0);
   expect(
     answer.citations.every((c: { scope: string }) => c.scope.startsWith("北京 · 2026年 ·")),

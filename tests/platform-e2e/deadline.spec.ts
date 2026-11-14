@@ -135,7 +135,7 @@ test("ENG-047 截止提醒跨页面一致，日期精度与实时到期正确且
         await context.request.post(`/api/exams/${ids["精确"]}`, { data: { action: "favorite" } })
       ).ok(),
     ).toBeTruthy();
-    await page.goto("/me");
+    await page.goto("/me?view=favorites");
     await expect(page.getByLabel("报名截止提醒")).toContainText("距报名截止");
     await page.goto(`/exams?q=${encodeURIComponent(`合成截止精确-${suffix}`)}`);
     await expect(page.getByLabel("报名截止提醒")).toContainText("距报名截止");

@@ -1,3 +1,5 @@
+import { sessionAccount } from "@/lib/server/account-auth";
+import { isLegacyTestMode } from "@/lib/server/access-config";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -7,6 +9,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse> {
+  if (!isLegacyTestMode() && sessionAccount(request)?.role !== "admin")
+    return NextResponse.json({ error: "仅管理员可测试模型连接。" }, { status: 403 });
   try {
     const { call } = await generateModelJson({
       schema: z.object({ ok: z.literal(true) }),

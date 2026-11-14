@@ -49,7 +49,10 @@ export function proxy(request: NextRequest): NextResponse {
       )
         return NextResponse.json({ error: "下载过于频繁，请稍后重试。" }, { status: 429 });
       if (
-        (path.startsWith("/admin") || path.startsWith("/api/admin/")) &&
+        (path.startsWith("/admin") ||
+          path.startsWith("/api/admin/") ||
+          path === "/setup" ||
+          path === "/api/model/test") &&
         account?.role !== "admin"
       )
         return NextResponse.json({ error: "仅内容管理员可操作。" }, { status: 403 });

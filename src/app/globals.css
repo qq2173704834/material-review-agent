@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --font-sans: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
   --background: #f7f8fb;
   --foreground: #202737;
   --card: #ffffff;
@@ -59,5 +60,357 @@
   ::selection {
     color: var(--foreground);
     background: #dedcff;
+  }
+}
+
+/* Shared surfaces and controls keep student pages consistent at every width. */
+@layer base {
+  html {
+    font-size: 16px;
+    scrollbar-gutter: stable;
+  }
+  body {
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+  button,
+  summary,
+  select {
+    cursor: pointer;
+  }
+  button {
+    transition:
+      background-color 0.16s ease,
+      box-shadow 0.16s ease;
+  }
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+    min-width: 0;
+  }
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--foreground);
+    padding: 0.6rem 0.8rem;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--primary);
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: pretty;
+    letter-spacing: -0.025em;
+  }
+  :is(p, h1, h2, h3, label, article, a) {
+    overflow-wrap: anywhere;
+  }
+  summary {
+    padding-block: 0.5rem;
+  }
+}
+@layer components {
+  .app-frame {
+    background: radial-gradient(ellipse at 90% 0%, #efedff 0%, transparent 35%), var(--background);
+  }
+  .app-sidebar {
+    box-shadow: 5px 0 28px -24px #48407550;
+  }
+  .app-topbar {
+    backdrop-filter: blur(12px);
+  }
+  .app-main {
+    min-width: 0;
+  }
+  .app-main h1 {
+    line-height: 1.3;
+  }
+  .app-main form > label {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .surface {
+    padding: 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: 0 4px 18px -14px #29224730;
+  }
+  .page-heading {
+    padding-block: 0.25rem 0.6rem;
+  }
+  .page-heading > p {
+    font-size: 0.9rem;
+    color: var(--muted-foreground);
+  }
+  .home-hero {
+    position: relative;
+    isolation: isolate;
+    border: 1px solid #dedaf7;
+    border-radius: 22px;
+    padding: 1.6rem 1.8rem;
+    background: linear-gradient(115deg, #efedff, #fafaff 65%, #edf5ff);
+    overflow: hidden;
+  }
+  .home-hero::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    right: -50px;
+    top: -100px;
+    width: 300px;
+    height: 300px;
+    border: 38px solid #dad5ff66;
+    border-radius: 50%;
+  }
+  .home-hero a {
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .exam-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    gap: 20px;
+    align-items: stretch;
+  }
+  .exam-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+    min-height: 330px;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--card);
+    box-shadow: 0 3px 12px -9px #32266b35;
+    transition:
+      border-color 0.16s ease,
+      box-shadow 0.16s ease;
+  }
+  .exam-card:hover {
+    border-color: #b5aeea;
+    box-shadow: 0 8px 24px -17px #51409880;
+  }
+  .exam-card h3 {
+    font-size: 1rem;
+  }
+  .exam-card > div:first-child {
+    min-height: 36px;
+  }
+  .exam-card > div:last-child {
+    margin-top: auto;
+  }
+  .content-toolbar {
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    background: #ffffffb8;
+    border-radius: 14px;
+    font-size: 0.875rem;
+  }
+  .page-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    background: #eeedf6;
+    border-radius: 13px;
+    width: fit-content;
+    max-width: 100%;
+  }
+  .page-tabs a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    padding: 0.55rem 1rem;
+    min-height: 42px;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+  }
+  .page-tabs a[aria-current="page"] {
+    background: white;
+    color: var(--primary);
+    font-weight: 600;
+    box-shadow: 0 2px 6px #32266b0d;
+  }
+  .identity-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    padding-top: 1rem;
+    font-size: 0.8rem;
+  }
+  .button-primary {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.65rem 1.1rem;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: var(--primary);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 4px 10px -6px #5644c980;
+    text-decoration: none;
+  }
+  .button-primary:hover:not(:disabled) {
+    background: #4942b5;
+  }
+  .preference-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+  }
+  .preference-options label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.875rem;
+  }
+  .preference-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid var(--border);
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    font-size: 0.875rem;
+  }
+  .preference-footer p {
+    color: var(--muted-foreground);
+  }
+  .preference-footer button {
+    margin-left: auto;
+  }
+  .assistant-trigger {
+    border-color: #dcd8f5;
+    color: #3e376b;
+  }
+  .assistant-panel {
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.65;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .assistant-panel label,
+  .assistant-panel input,
+  .assistant-panel select,
+  .assistant-panel textarea,
+  .assistant-panel button {
+    font-family: inherit;
+    font-size: 0.875rem;
+  }
+  .assistant-panel button {
+    min-height: 40px;
+  }
+  .assistant-panel .assistant-suggestion {
+    font-size: 0.75rem;
+    color: #514684;
+    background: #f7f5ff;
+    border-color: #e6e1fb;
+  }
+  .assistant-panel article {
+    border-radius: 13px;
+    background: #f8f7fc;
+    line-height: 1.8;
+  }
+  .assistant-panel article p {
+    margin-top: 0.4rem;
+  }
+  .assistant-panel blockquote {
+    padding: 0.6rem 0.8rem;
+    border-left: 3px solid #c9c1ef;
+    background: white;
+  }
+  .resource-card {
+    height: 100%;
+  }
+  .auth-page {
+    margin-top: clamp(1rem, 6vh, 5rem);
+    margin-bottom: 3rem;
+    border: 1px solid #e2ddf3;
+    border-radius: 24px;
+    background: white;
+    box-shadow: 0 16px 60px -32px #54427f55;
+    padding: 2rem;
+    width: calc(100% - 2rem);
+  }
+  .auth-page > section > h1 {
+    margin-bottom: 1.2rem;
+  }
+  .auth-page form > button[type="submit"] {
+    background: var(--primary);
+    color: white;
+    border: none;
+    font-weight: 600;
+  }
+  @media (max-width: 639px) {
+    .exam-card-grid {
+      gap: 14px;
+    }
+    .exam-card {
+      min-height: 300px;
+    }
+    .surface {
+      padding: 1rem;
+    }
+    .home-hero {
+      padding: 1.3rem;
+    }
+    .preference-options {
+      flex-direction: column;
+    }
+    .preference-footer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .preference-footer button {
+      width: 100%;
+    }
+    .assistant-panel {
+      max-height: calc(100dvh - 115px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

@@ -161,7 +161,7 @@ test("撤回时存在更新草稿也保留原发布版本，收藏不泄露新�
     ).status(),
   ).toBe(200);
   expect((await actors.student.api.get(`/exams/${item.id}`)).status()).toBe(404);
-  const dashboard = await (await actors.student.api.get("/me")).text();
+  const dashboard = await (await actors.student.api.get("/me?view=favorites")).text();
   expect(dashboard).toContain(content.title);
   expect(dashboard).toContain("已撤回");
   expect(dashboard).not.toContain(secret);
@@ -379,7 +379,7 @@ test("累计超过100个草稿后，收藏仍显示发布快照且旧任务可�
   } finally {
     db.close();
   }
-  const dashboard = await actors.student.api.get("/me");
+  const dashboard = await actors.student.api.get("/me?view=favorites");
   expect(dashboard.status()).toBe(200);
   const html = await dashboard.text();
   expect(html).toContain(content.title);

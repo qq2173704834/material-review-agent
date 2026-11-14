@@ -92,7 +92,11 @@ export function saveGoal(userId: string, raw: GoalInput, id?: string): StudentGo
     return studentGoal(userId, key)!;
   })();
 }
-export function portalPreferences(userId: string): { personalized: boolean; retainChat: boolean } {
+export function portalPreferences(userId: string): {
+  personalized: boolean;
+  retainChat: boolean;
+  externalEnabled: boolean;
+} {
   const row = platformDb()
     .prepare<[string], { personalized: number; retain_chat: number }>(
       "SELECT * FROM portal_preferences WHERE user_id=?",
@@ -101,5 +105,11 @@ export function portalPreferences(userId: string): { personalized: boolean; reta
   return {
     personalized: row ? !!row.personalized : true,
     retainChat: row ? !!row.retain_chat : true,
+    externalEnabled:
+      platformDb()
+        .prepare<[string], { external_enabled: number }>(
+          "SELECT external_enabled FROM assistant_preferences WHERE user_id=?",
+        )
+        .get(userId)?.external_enabled !== 0,
   };
 }

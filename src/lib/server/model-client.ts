@@ -58,11 +58,7 @@ export function getModelConfiguration(): z.infer<typeof modelConfigurationSchema
     maxAttempts: process.env.AI_MAX_ATTEMPTS?.trim() || "2",
   });
   if (!parsed.success)
-    throw new ModelServiceError(
-      "configuration",
-      "模型配置不完整或无效，请在项目根目录 .env.local 填写 API 地址、模型名和密钥，并检查超时及调用上限。",
-      503,
-    );
+    throw new ModelServiceError("configuration", "AI服务暂不可用，请稍后重试或联系管理员。", 503);
   return parsed.data;
 }
 

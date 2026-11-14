@@ -45,6 +45,8 @@ test("BUG-025 同名昵称不混淆登录账号，目标与反馈按会话隔离
     await expect(pageA.getByLabel("当前登录身份")).toContainText("昵称：test@123");
     await expect(pageA.getByRole("heading", { name: /A账号专属考试目标/ })).toBeVisible();
     await expect(pageB.getByRole("heading", { name: /A账号专属考试目标/ })).toHaveCount(0);
+    await pageA.goto("/me?view=feedback");
+    await pageB.goto("/me?view=feedback");
     const ownFeedback = pageA
       .locator("section")
       .filter({ has: pageA.getByRole("heading", { name: "我的内容反馈", exact: true }) });
@@ -85,7 +87,7 @@ test("BUG-025 同名昵称不混淆登录账号，目标与反馈按会话隔离
 test("BUG-025 未登录不能读取我的考试", async ({ page }) => {
   await page.goto("/me");
   await expect(page).toHaveURL(/\/login\?next=/);
-  await expect(page.getByRole("heading", { name: "我的考试工作台" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "我的考试" })).toHaveCount(0);
 });
 test("BUG-025 脚本未就绪时禁用提交，账号表单不使用GET发送密码", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });

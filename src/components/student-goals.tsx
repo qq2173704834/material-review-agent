@@ -54,7 +54,7 @@ export function StudentGoals({
     }
   }
   return (
-    <section id="goals" className="space-y-5">
+    <section id="goals" className="surface space-y-5">
       <h2 className="text-xl font-semibold">我的考试目标</h2>
       <p className="text-sm text-muted-foreground">
         可同时关注不同考试；专业、考期和地区条件仍以当期公告为准。

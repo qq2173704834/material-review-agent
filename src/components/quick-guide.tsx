@@ -48,6 +48,9 @@ export function QuickGuide(): ReactElement {
             <p>点开问题核对依据，在问题旁修订材料，再复查受影响项。确认范围后导出报告。</p>
           </li>
         </ol>
+        <p className="mb-4 text-sm text-muted-foreground">
+          结果分为通过、未通过、待确认、无法检查与不适用；未核验的内容不会表示为通过。
+        </p>
         <DemoControls autoRun forceMock />
         <button
           className="min-h-11 rounded-lg bg-primary px-5 text-sm font-medium text-white"

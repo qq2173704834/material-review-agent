@@ -427,14 +427,11 @@ export function TaskWorkspace({
                 ? "模拟演示模式：不调用真实模型；规格工具读取实际材料，语义内容不会自动算作通过。"
                 : mode === "live"
                   ? "真实模型模式：审查依据及检查所需材料片段将发送至已配置的模型服务。"
-                  : "模型模式配置无效。"}
+                  : "AI服务暂不可用，请稍后重试或联系管理员。"}
             </p>
             {cannotRun && (
               <p role="alert" className="mt-2 text-sm text-red-800">
-                请先完成模型配置，输入和材料已保留。
-                <Link href="/setup" className="ml-2 underline">
-                  前往本地环境
-                </Link>
+                AI服务暂不可用，请稍后重试或联系管理员。输入和材料已保留。
               </p>
             )}
             {Object.values(problemCounts).some((count) => count > 0) && (

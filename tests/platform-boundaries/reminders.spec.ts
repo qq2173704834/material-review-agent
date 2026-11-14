@@ -40,9 +40,7 @@ test("目标无需收藏即显示节点，已读按账号和版本隔离，归�
   ).toBe(400);
   await page.context().addCookies((await actors.student.api.storageState()).cookies);
   await page.goto("/me");
-  const nodes = page
-    .getByRole("heading", { name: "我的考试时间节点 · Asia/Shanghai" })
-    .locator("..");
+  const nodes = page.getByRole("heading", { name: "考试日程" }).locator("../..");
   await expect(nodes.getByText(content.title, { exact: true })).toBeVisible();
   await nodes.getByRole("button", { name: "标记提醒已读" }).click();
   await expect.poll(async () => (await get(actors.student.api))[0]?.read).toBe(true);

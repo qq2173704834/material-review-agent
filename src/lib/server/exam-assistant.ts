@@ -20,7 +20,7 @@ export const assistantInputSchema = z
     question: z.string().trim().min(1).max(3000),
     goalId: z.string().uuid().optional(),
     useContext: z.boolean().default(false),
-    allowExternal: z.boolean().default(false),
+    allowExternal: z.boolean().optional(),
     learning: z.boolean().default(false),
   })
   .strict();
@@ -226,14 +226,8 @@ export async function askExamAssistant(
   const sources = assistantSources(userId, input),
     mode = getAiMode(),
     retain = portalPreferences(userId).retainChat;
-  if (
-    mode === "live" &&
-    !input.allowExternal &&
-    (input.learning || sources.some((source) => !source.historical))
-  )
-    throw new Error(
-      "真实AI答疑需要允许将本次问题、所选目标的考试范围及公开知识片段发送到已配置模型。不会发送私人材料。",
-    );
+  const externalEnabled =
+    portalPreferences(userId).externalEnabled && input.allowExternal !== false;
   let conversationId: string | null = retain ? (input.conversationId ?? randomUUID()) : null;
   db.transaction(() => {
     // A per-user reservation prevents two parallel requests from billing the same question twice.
@@ -333,6 +327,23 @@ export async function askExamAssistant(
         citations: [],
         conversationId,
         warning: "没有可核验的当前证据，不推断报名时间或报考资格。",
+      };
+    } else if (!externalEnabled) {
+      answer = {
+        answer: sources.length
+          ? `已关闭AI生成，找到以下本站资料：\n${sources
+              .slice(0, 3)
+              .map((source) => source.text.slice(0, 240))
+              .join("\n\n")}`
+          : "已关闭AI生成，暂未找到匹配的本站资料。可到学习页的AI与隐私设置调整。",
+        kind: "需补充信息",
+        mode: "retrieval",
+        conversationId,
+        citations: sources.slice(0, 3).map(({ text, historical, ...source }) => {
+          void historical;
+          return { ...source, quote: text.slice(0, 240) };
+        }),
+        warning: "本次仅检索本站资料，未调用外部模型。",
       };
     } else if (mode === "mock") {
       answer = {

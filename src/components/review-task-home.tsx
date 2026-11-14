@@ -1,15 +1,6 @@
 import { headers } from "next/headers";
 import { requestIdentity } from "@/lib/server/access-config";
-import {
-  ArrowRight,
-  FileCheck2,
-  FileSearch,
-  Files,
-  FolderOpen,
-  ListChecks,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowRight, FileCheck2, FolderOpen, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { AppShell } from "@/components/app-shell";
@@ -22,13 +13,6 @@ import { QuickGuide } from "@/components/quick-guide";
 import { DemoControls } from "@/components/demo-controls";
 
 import type { ReactElement } from "react";
-
-const workflowSteps = [
-  { title: "导入要求", description: "从本次通知中整理提交规范", icon: FileSearch },
-  { title: "匹配材料", description: "将文件与独立检查项关联", icon: Files },
-  { title: "逐项核验", description: "查看结论、原文与材料证据", icon: ListChecks },
-  { title: "整改复检", description: "更新材料，确认问题的变化", icon: RefreshCw },
-];
 
 export const dynamic = "force-dynamic";
 
@@ -120,7 +104,7 @@ export default async function TasksPage(): Promise<ReactElement> {
               全部任务{" "}
               <span className="ml-1 text-xs font-normal text-muted-foreground">{tasks.length}</span>
             </h2>
-            <Badge>本地保存</Badge>
+            <Badge>按最近更新排序</Badge>
           </div>
           <ul className="divide-y divide-border">
             {tasks.map((task) => (
@@ -201,30 +185,6 @@ export default async function TasksPage(): Promise<ReactElement> {
           </div>
         </section>
       )}
-
-      <section id="workflow" aria-labelledby="workflow-heading" className="mt-10">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h2 id="workflow-heading" className="text-sm font-semibold">
-            从要求到复检，每一步都有记录
-          </h2>
-          <span className="text-xs text-muted-foreground">流程规划</span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {workflowSteps.map(({ title, description, icon: Icon }, index) => (
-            <div key={title} className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-5 flex items-center justify-between">
-                <Icon className="size-5 text-primary" strokeWidth={1.6} aria-hidden="true" />
-                <span className="font-mono text-xs text-muted-foreground/60">0{index + 1}</span>
-              </div>
-              <h3 className="text-sm font-medium">{title}</h3>
-              <p className="mt-2 text-xs leading-6 text-muted-foreground">{description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      <p className="mt-8 text-xs leading-6 text-muted-foreground">
-        预审应区分通过、未通过、待确认、无法检查与不适用。未核验的内容不会被表示为通过。
-      </p>
     </AppShell>
   );
 }

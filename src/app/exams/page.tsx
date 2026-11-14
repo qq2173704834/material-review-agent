@@ -72,7 +72,7 @@ export default async function Page({
             升学、语言、计算机、职业资格与就业招录。报名条件因地区、考期和学籍不同，请核对官方要求。
           </p>
         </header>
-        <form action="/exams" className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-3">
+        <form action="/exams" className="surface grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <label>
             关键词
             <input
@@ -204,7 +204,7 @@ export default async function Page({
         )}
         <div className="grid gap-4">
           {results.slice((page - 1) * 20, page * 20).map((item) => (
-            <article key={item.id} className="space-y-2 rounded-xl border bg-card p-5">
+            <article key={item.id} className="surface space-y-2">
               <p className="text-xs text-primary">
                 {CATEGORY_LABELS[item.content.category]} · {item.content.region} ·{" "}
                 {item.content.edition} · {item.content.stage}

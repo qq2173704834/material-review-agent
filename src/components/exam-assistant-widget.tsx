@@ -1,6 +1,9 @@
 "use client";
 import { ContentFeedback } from "@/components/content-feedback";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { CATEGORY_LABELS } from "@/domain/exam-catalog";
+import type { ExamCategoryId } from "@/domain/exam-catalog";
 import { usePathname } from "next/navigation";
 import type { ReactElement } from "react";
 import type { AssistantAnswer } from "@/domain/assistant";
@@ -31,7 +34,6 @@ function AssistantPanel(): ReactElement {
     [question, setQuestion] = useState(""),
     [goal, setGoal] = useState(""),
     [context, setContext] = useState(false),
-    [external, setExternal] = useState(false),
     [learning, setLearning] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -79,7 +81,6 @@ function AssistantPanel(): ReactElement {
           question,
           goalId: goal || undefined,
           useContext: context,
-          allowExternal: external,
           learning,
         }),
       });
@@ -123,7 +124,7 @@ function AssistantPanel(): ReactElement {
     }
   }
   return (
-    <div className="fixed right-4 bottom-4 z-50">
+    <div className="assistant-widget fixed right-3 bottom-3 z-50 sm:right-5 sm:bottom-5">
       <button
         ref={trigger}
         aria-label="打开考试学习AI助手"
@@ -132,7 +133,7 @@ function AssistantPanel(): ReactElement {
           if (!open) setState(null);
           setOpen(!open);
         }}
-        className="flex items-center gap-2 rounded-full border bg-background p-3 shadow-lg"
+        className="assistant-trigger flex items-center gap-2 rounded-full border bg-card p-3 shadow-lg"
       >
         <svg aria-hidden="true" width="42" height="42" viewBox="0 0 48 48">
           <path
@@ -154,13 +155,19 @@ function AssistantPanel(): ReactElement {
           onKeyDown={(event) => {
             if (event.key === "Escape") close();
           }}
-          className="absolute right-0 bottom-20 flex max-h-[75dvh] w-[min(28rem,calc(100vw-2rem))] flex-col gap-3 overflow-y-auto rounded-xl border bg-background p-4 shadow-xl"
+          className="assistant-panel absolute right-0 bottom-20 flex max-h-[min(82dvh,800px)] w-[min(30rem,calc(100vw-3rem))] flex-col gap-4 overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl"
         >
-          <div className="flex justify-between">
-            <h2 className="font-semibold">考试学习AI助手</h2>
-            <button onClick={close}>关闭</button>
+          <div className="flex items-center justify-between gap-3 border-b pb-3">
+            <h2 className="text-base font-semibold">考试学习AI助手</h2>
+            <button
+              type="button"
+              className="rounded-lg px-3 text-sm text-muted-foreground"
+              onClick={close}
+            >
+              关闭
+            </button>
           </div>
-          <p className="text-xs">
+          <p className="text-xs leading-6 text-muted-foreground">
             {state?.mode === "mock"
               ? "模拟模式，未调用真实模型"
               : "考试信息引用已审核知识；学习建议请自行核对。"}{" "}
@@ -169,71 +176,77 @@ function AssistantPanel(): ReactElement {
           {state && (
             <p className="text-xs">
               {state.policy.enabled
-                ? `每小时最多${state.policy.hourlyLimit}问；模型费用以服务商账单为准。`
+                ? `每小时可提问${state.policy.hourlyLimit}次。`
                 : "助手已暂停服务，考试和学习资料仍可访问。"}
             </p>
           )}
           {state?.usage && (
-            <p className="text-xs text-muted-foreground">
-              最近1小时：{state.usage.questions}问，失败{state.usage.failed}次；已记录模型请求
-              {state.usage.modelRequests}次，已知输入/输出Token {state.usage.inputTokens}/
-              {state.usage.outputTokens}。
-              {state.usage.unknownTokenCalls > 0
-                ? `另有${state.usage.unknownTokenCalls}次Token不完整，合计仅为已知部分。`
-                : "历史未记录耗用不计入合计，费用未知。"}
-            </p>
+            <details className="text-xs text-muted-foreground">
+              <summary>使用记录</summary>
+              <p className="mt-2">
+                最近1小时：{state.usage.questions}问，失败{state.usage.failed}次；已记录模型请求
+                {state.usage.modelRequests}次，已知输入/输出Token {state.usage.inputTokens}/
+                {state.usage.outputTokens}。
+                {state.usage.unknownTokenCalls > 0
+                  ? `另有${state.usage.unknownTokenCalls}次Token不完整，合计仅为已知部分。`
+                  : "历史未记录耗用不计入合计，费用未知。"}
+              </p>
+            </details>
           )}
-          <label>
-            私有会话
-            <select
-              disabled={busy}
-              value={conversation}
-              onChange={(event) => {
-                setConversation(event.target.value);
-                setError("");
-              }}
-              className="w-full rounded border p-2"
-            >
-              <option value="">新会话</option>
-              {state?.conversations.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex gap-4 text-sm">
-            <button
-              disabled={busy}
-              className="underline"
-              onClick={() => {
-                setConversation("");
-                setState((previous) => (previous ? { ...previous, messages: [] } : previous));
-              }}
-            >
-              新建会话
-            </button>
-            <button
-              disabled={busy || !conversation}
-              className="underline"
-              onClick={async () => {
-                try {
-                  const response = await fetch("/api/assistant", {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: conversation }),
-                  });
-                  if (!response.ok) throw new Error("删除失败");
+          <details className="text-sm">
+            <summary>历史会话</summary>
+            <label>
+              私有会话
+              <select
+                disabled={busy}
+                value={conversation}
+                onChange={(event) => {
+                  setConversation(event.target.value);
+                  setError("");
+                }}
+                className="w-full rounded border p-2"
+              >
+                <option value="">新会话</option>
+                {state?.conversations.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex gap-4 text-sm">
+              <button
+                disabled={busy}
+                className="underline"
+                onClick={() => {
                   setConversation("");
-                  await load();
-                } catch {
-                  setError("删除失败，请重试。");
-                }
-              }}
-            >
-              删除当前历史
-            </button>
-          </div>
+                  setState((previous) => (previous ? { ...previous, messages: [] } : previous));
+                }}
+              >
+                新建会话
+              </button>
+              <button
+                disabled={busy || !conversation}
+                className="underline"
+                onClick={async () => {
+                  try {
+                    const response = await fetch("/api/assistant", {
+                      method: "DELETE",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id: conversation }),
+                    });
+                    if (!response.ok) throw new Error("删除失败");
+                    setConversation("");
+                    await load();
+                  } catch {
+                    setError("删除失败，请重试。");
+                  }
+                }}
+              >
+                删除当前历史
+              </button>
+            </div>
+          </details>
           <div className="space-y-4" aria-live="polite">
             {state?.messages.map((message, index) => (
               <article key={index} className="rounded border p-3 text-sm">
@@ -292,7 +305,7 @@ function AssistantPanel(): ReactElement {
                   key={example}
                   type="button"
                   disabled={busy}
-                  className="rounded border px-2 py-1 text-xs"
+                  className="assistant-suggestion rounded-lg border px-3 py-2 text-left text-xs"
                   onClick={() => {
                     setQuestion(example);
                     setLearning(index === 1);
@@ -303,48 +316,44 @@ function AssistantPanel(): ReactElement {
                 </button>
               ))}
             </div>
-            <label className="block">
-              <input
-                type="checkbox"
-                checked={learning}
-                onChange={(event) => setLearning(event.target.checked)}
-              />{" "}
-              学习讲解/练习建议（AI生成）
-            </label>
-            <label className="block">
-              考试目标
-              <select
-                value={goal}
-                onChange={(event) => setGoal(event.target.value)}
-                className="w-full border p-2"
-              >
-                <option value="">不选择</option>
-                {state?.goals.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.category} · {item.edition}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <input
-                type="checkbox"
-                checked={context}
-                onChange={(event) => setContext(event.target.checked)}
-              />{" "}
-              本次使用所选目标的考试、地区、考期
-            </label>
-            {state?.mode === "live" && (
-              <label className="block text-sm">
-                <input
-                  type="checkbox"
-                  checked={external}
-                  onChange={(event) => setExternal(event.target.checked)}
-                />{" "}
-                允许将本次问题、所选目标范围和公开知识片段发送到已配置模型服务
-              </label>
-            )}
-            <label className="block">
+            <details>
+              <summary>回答设置</summary>
+              <div className="mt-3 space-y-3">
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={learning}
+                    onChange={(event) => setLearning(event.target.checked)}
+                  />{" "}
+                  学习讲解/练习建议（AI生成）
+                </label>
+                <label className="block text-sm">
+                  考试目标
+                  <select
+                    value={goal}
+                    onChange={(event) => setGoal(event.target.value)}
+                    className="mt-2 w-full rounded-lg border p-2"
+                  >
+                    <option value="">不选择</option>
+                    {state?.goals.map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {CATEGORY_LABELS[item.category as ExamCategoryId] ?? item.category} ·{" "}
+                        {item.edition}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={context}
+                    onChange={(event) => setContext(event.target.checked)}
+                  />{" "}
+                  本次使用所选目标的考试、地区、考期
+                </label>
+              </div>
+            </details>
+            <label className="block text-sm">
               你的问题
               <textarea
                 ref={input}
@@ -352,15 +361,12 @@ function AssistantPanel(): ReactElement {
                 required
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
-                className="mt-1 w-full rounded border p-2"
+                className="mt-2 min-h-24 w-full resize-y rounded-xl border p-3 text-sm"
                 placeholder="例如：本考期的报名条件是什么？"
               />
             </label>
             <div className="flex gap-4">
-              <button
-                disabled={busy || !state || !state.policy.enabled}
-                className="rounded bg-primary px-4 py-2 text-primary-foreground"
-              >
+              <button disabled={busy || !state || !state.policy.enabled} className="button-primary">
                 {busy ? "正在回答…" : "发送"}
               </button>
               {busy && (
@@ -370,7 +376,13 @@ function AssistantPanel(): ReactElement {
               )}
             </div>
           </form>
-          <p role="status" className="text-sm">
+          <p className="text-xs leading-6 text-muted-foreground">
+            回答由AI生成，你的问题及相关参考信息会用于生成回答。
+            <Link className="ml-1 text-primary underline" href="/learn#assistant-privacy">
+              隐私设置
+            </Link>
+          </p>
+          <p role="status" className="text-sm text-red-700">
             {error}
           </p>
         </section>

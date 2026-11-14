@@ -133,10 +133,10 @@ test("真实账号门禁、恢复、隔离、发布收藏和公告预审版本�
   });
   expect(bad.status()).toBe(400);
   expect((await a.post(`/api/exams/${id}`, { data: { action: "favorite" } })).ok()).toBeTruthy();
-  expect(await (await a.get("/me")).text()).toContain(content.title);
+  expect(await (await a.get("/me?view=favorites")).text()).toContain(content.title);
   const peerContext = await browser.newContext({ storageState: await b.storageState() });
   const peerPage = await peerContext.newPage();
-  await peerPage.goto("/me");
+  await peerPage.goto("/me?view=favorites");
   const peerFavorites = peerPage
     .locator("section")
     .filter({ has: peerPage.getByRole("heading", { name: /^我的收藏/ }) });
@@ -162,7 +162,9 @@ test("真实账号门禁、恢复、隔离、发布收藏和公告预审版本�
     },
   });
   await manager.post("/api/admin/exams", { data: { action: "publish", id, version: 2 } });
-  expect((await (await a.get("/me")).text()).replace(/<!--.*?-->/g, "")).toContain("来源已有v2");
+  expect((await (await a.get("/me?view=reviews")).text()).replace(/<!--.*?-->/g, "")).toContain(
+    "来源已有v2",
+  );
   expect(
     (
       await manager.post("/api/admin/exams", { data: { action: "publish", id, version: 1 } })
@@ -180,7 +182,7 @@ test("真实账号门禁、恢复、隔离、发布收藏和公告预审版本�
   expect(await sourcesResponse.text()).toContain("需补充成绩单");
   await manager.post("/api/admin/exams", { data: { action: "withdraw", id, version: 2 } });
   expect((await a.get(`/exams/${id}`)).status()).toBe(404);
-  expect(await (await a.get("/me")).text()).toContain("公告已撤回");
+  expect(await (await a.get("/me?view=reviews")).text()).toContain("公告已撤回");
   const cookie = (await a.storageState()).cookies.find((c) => c.name === "exam_session");
   expect(cookie?.httpOnly).toBe(true);
   expect(cookie?.sameSite).toBe("Lax");
@@ -299,12 +301,12 @@ test("账号设置、会话期限、禁用与迁移预演及数据库备份恢�
   upgradeDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(200);
   const futureDb = new Database(resolve(".local-data/platform-e2e/platform.sqlite"));
-  expect(futureDb.pragma("user_version", { simple: true })).toBe(5);
-  futureDb.pragma("user_version=6");
+  expect(futureDb.pragma("user_version", { simple: true })).toBe(6);
+  futureDb.pragma("user_version=7");
   futureDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(503);
   const restoreVersionDb = new Database(resolve(".local-data/platform-e2e/platform.sqlite"));
-  restoreVersionDb.pragma("user_version=5");
+  restoreVersionDb.pragma("user_version=6");
   restoreVersionDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(200);
   execFileSync(process.execPath, [
@@ -394,7 +396,7 @@ test("手机注册、恢复码保存提示和登录页面可访问性", async ({
   await page.getByLabel("密码", { exact: true }).fill(password);
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("heading", { name: "考试信息与学习，一站跟进" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "下一场考试，从这里出发" })).toBeVisible();
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
   ).toBeTruthy();

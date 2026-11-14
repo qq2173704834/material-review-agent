@@ -377,7 +377,7 @@ export function ReviewExecutionPanel({
     try {
       if (workflow) {
         if (mode === "invalid" || (mode === "live" && !workflow.hasModelConfiguration))
-          throw new Error("请先在本地环境完成模型配置。输入和材料已保留。");
+          throw new Error("AI服务暂不可用，请稍后重试或联系管理员。输入和材料已保留。");
         await workflow.savePreparation();
         const taskResponse = await fetch(`/api/tasks/${taskId}`, {
           cache: "no-store",

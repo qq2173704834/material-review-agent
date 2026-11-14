@@ -40,17 +40,24 @@ export async function POST(request: Request): Promise<Response> {
             action: z.literal("preferences"),
             personalized: z.boolean(),
             retainChat: z.boolean(),
+            externalEnabled: z.boolean().optional(),
           })
           .strict(),
       ])
       .parse(await readSmallJson(request, 5000));
     if (input.action === "mark") resourceMark(account.id, input.id, input.field, input.value);
-    else
-      platformDb()
-        .prepare(
+    else {
+      const db = platformDb();
+      db.transaction(() => {
+        db.prepare(
           "INSERT INTO portal_preferences(user_id,personalized,retain_chat) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET personalized=excluded.personalized,retain_chat=excluded.retain_chat",
-        )
-        .run(account.id, input.personalized ? 1 : 0, input.retainChat ? 1 : 0);
+        ).run(account.id, input.personalized ? 1 : 0, input.retainChat ? 1 : 0);
+        if (input.externalEnabled !== undefined)
+          db.prepare(
+            "INSERT INTO assistant_preferences(user_id,external_enabled) VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET external_enabled=excluded.external_enabled",
+          ).run(account.id, input.externalEnabled ? 1 : 0);
+      })();
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(

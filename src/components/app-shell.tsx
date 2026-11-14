@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardCheck, LayoutDashboard, Settings2 } from "lucide-react";
+import { BookOpen, ClipboardCheck, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { AccountNavigation } from "@/components/account-navigation";
 
@@ -17,19 +17,18 @@ const navigationItems = [
   { page: "exams", href: "/exams", title: "考试中心", icon: LayoutDashboard },
   { page: "me", href: "/me", title: "我的考试", icon: ClipboardCheck },
   { page: "tasks", href: "/tasks", title: "材料预审", icon: LayoutDashboard },
-  { page: "setup", href: "/setup", title: "本地环境", icon: Settings2 },
 ] as const;
 
 export function AppShell({ activePage, children }: AppShellProps): ReactElement {
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="app-frame min-h-screen lg:grid lg:grid-cols-[224px_minmax(0,1fr)]">
       <a
         href="#main-content"
         className="sr-only z-50 rounded-md bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         跳到主要内容
       </a>
-      <aside className="flex flex-col border-b border-border bg-card lg:sticky lg:top-0 lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
+      <aside className="app-sidebar flex flex-col border-b border-border bg-card lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:border-r lg:border-b-0">
         <Link
           href="/"
           className="flex items-center gap-3 px-5 py-6 lg:px-6 lg:py-8"
@@ -63,7 +62,7 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
               )}
             >
               <Icon className="size-4" aria-hidden="true" />
-              <span className="text-[10px] sm:text-sm">{title}</span>
+              <span className="text-xs sm:text-sm">{title}</span>
             </Link>
           ))}
           <AccountNavigation />
@@ -71,15 +70,15 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
       </aside>
 
       <div className="min-w-0">
-        <header className="flex h-20 items-center justify-between border-b border-border bg-card/60 px-6 lg:px-10">
+        <header className="app-topbar flex h-16 items-center justify-between border-b border-border bg-card/80 px-5 lg:px-9">
           <p className="text-sm text-muted-foreground">
-            工作空间 <span className="mx-2 text-border">/</span>{" "}
+            考试与学习 <span className="mx-2 text-border">/</span>{" "}
             {activePage === "home"
               ? "首页"
               : activePage === "learn"
                 ? "学习"
                 : activePage === "setup"
-                  ? "本地环境"
+                  ? "服务维护"
                   : activePage === "exams"
                     ? "考试中心"
                     : activePage === "me"
@@ -92,7 +91,7 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto max-w-[1440px] px-5 py-8 outline-none sm:px-8 lg:px-10 lg:py-10"
+          className="app-main mx-auto max-w-[1520px] px-4 pt-6 pb-28 outline-none sm:px-7 lg:px-9 lg:pt-8"
         >
           {children}
         </main>

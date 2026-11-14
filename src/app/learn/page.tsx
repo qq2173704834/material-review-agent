@@ -47,12 +47,12 @@ export default async function Learn({
   return (
     <AppShell activePage="learn">
       <div className="space-y-6">
-        <header>
+        <header className="page-heading">
           <p className="text-sm text-primary">围绕你的考试目标学习</p>
           <h1 className="my-2 text-3xl font-semibold">学习资源与备考资讯</h1>
-          <p>先从官方资料入口开始，再收集适合科目和阶段的资料；入口导航不代表已读取完整课程。</p>
+          <p>找到适合你的资料，让今天的学习更有方向。</p>
         </header>
-        <form className="grid gap-3 rounded-xl border p-5 sm:grid-cols-3">
+        <form className="surface grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <label>
             考试目标
             <select
@@ -148,7 +148,7 @@ export default async function Learn({
         )}
         <div className="grid gap-4 md:grid-cols-2">
           {resources.slice((page - 1) * 12, page * 12).map((item) => (
-            <article key={item.id} className="space-y-3 rounded-xl border p-5">
+            <article key={item.id} className="resource-card surface space-y-3">
               <p className="text-xs text-primary">
                 {CATEGORY_LABELS[item.content.category]} · {item.content.format} ·{" "}
                 {item.content.studyStage}
