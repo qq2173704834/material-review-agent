@@ -299,12 +299,12 @@ test("账号设置、会话期限、禁用与迁移预演及数据库备份恢�
   upgradeDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(200);
   const futureDb = new Database(resolve(".local-data/platform-e2e/platform.sqlite"));
-  expect(futureDb.pragma("user_version", { simple: true })).toBe(4);
-  futureDb.pragma("user_version=5");
+  expect(futureDb.pragma("user_version", { simple: true })).toBe(5);
+  futureDb.pragma("user_version=6");
   futureDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(503);
   const restoreVersionDb = new Database(resolve(".local-data/platform-e2e/platform.sqlite"));
-  restoreVersionDb.pragma("user_version=4");
+  restoreVersionDb.pragma("user_version=5");
   restoreVersionDb.close();
   expect((await a.get("/api/tasks")).status()).toBe(200);
   execFileSync(process.execPath, [

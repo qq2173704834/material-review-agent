@@ -9,6 +9,17 @@ import {
   createActor,
 } from "../helpers/platform-boundaries";
 
+test.beforeEach(async ({ actors }) => {
+  // Worker accounts are reused; unrelated cases must not consume this case's write budget.
+  const db = database();
+  try {
+    for (const actor of [actors.student, actors.peer, actors.admin])
+      db.prepare("DELETE FROM rate_limits WHERE key=?").run(`writes:${actor.id}`);
+  } finally {
+    db.close();
+  }
+});
+
 test("助手按明确地区筛选知识，耗用记录独立且不保存模式不留问答正文", async ({
   actors,
   playwright,

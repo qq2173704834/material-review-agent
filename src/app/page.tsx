@@ -162,7 +162,7 @@ export default async function Home({
                 className={`rounded-full px-4 py-2 text-sm transition-colors ${selected.id === section.id ? "bg-primary font-medium text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
               >
                 {section.title}
-                <span className="ml-2 text-xs opacity-75">{section.items.length}</span>
+                <span className="ml-2 text-xs">{section.items.length}</span>
               </Link>
             ))}
           </nav>

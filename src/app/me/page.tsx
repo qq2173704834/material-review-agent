@@ -4,7 +4,8 @@ import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 import { LearningActions } from "@/components/learning-actions";
 import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
 import { requestTime } from "@/lib/server/request-time";
-import { isUpcoming } from "@/lib/portal-feed";
+import { examReminders } from "@/lib/server/exam-reminders";
+import { ReminderRead } from "@/components/reminder-read";
 import { StudentGoals } from "@/components/student-goals";
 import { studentGoals } from "@/lib/server/student-goals";
 import { listNotices } from "@/lib/server/exam-store";
@@ -64,14 +65,7 @@ export default async function Page({
       { notice_id: string; task_id: string; notice_version: number; stage: string; target: string }
     >("SELECT * FROM exam_task_links WHERE user_id=?")
     .all(account.id);
-  const nodes = items
-    .filter((item) => item.status !== "withdrawn" && item.content.disposition === "正常")
-    .flatMap((item) =>
-      item.content.timeline
-        .filter((point) => isUpcoming(point.value))
-        .map((point) => ({ id: item.id, title: item.content.title, ...point })),
-    )
-    .sort((a, b) => a.value.localeCompare(b.value));
+  const nodes = examReminders(account.id, now);
   return (
     <AppShell activePage="me">
       <div className="space-y-7">
@@ -148,7 +142,10 @@ export default async function Page({
           历史与通用材料预审任务
         </Link>
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">收藏时间节点 · Asia/Shanghai</h2>
+          <h2 className="text-xl font-semibold">我的考试时间节点 · Asia/Shanghai</h2>
+          <p className="text-sm text-muted-foreground">
+            汇总进行中的目标与收藏，展示未来30天的已确认节点；提醒已读不表示完成报名。
+          </p>
           {nodes.length ? (
             nodes.map((node, index) => (
               <p key={`${node.id}-${index}`}>
@@ -158,6 +155,7 @@ export default async function Page({
                 · {node.label}：{node.value}
                 {Date.parse(node.value) < new Date().getTime() ? "（已到日期，请核对时刻）" : ""}
                 {node.value.length === 10 ? "（仅日期）" : ""}
+                {node.read ? " · 提醒已读" : <ReminderRead id={node.id} version={node.version} />}
               </p>
             ))
           ) : (

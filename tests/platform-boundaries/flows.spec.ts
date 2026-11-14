@@ -6,6 +6,7 @@ import {
   noticeContent,
   publish,
   unique,
+  database,
 } from "../helpers/platform-boundaries";
 
 test("真实原件按任务授权隔离，下载和Range读取均不能绕过撤销权限", async ({ actors }) => {
@@ -53,6 +54,9 @@ test("真实原件按任务授权隔离，下载和Range读取均不能绕过撤
 });
 
 test("公告分页保留筛选条件，第二页不重复且越界页码回到最后有效页", async ({ page, actors }) => {
+  const quotaDb = database();
+  quotaDb.prepare("DELETE FROM rate_limits WHERE key=?").run(`writes:${actors.admin.id}`);
+  quotaDb.close();
   const marker = unique("分页回归");
   const ids: string[] = [];
   for (let index = 0; index < 21; index++) {

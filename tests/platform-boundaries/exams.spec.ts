@@ -75,12 +75,12 @@ test("日期未知允许发布并明确未知；仅有日期不推断具体报�
   );
   await publish(actors.admin, unknown.id);
   expect(await (await actors.student.api.get(`/exams/${unknown.id}`)).text()).toContain(
-    "报名时间未完整确认",
+    "时间待确认",
   );
   const datesOnly = await draft(actors.admin);
   await publish(actors.admin, datesOnly.id);
   expect(await (await actors.student.api.get(`/exams/${datesOnly.id}`)).text()).toContain(
-    "仅公布日期，请核对官方具体时刻",
+    "仅日期，具体时刻未公布",
   );
 });
 

@@ -17,7 +17,7 @@ export function platformDb(): Database.Database {
     const existing = state.__examPlatform;
     if (
       existing.directory === directory &&
-      Number(existing.database.pragma("user_version", { simple: true })) === 4
+      Number(existing.database.pragma("user_version", { simple: true })) === 5
     )
       return existing.database;
     existing.database.close();
@@ -28,7 +28,7 @@ export function platformDb(): Database.Database {
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   db.pragma("busy_timeout = 5000");
-  if (Number(db.pragma("user_version", { simple: true })) > 4) {
+  if (Number(db.pragma("user_version", { simple: true })) > 5) {
     db.close();
     throw new Error("平台数据库版本高于当前程序，请使用对应程序版本。");
   }
@@ -143,7 +143,13 @@ export function platformDb(): Database.Database {
       created_at TEXT NOT NULL, completed_at TEXT, execution_id TEXT,
       UNIQUE(goal_id,fingerprint)
     );
-    PRAGMA user_version = 4;
+    CREATE TABLE IF NOT EXISTS exam_reminder_reads (
+      user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      notice_id TEXT NOT NULL REFERENCES exam_notices(id) ON DELETE CASCADE,
+      version INTEGER NOT NULL, read_at TEXT NOT NULL,
+      PRIMARY KEY(user_id,notice_id)
+    );
+    PRAGMA user_version = 5;
   `),
   )();
   state.__examPlatform = { directory, database: db };

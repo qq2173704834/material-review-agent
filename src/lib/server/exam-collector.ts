@@ -121,7 +121,9 @@ export async function collectSource(id: string): Promise<{ drafts: number; messa
   }
 }
 let ticking = false;
-export async function collectorTick(): Promise<void> {
+export async function collectorTick(
+  collect: (id: string) => Promise<unknown> = collectSource,
+): Promise<void> {
   if (ticking) return;
   ticking = true;
   try {
@@ -137,7 +139,7 @@ export async function collectorTick(): Promise<void> {
     const hour = Number(configured?.value ?? 8);
     for (const source of dueCollectorSources(enabled, Date.now(), hour)) {
       try {
-        await collectSource(source.id);
+        await collect(source.id);
       } catch {
         /* Each failure is persisted, and other sources continue. */
       }
