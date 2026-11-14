@@ -1,14 +1,6 @@
-import {
-  BookOpen,
-  ArrowUpRight,
-  ClipboardCheck,
-  LayoutDashboard,
-  Settings2,
-  ShieldCheck,
-} from "lucide-react";
+import { BookOpen, ClipboardCheck, LayoutDashboard, Settings2 } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 import type { ReactElement, ReactNode } from "react";
@@ -84,23 +76,6 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
             账号与访问身份
           </Link>
         </nav>
-
-        <div className="mt-auto hidden p-4 lg:block">
-          <div className="rounded-xl border border-border bg-background p-4">
-            <ShieldCheck className="mb-3 size-5 text-primary" aria-hidden="true" />
-            <p className="text-xs font-medium">每一项结论，都应有据可查</p>
-            <p className="mt-2 text-xs leading-6 text-muted-foreground">
-              从要求原文出发，区分明确问题与尚待核实的信息。
-            </p>
-            <Link
-              href="/setup"
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary"
-            >
-              查看当前阶段 <ArrowUpRight className="size-3" aria-hidden="true" />
-            </Link>
-          </div>
-          <p className="px-2 pt-5 text-[11px] text-muted-foreground">本地开发版 · v0.1.0</p>
-        </div>
       </aside>
 
       <div className="min-w-0">
@@ -121,10 +96,6 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
                         ? "内容管理"
                         : "审查任务"}
           </p>
-          <Badge className="border-primary/15 bg-primary/5 text-primary">
-            <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-            本地开发
-          </Badge>
         </header>
         <main
           id="main-content"
