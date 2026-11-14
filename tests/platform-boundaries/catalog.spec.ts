@@ -310,3 +310,37 @@ test("旧登记的仅查询来源不能继续用通用采集把导航保存成�
     db.close();
   }
 });
+
+test("审定网站关系与考试主办分开，管理员待核实修订优先于静态依据", async ({ actors }) => {
+  const initial = (await (await actors.admin.api.get("/api/admin/exams")).json()).sources;
+  const source = initial.find((entry: { url: string }) => entry.url === "https://cet.neea.edu.cn/");
+  expect(source.provenance).toMatchObject({
+    organizer: "教育部教育考试院（网站主办）",
+    relationship: "官方信息发布",
+    result: "已核对",
+  });
+  const db = database();
+  const key = `source-proof:${source.id}`;
+  try {
+    expect(db.prepare("SELECT value FROM portal_settings WHERE key=?").get(key)).toBeUndefined();
+    const revision = {
+      ...source.provenance,
+      organizer: "合成后续复核",
+      relationship: "待核实",
+      result: "待核实",
+      checkedAt: new Date().toISOString(),
+    };
+    db.prepare("INSERT INTO portal_settings(key,value) VALUES (?,?)").run(
+      key,
+      JSON.stringify(revision),
+    );
+    const after = (await (await actors.admin.api.get("/api/admin/exams")).json()).sources.find(
+      (entry: { id: string }) => entry.id === source.id,
+    );
+    expect(after.provenance).toEqual(revision);
+    expect(after.enabled).toBe(source.enabled);
+  } finally {
+    db.prepare("DELETE FROM portal_settings WHERE key=?").run(key);
+    db.close();
+  }
+});

@@ -1,0 +1,445 @@
+{
+  "checkedAt": "2026-11-14T11:50:27.503Z",
+  "results": [
+    {
+      "sourceUrl": "https://gmat-main.neea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://gmat-main.neea.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:25.342Z"
+      },
+      "evidence": {
+        "sourceSha256": "b3c3c6d9b756a3ee35ee0c9451b781abbfb5f70571dddafad0955f44a56b9d3c",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://gmat-main.neea.cn/",
+          "name": "美国管理学研究生入学考试(GMAT)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://gre-main.neea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://gre-main.neea.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:25.417Z"
+      },
+      "evidence": {
+        "sourceSha256": "1bc3e45e7c73a7e1ea9a02315b956aa0b6fb913fe4533d4d0f5f643bc3de571a",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://gre-main.neea.cn/",
+          "name": "GRE®考试(GRE®)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://lsat.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://lsat.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:25.590Z"
+      },
+      "evidence": {
+        "sourceSha256": "b722567c826de39528086b3edd0fc06eef3f819a0883e028c4645937b5e0edd1",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://lsat.neea.edu.cn/",
+          "name": "美国法学院入学考试 (LSAT)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://mhk.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://mhk.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:25.702Z"
+      },
+      "evidence": {
+        "sourceSha256": "c7f7b4714e4d7d484028ce4cd4f86784929379d8caa07e3fa52c651846f9a7a9",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://mhk.neea.edu.cn/",
+          "name": "中国少数民族汉语水平等级考试(MHK)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://www.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:25.813Z"
+      },
+      "evidence": {
+        "sourceSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://www.neea.edu.cn/html1/folder/1510/793-1.htm",
+          "name": "关于我们"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://ntce.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://ntce.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:25.922Z"
+      },
+      "evidence": {
+        "sourceSha256": "d69dad8e6d9765c153ae01f0244652e65b04bd85628d98b8c6fc245143e81f9b",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://ntce.neea.edu.cn/",
+          "name": "中小学教师资格考试"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://ccpt.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://ccpt.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.011Z"
+      },
+      "evidence": {
+        "sourceSha256": "d63e4923276559ac97610cf492dab1d4828f48848e6cdb15eed9784b186d3041",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://ccpt.neea.edu.cn/",
+          "name": "书画等级考试(CCPT)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://wsk.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://wsk.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.106Z"
+      },
+      "evidence": {
+        "sourceSha256": "bb0d86c6e906dc8eb4b3d72044625a90ebd490b276fb96f43f2fe7508935b981",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://wsk.neea.edu.cn/",
+          "name": "全国外语水平考试(WSK)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://pets.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://pets.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.203Z"
+      },
+      "evidence": {
+        "sourceSha256": "26a576c32a9d512e3c6f36cfc29338552c55e1608952a6a09f8cff8ab749b6ca",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://pets.neea.edu.cn/",
+          "name": "全国英语等级考试(PETS)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://nit.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://nit.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.394Z"
+      },
+      "evidence": {
+        "sourceSha256": "b9058f0b8a48e26b68e28bf96af17155866e4a1ebf28af0903589a68fd287e29",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://nit.neea.edu.cn/",
+          "name": "全国计算机应用水平考试(NIT)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://ncre.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://ncre.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.505Z"
+      },
+      "evidence": {
+        "sourceSha256": "301e02fa8eebcf5235229b1ed40f9a8ed1bcabe3803a2f8f8024c3fc86382781",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://ncre.neea.edu.cn/",
+          "name": "全国计算机等级考试(NCRE)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://bec.neea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://bec.neea.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.615Z"
+      },
+      "evidence": {
+        "sourceSha256": "3aafe575b51bd4aba6a231a6e61e6cf7b35e8855caecd00fdb97d168b3eb7648",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://bec.neea.cn/",
+          "name": "剑桥商务英语考试 (BEC)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://tdxl.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://tdxl.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.714Z"
+      },
+      "evidence": {
+        "sourceSha256": "3e4a75932badfd17b7a62275f906b30df81f3c34b8f149c49624c71e950b68ff",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://tdxl.neea.edu.cn/",
+          "name": "同等学力申请硕士学位考试"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://cet.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://cet.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.796Z"
+      },
+      "evidence": {
+        "sourceSha256": "d6fbbe3039c668f313ffea2791b2ce9c34de8833187e5f3fe4dcf54bfe82aeea",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://cet.neea.edu.cn/",
+          "name": "全国大学英语四、六级考试(CET)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://www.neea.edu.cn/html1/folder/19093/4844-1.htm",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://www.neea.edu.cn/html1/folder/19093/4844-1.htm",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:26.894Z"
+      },
+      "evidence": {
+        "sourceSha256": "b59ee8eae42e682341328f204608a66cef0170b0be7e0b25f29474a076f67d96",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://www.neea.edu.cn/html1/folder/1510/793-1.htm",
+          "name": "关于我们"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://jlpt-main.neea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://jlpt-main.neea.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:27.011Z"
+      },
+      "evidence": {
+        "sourceSha256": "f2c31833fcf2a5ab0afca17254d120f7114c142ab5434e6ae98fae540f4f62b6",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://jlpt-main.neea.cn/",
+          "name": "日本语能力测试(JLPT)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://delf-dalf.neea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://delf-dalf.neea.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:27.139Z"
+      },
+      "evidence": {
+        "sourceSha256": "c405d864f6a6911d896f54b11931f8878553ee63d2afb4862859593ad6c44552",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://delf-dalf.neea.cn/",
+          "name": "法语(DELF-DALF)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://dele.neea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://dele.neea.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:27.256Z"
+      },
+      "evidence": {
+        "sourceSha256": "944862003ce04d93804fba23d7763338d360cc5d3d0faaa1cf110779026b66d3",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://dele.neea.cn/",
+          "name": "对外西班牙语水平证书考试（DELE）"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://topik-main.neea.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://topik-main.neea.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:27.371Z"
+      },
+      "evidence": {
+        "sourceSha256": "6f084aa06a9bdbde9cd0e5b0109e050e2690baeb375ae3b979739f497e3410de",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://topik-main.neea.cn/",
+          "name": "韩国语能力考试 (TOPIK)"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    },
+    {
+      "sourceUrl": "https://zikao.neea.edu.cn/",
+      "verified": true,
+      "provenance": {
+        "organizer": "教育部教育考试院（网站主办）",
+        "relationship": "官方信息发布",
+        "referenceUrl": "https://zikao.neea.edu.cn/",
+        "quote": "主办单位：教育部教育考试院",
+        "result": "已核对",
+        "checkedAt": "2026-11-14T11:50:27.503Z"
+      },
+      "evidence": {
+        "sourceSha256": "54ae759b00bf072cf8ea4dc0e42af59d5487463cca8fca816128735628074954",
+        "parentUrl": "https://www.neea.edu.cn/",
+        "parentLink": {
+          "url": "https://zikao.neea.edu.cn/",
+          "name": "自学考试"
+        },
+        "parentSha256": "08e1fae55680880f477f366a3cd1cd471fae4a9b92741fe6f35532ef53854021"
+      },
+      "message": "主办单位原文与教育考试院总入口链接共同核对；只证明网站发布关系，不把国际考试所有权/全球主办归给教育考试院。"
+    }
+  ]
+}

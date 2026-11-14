@@ -1,3 +1,4 @@
+import officialSourceProvenance from "@/domain/official-source-provenance.json";
 import { EXAM_PORTALS } from "@/domain/exam-portals";
 import provincialSources from "@/domain/provincial-exam-sources.json";
 import "server-only";
@@ -104,6 +105,12 @@ const initialSources = [
     (portal) => [portal.category, portal.name, portal.url] as const,
   ),
 ] as const;
+function reviewedSourceProvenance(url: string): SourceProvenance | undefined {
+  const record = officialSourceProvenance.results.find((entry) => entry.sourceUrl === url);
+  if (!record?.verified) return undefined;
+  const parsed = sourceProvenanceSchema.safeParse(record.provenance);
+  return parsed.success ? parsed.data : undefined;
+}
 export function sources(): ExamSource[] {
   const db = platformDb();
   for (const [category, name, url] of initialSources)
@@ -142,7 +149,11 @@ export function sources(): ExamSource[] {
     .all()
     .map((source) => ({
       ...source,
-      ...(proofs.has(source.id) ? { provenance: proofs.get(source.id) } : {}),
+      ...(proofs.has(source.id)
+        ? { provenance: proofs.get(source.id) }
+        : reviewedSourceProvenance(source.url)
+          ? { provenance: reviewedSourceProvenance(source.url) }
+          : {}),
     }));
 }
 export function sourceById(id: string): ExamSource | undefined {
