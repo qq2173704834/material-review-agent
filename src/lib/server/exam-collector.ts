@@ -2,6 +2,7 @@ import { beijingDay } from "@/lib/portal-feed";
 import { classifyExamTitle, classifyExamCategories } from "@/lib/exam-discovery";
 import { dueCollectorSources } from "@/lib/collector-schedule";
 import { collectorCandidates } from "@/lib/collector-candidates";
+import { EXAM_PORTALS } from "@/domain/exam-portals";
 import "server-only";
 import { fetchPublicWebpage } from "./webpage-fetcher";
 import { officialUrl, saveDraft, sourceById, sources } from "./exam-store";
@@ -23,6 +24,9 @@ export async function collectSource(id: string): Promise<{ drafts: number; messa
   let drafts = 0;
   let failures = 0;
   try {
+    const portal = EXAM_PORTALS.find((entry) => entry.url === source.url);
+    if (portal?.collectionMode === "query")
+      throw new Error("此来源仅提供官方查询入口，尚未适配公告采集；请查询原站或人工导入原文。");
     const page = await fetchPublicWebpage(source.url);
     const links = collectorCandidates(page.links, source);
     for (const link of links) {

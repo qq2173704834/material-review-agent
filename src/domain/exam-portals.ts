@@ -242,6 +242,6 @@ export const EXAM_PORTALS = [
     checkedAt: "2026-11-14",
     status: "accessible",
     title: "中国研究生招生信息网",
-    collectionMode: "query",
+    collectionMode: "candidate",
   },
 ] as const;

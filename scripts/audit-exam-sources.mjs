@@ -11,13 +11,34 @@ const { sources } = await import("../src/lib/server/exam-store.ts");
 const { collectSource } = await import("../src/lib/server/exam-collector.ts");
 const { platformDb } = await import("../src/lib/server/platform-db.ts");
 const { EXAM_PORTALS } = await import("../src/domain/exam-portals.ts");
-const selected = sources().filter(
-  (source) =>
-    source.region === "全国" &&
-    (EXAM_PORTALS.some(
-      (portal) => portal.url === source.url && portal.collectionMode === "candidate",
-    ) ||
-      ["cet4", "ncre", "teacher", "graduate"].includes(source.category)),
+const scope = process.argv.find((arg) => arg.startsWith("--scope="))?.slice(8) ?? "national";
+if (!["national", "provincial", "registered"].includes(scope))
+  throw new Error("scope仅支持national、provincial或registered。");
+if (scope === "registered") {
+  const { default: Database } = await import("better-sqlite3");
+  const registry = new Database(resolve(".local-data/platform.sqlite"), { readonly: true });
+  try {
+    const records = registry.prepare("SELECT id,name,url,category,region FROM exam_sources").all();
+    for (const record of records)
+      platformDb()
+        .prepare(
+          "INSERT OR IGNORE INTO exam_sources(id,name,url,category,region) VALUES (?,?,?,?,?)",
+        )
+        .run(record.id, record.name, record.url, record.category, record.region);
+  } finally {
+    registry.close();
+  }
+}
+const selected = sources().filter((source) =>
+  scope === "registered"
+    ? true
+    : scope === "provincial"
+      ? source.category === "education-local" && source.region !== "全国"
+      : source.region === "全国" &&
+        (EXAM_PORTALS.some(
+          (portal) => portal.url === source.url && portal.collectionMode === "candidate",
+        ) ||
+          ["cet4", "ncre", "teacher", "graduate"].includes(source.category)),
 );
 const results = [];
 const output = resolve(directory, "source-audit.json");
@@ -45,6 +66,7 @@ for (const source of selected) {
   results.push({
     source: source.url,
     category: source.category,
+    region: source.region,
     checkedAt: new Date().toISOString(),
     outcome,
     drafts,
@@ -55,6 +77,7 @@ for (const source of selected) {
     JSON.stringify(
       {
         directory,
+        scope,
         automaticPublication: false,
         enabledSources: sources().filter((item) => item.enabled).length,
         publishedNotices: db

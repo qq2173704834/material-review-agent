@@ -1,0 +1,750 @@
+{
+  "directory": "E:\\Projects\\material-review-agent\\.local-data\\source-audit\\run-il3zkM",
+  "scope": "provincial",
+  "automaticPublication": false,
+  "enabledSources": 0,
+  "publishedNotices": 0,
+  "results": [
+    {
+      "source": "https://www.shmeea.edu.cn",
+      "category": "education-local",
+      "region": "上海",
+      "checkedAt": "2026-11-14T11:42:03.980Z",
+      "outcome": {
+        "success": false,
+        "message": "列表可访问，但未识别到适配的考试公告链接；需调整来源入口或人工导入。"
+      },
+      "drafts": [],
+      "repeat": null
+    },
+    {
+      "source": "https://www.ynzs.cn",
+      "category": "education-local",
+      "region": "云南",
+      "checkedAt": "2026-11-14T11:42:09.403Z",
+      "outcome": {
+        "success": true,
+        "drafts": 7,
+        "message": "检查7条候选，新增/变化草稿7条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "46a7ead8-7188-4b57-a86a-090fc68e7303",
+          "canonical_url": "https://www.ynzs.cn/html/content/8795.html",
+          "digest": "e10d232cee71edde5bdbdd49ba94560ab8b492f5150966521580b8f83ad843ab",
+          "version": 1
+        },
+        {
+          "id": "08a17885-54a8-4d5c-be15-ce75f6b992ef",
+          "canonical_url": "https://www.ynzs.cn/html/content/9082.html",
+          "digest": "79b1463346576a73db1671059b84f572a28ce34db0545fb9da9133a43e3cfd35",
+          "version": 1
+        },
+        {
+          "id": "62b016c6-8054-4876-abfb-99e08f644d43",
+          "canonical_url": "https://www.ynzs.cn/html/content/9098.html",
+          "digest": "c1cc1afb41abddd5618bd5d97824fd92ad5e1e7be6752d86bf8ef17d69f159fd",
+          "version": 1
+        },
+        {
+          "id": "0bc0eb05-5b20-4b35-96c3-d854cb2d7f58",
+          "canonical_url": "https://www.ynzs.cn/html/content/9104.html",
+          "digest": "4db010ed3c3b6d7053942436794119488b0c6d5e77b2029dd37ceed0d5b01d6d",
+          "version": 1
+        },
+        {
+          "id": "6a40f8ef-eba0-4349-a034-7c73ac58dca7",
+          "canonical_url": "https://www.ynzs.cn/html/content/9106.html",
+          "digest": "5641490c75dccfe91422ad7370b374dc9c0819c9a1f1c3cb737d0638f176765c",
+          "version": 1
+        },
+        {
+          "id": "273cbb68-b1b5-4664-8d19-2fd00732d389",
+          "canonical_url": "https://www.ynzs.cn/html/content/9133.html",
+          "digest": "c9457ff63e3d53881c9434cf3c5700012d0c22f3f261dab9260509a6ba97041b",
+          "version": 1
+        },
+        {
+          "id": "285a9e5c-ab53-485c-aa23-8d2c68c99016",
+          "canonical_url": "https://www.ynzs.cn/html/content/9143.html",
+          "digest": "f211dc524b6837751c53321f9535e19ae7872483f6e266cdb0cfdfffcdfb8925",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查7条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.bjeea.cn/",
+      "category": "education-local",
+      "region": "北京",
+      "checkedAt": "2026-11-14T11:42:12.007Z",
+      "outcome": {
+        "success": true,
+        "drafts": 4,
+        "message": "检查4条候选，新增/变化草稿4条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "14b0dd49-b20e-4ec3-942f-f627ec116e23",
+          "canonical_url": "https://www.bjeea.cn/html/fxlks/shdjks/kcgz/2026/0811/88298.html",
+          "digest": "bc591be39d0fe92ed2e9bb3d68bd5f533076f414d22ba08ac55aa880a98ea1ba",
+          "version": 1
+        },
+        {
+          "id": "6a112fac-073d-4d00-8cc8-c17262fa2b52",
+          "canonical_url": "https://www.bjeea.cn/html/fxlks/shdjks/tzgg/2026/0811/88297.html",
+          "digest": "54b8dcf3eaac4f5c061982f36345498827f4c396d6a7173bb443d04e104b5fad",
+          "version": 1
+        },
+        {
+          "id": "c509d44f-077d-4006-b714-31b645482aff",
+          "canonical_url": "https://www.bjeea.cn/html/fxlks/shdjks/tzgg/2026/1102/88449.html",
+          "digest": "d2468522e223bd01c394dee967fb81997511b2b5d2b96962bebba0babf348512",
+          "version": 1
+        },
+        {
+          "id": "733fdbb5-ebd1-4c37-95eb-b30f083acac0",
+          "canonical_url": "https://www.bjeea.cn/html/yk/tzgg/2026/1007/88385.html",
+          "digest": "9b4362eed90eb14ba0f56c5a1612ea9bfac83820c924eef81498c859ad83dcf7",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查4条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.sceea.cn/",
+      "category": "education-local",
+      "region": "四川",
+      "checkedAt": "2026-11-14T11:42:12.651Z",
+      "outcome": {
+        "success": true,
+        "drafts": 3,
+        "message": "检查3条候选，新增/变化草稿3条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "151bc32c-1255-4681-8fd2-c2051bf6bede",
+          "canonical_url": "https://www.sceea.cn/Html/202610/Newsdetail_4995.html",
+          "digest": "20d034a5c453917c3fb95d2e0293f6549e1031478c6431add924134f5788aec8",
+          "version": 1
+        },
+        {
+          "id": "93780869-a376-44a3-8e91-e6129a363dc4",
+          "canonical_url": "https://www.sceea.cn/Html/202610/Newsdetail_5001.html",
+          "digest": "88473fd5df974f68ba506ab037592e560f112fe57bff43675f0ddfa53ad7ccca",
+          "version": 1
+        },
+        {
+          "id": "b520cff8-b81a-48a3-a69a-c3d65560afe4",
+          "canonical_url": "https://www.sceea.cn/Html/202611/Newsdetail_5004.html",
+          "digest": "f95923bf4b50934d15be7b2ebafdcf4c8edef85b205cc93b6b4bba71e60987cf",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查3条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.ahzsks.cn/index.htm",
+      "category": "education-local",
+      "region": "安徽",
+      "checkedAt": "2026-11-14T11:42:13.146Z",
+      "outcome": {
+        "success": false,
+        "message": "列表可访问，但未识别到适配的考试公告链接；需调整来源入口或人工导入。"
+      },
+      "drafts": [],
+      "repeat": null
+    },
+    {
+      "source": "https://www.sdzk.cn/",
+      "category": "education-local",
+      "region": "山东",
+      "checkedAt": "2026-11-14T11:42:13.489Z",
+      "outcome": {
+        "success": false,
+        "message": "网页正文过短或无法提取；可改为粘贴原文。"
+      },
+      "drafts": [],
+      "repeat": null
+    },
+    {
+      "source": "https://eea.gd.gov.cn/",
+      "category": "education-local",
+      "region": "广东",
+      "checkedAt": "2026-11-14T11:42:18.859Z",
+      "outcome": {
+        "success": true,
+        "drafts": 8,
+        "message": "检查8条候选，新增/变化草稿8条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "7664f3bd-bc79-4696-a4a3-1eeccf07fa88",
+          "canonical_url": "https://eea.gd.gov.cn/banner/content/post_4832261.html",
+          "digest": "137296d52daff3ccb5d6ee694ed7fc93e7c17e2437dfaf5f07bd68ac57473c26",
+          "version": 1
+        },
+        {
+          "id": "3672fe43-dbfa-4c0f-862a-45603f4e3b24",
+          "canonical_url": "https://eea.gd.gov.cn/news/content/post_4971623.html",
+          "digest": "e01116841357d759de7f9d056d3c0bdfea2a214fbbd43f1f4bafb9d6b002e1a6",
+          "version": 1
+        },
+        {
+          "id": "67019ccf-c455-4215-bdc9-ce39eaa3bfbd",
+          "canonical_url": "https://eea.gd.gov.cn/news/content/post_4975132.html",
+          "digest": "ac3bf5a495d3b1e72a0565b9436aaf8a4dae2f0c33cf847dcfed4600432c30c8",
+          "version": 1
+        },
+        {
+          "id": "03b7b1cf-3c96-4958-9783-11888c5af9ef",
+          "canonical_url": "https://eea.gd.gov.cn/news/content/post_4977525.html",
+          "digest": "3f18a5f05e8eba05ee940f44bbcf200f32d4b42ea5235c568d94cc6ed361ca9c",
+          "version": 1
+        },
+        {
+          "id": "b57149d2-85a2-4697-b90e-81b750895c4a",
+          "canonical_url": "https://eea.gd.gov.cn/news/content/post_4978692.html",
+          "digest": "94222bf86fae032908eac0e2eeadfa96a53910fd90e46a858387f1850ed331d0",
+          "version": 1
+        },
+        {
+          "id": "aed01fe4-df3d-48d1-94b1-4cfe4561ea2a",
+          "canonical_url": "https://eea.gd.gov.cn/news/content/post_4978694.html",
+          "digest": "cc46cc418b84967972a624902a0466a6a221e444bced063b202d2fce3802cad3",
+          "version": 1
+        },
+        {
+          "id": "c2d4f4c5-3629-4802-b829-1b966cb20d7e",
+          "canonical_url": "https://eea.gd.gov.cn/tzgg/content/post_4971624.html",
+          "digest": "9d5db26e54e600396a395c3260c515512fe290643221690a0d65c109125242fd",
+          "version": 1
+        },
+        {
+          "id": "96cf6844-6923-4426-bbda-1cd567ea9c0b",
+          "canonical_url": "https://eea.gd.gov.cn/yjsks/content/post_4962564.html",
+          "digest": "9a5589c34d0827f0455bdba7bb7f6e293b63d749f20a612b709ecd1ebecb8bc9",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查8条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.gxeea.cn",
+      "category": "education-local",
+      "region": "广西",
+      "checkedAt": "2026-11-14T11:42:19.996Z",
+      "outcome": {
+        "success": false,
+        "message": "列表可访问，但未识别到适配的考试公告链接；需调整来源入口或人工导入。"
+      },
+      "drafts": [],
+      "repeat": null
+    },
+    {
+      "source": "https://www.xjzk.gov.cn/",
+      "category": "education-local",
+      "region": "新疆",
+      "checkedAt": "2026-11-14T11:42:23.466Z",
+      "outcome": {
+        "success": true,
+        "drafts": 8,
+        "message": "检查8条候选，新增/变化草稿8条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "40403d67-cec0-456a-8aa9-68c62768a80c",
+          "canonical_url": "https://www.xjzk.gov.cn/c/2026-09-11/495932.shtml",
+          "digest": "0f9eb627e96fb9817c457b8fff3d58e45ee906ad9de487dc932a1cdb00f8cbcb",
+          "version": 1
+        },
+        {
+          "id": "79a4756b-7417-46d2-acad-3bf575ad2172",
+          "canonical_url": "https://www.xjzk.gov.cn/c/2026-09-30/495994.shtml",
+          "digest": "487eac6ec3264ead9224e017d6eea2f62b8716364a07c37ee39e9706aa4a39b0",
+          "version": 1
+        },
+        {
+          "id": "c84b3695-7d6a-455c-8898-40ccf11a31e0",
+          "canonical_url": "https://www.xjzk.gov.cn/c/2026-10-19/496108.shtml",
+          "digest": "0aede83ed1a2bf8862d77b9a62685a0e2f1b59f531339b00bc428d94b8049b6f",
+          "version": 1
+        },
+        {
+          "id": "423723e9-26c2-4b90-9d1d-2015e5cf73a4",
+          "canonical_url": "https://www.xjzk.gov.cn/c/2026-10-21/496111.shtml",
+          "digest": "288041af7fe91ea25311419f94d176a7216381bdcfa2a4a76af1dc85f086fa82",
+          "version": 1
+        },
+        {
+          "id": "a40a9b54-acb4-446a-8692-c3f7b304c14a",
+          "canonical_url": "https://www.xjzk.gov.cn/c/2026-10-26/496114.shtml",
+          "digest": "df095a6403909bbd834b2c09f001ae5fb2b9a5836425d1ebcfb514bdf4e827fd",
+          "version": 1
+        },
+        {
+          "id": "bfa3c5a2-b539-4289-a1e2-18e5c6613c16",
+          "canonical_url": "https://www.xjzk.gov.cn/c/2026-11-02/496323.shtml",
+          "digest": "ea4731141c63077cdcb9621ddf38e3101da45baeb51858339dc15f0a1d5b861b",
+          "version": 1
+        },
+        {
+          "id": "4eb44c20-0a58-479d-abd0-fd458fd481f4",
+          "canonical_url": "https://www.xjzk.gov.cn/c/2026-11-02/496326.shtml",
+          "digest": "e021d61ebcea1c5062ee92faa71d54a5cdcfc11df9ba50bf6ecbf4d1aea78279",
+          "version": 1
+        },
+        {
+          "id": "7d95246d-4dcb-4363-adcd-e7cde02aa007",
+          "canonical_url": "https://www.xjzk.gov.cn/c/2026-11-06/496335.shtml",
+          "digest": "acefb6f609021dfefc6202d78dec0dcb597faf48adc9f7789a508eb5050ffc1e",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查8条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.jxeea.cn/",
+      "category": "education-local",
+      "region": "江西",
+      "checkedAt": "2026-11-14T11:42:24.071Z",
+      "outcome": {
+        "success": false,
+        "message": "列表可访问，但未识别到适配的考试公告链接；需调整来源入口或人工导入。"
+      },
+      "drafts": [],
+      "repeat": null
+    },
+    {
+      "source": "https://www.hebeea.edu.cn",
+      "category": "education-local",
+      "region": "河北",
+      "checkedAt": "2026-11-14T11:42:25.958Z",
+      "outcome": {
+        "success": true,
+        "drafts": 5,
+        "message": "检查5条候选，新增/变化草稿5条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "d8f0b0f3-f2ed-4507-b25b-c719f15d6e44",
+          "canonical_url": "https://www.hebeea.edu.cn/c/2026-11-03/493840.html",
+          "digest": "cebc475e9b0cecaf282624a75bc2ed0c337fb47df6379dd2e134d64853a92425",
+          "version": 1
+        },
+        {
+          "id": "c560f00f-5b97-4788-b932-99c324d4475e",
+          "canonical_url": "https://www.hebeea.edu.cn/c/2026-11-10/493913.html",
+          "digest": "19b368b6aa532b92a98c09f9e45f44e004d11cb8d656bbd88f83ef4ee9e1d1e4",
+          "version": 1
+        },
+        {
+          "id": "e088d200-ecb8-4d6a-91f3-7680c008f6e1",
+          "canonical_url": "https://www.hebeea.edu.cn/c/2026-11-11/493915.html",
+          "digest": "1f6e87091837b2fbabe1f321a2a411808d048ca8d9effdd89ed91cb8f3611ae0",
+          "version": 1
+        },
+        {
+          "id": "4c8ba03b-f542-491f-9b88-c8b68603fbcf",
+          "canonical_url": "https://www.hebeea.edu.cn/c/2026-11-12/493917.html",
+          "digest": "9c8c4baf019c6d6f60573e8bb805353057e3d410c6d43c4e36afbb2a2b59a401",
+          "version": 1
+        },
+        {
+          "id": "a96e70e4-8377-4c66-befd-66f7ca27a3c7",
+          "canonical_url": "https://www.hebeea.edu.cn/c/2026-11-12/493919.html",
+          "digest": "4a5e24c90e98114d90afe469e1f1f4608f07655254bf6687d7ab9ac4f58e037a",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查5条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.zjzs.net",
+      "category": "education-local",
+      "region": "浙江",
+      "checkedAt": "2026-11-14T11:42:26.015Z",
+      "outcome": {
+        "success": false,
+        "message": "网页正文过短或无法提取；可改为粘贴原文。"
+      },
+      "drafts": [],
+      "repeat": null
+    },
+    {
+      "source": "https://www.hbea.edu.cn/",
+      "category": "education-local",
+      "region": "湖北",
+      "checkedAt": "2026-11-14T11:42:28.321Z",
+      "outcome": {
+        "success": true,
+        "drafts": 6,
+        "message": "检查6条候选，新增/变化草稿6条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "74f63555-82bf-426c-9b06-66f83b2d7848",
+          "canonical_url": "https://www.hbea.edu.cn/html/2026-10/16165.html",
+          "digest": "5b2ce1238da32f7a8cfb0e647041b35c38ca2bacd526b429ce14413cf86bdf57",
+          "version": 1
+        },
+        {
+          "id": "3f9f22d6-d918-4a25-806f-a04cd169f928",
+          "canonical_url": "https://www.hbea.edu.cn/html/2026-10/16204.html",
+          "digest": "1c28ecdcc196781266b97b97de15a6e41baa7e38509a9e94de918d389ca889b2",
+          "version": 1
+        },
+        {
+          "id": "721486df-0566-4e49-9d2b-ce46f30000e9",
+          "canonical_url": "https://www.hbea.edu.cn/html/2026-10/16217.html",
+          "digest": "74e1e4d982bbf4686022c0ddde3f9df6f1bb33159058c59fa5400b5393c20215",
+          "version": 1
+        },
+        {
+          "id": "8827e431-3094-44a4-970f-4dad2c55ef6a",
+          "canonical_url": "https://www.hbea.edu.cn/html/2026-11/16229.shtml",
+          "digest": "0cb6db42e330e9b079d71cf5c9af81cf10c82fd3b05f825e553f56f4bbcaaa97",
+          "version": 1
+        },
+        {
+          "id": "cd7ef0b8-3773-43c9-b537-be13f1b533b2",
+          "canonical_url": "https://www.hbea.edu.cn/html/2026-11/16239.shtml",
+          "digest": "be712e5027cb096f18bd705bde1b9810e9a5750c57e3d400814656c78f6afd5a",
+          "version": 1
+        },
+        {
+          "id": "0dcfaedc-3ba2-4641-9c52-5d5e1fe0e9e7",
+          "canonical_url": "https://www.hbea.edu.cn/html/2026-11/16277.html",
+          "digest": "7513a72f9c038c3eafeb3715735ed167a1a8ac8240ab6aa251d15ddd37f39ac7",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查6条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://zsksy.guizhou.gov.cn/",
+      "category": "education-local",
+      "region": "贵州",
+      "checkedAt": "2026-11-14T11:42:30.059Z",
+      "outcome": {
+        "success": true,
+        "drafts": 4,
+        "message": "检查4条候选，新增/变化草稿4条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "1511b9ff-19ee-4aea-88ad-5c2421e2b558",
+          "canonical_url": "https://zsksy.guizhou.gov.cn/tzgg/202610/t20261020_91009883.html",
+          "digest": "6163d0c05dee71b3b8a4a6ea43b4cc7622fcb4078bff300164b1ee825f17f91d",
+          "version": 1
+        },
+        {
+          "id": "b6234c24-cd7b-4822-8000-6982f25ef624",
+          "canonical_url": "https://zsksy.guizhou.gov.cn/tzgg/202611/t20261103_91066898.html",
+          "digest": "f7c778603150c1249e44c5f18311a4baa6f288fe074b2ebe4a396b55142c18f9",
+          "version": 1
+        },
+        {
+          "id": "cd38a8ba-e28a-4d3e-ae49-a78e3a1ff061",
+          "canonical_url": "https://zsksy.guizhou.gov.cn/xwzx/gzyw/202610/t20261027_91040212.html",
+          "digest": "e24a33c6e1d1a72dcffe12feb39aca0dc01e6fa46fe602a792b8e475c896f9af",
+          "version": 1
+        },
+        {
+          "id": "76e89078-81e3-449b-9d3f-ef9a4c42de23",
+          "canonical_url": "https://zsksy.guizhou.gov.cn/xwzx/gzyw/202611/t20261113_91104093.html",
+          "digest": "d3936c04c6539d0f975afb3ae2f176caba14d3f79069aa10a4c03e450600e53e",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查4条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.lnzsks.com",
+      "category": "education-local",
+      "region": "辽宁",
+      "checkedAt": "2026-11-14T11:42:36.607Z",
+      "outcome": {
+        "success": true,
+        "drafts": 8,
+        "message": "检查8条候选，新增/变化草稿8条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "8c13cba3-c72a-44c4-9c8b-42603c7f2d1e",
+          "canonical_url": "https://www.lnzsks.com/newsinfo/IMS_20260506_45883_ldkPSqnxCh.htm",
+          "digest": "a241e8f295c5f36dd45f6058bf0e6a1ed846e944c5ab8343eec2f7093a26630e",
+          "version": 1
+        },
+        {
+          "id": "8edbe378-f954-45a7-a3c7-b47503eab05a",
+          "canonical_url": "https://www.lnzsks.com/newsinfo/IMS_20260517_45942_WzInPkcAdb.htm",
+          "digest": "f45d946634b63aea39ae03671e0ca094731936571b4dc29cac25028576e9e0ff",
+          "version": 1
+        },
+        {
+          "id": "cc01103b-51a3-4ac3-99ba-148770108e60",
+          "canonical_url": "https://www.lnzsks.com/newsinfo/IMS_20261008_46522_B4cltDL2xk.htm",
+          "digest": "5fcd6062a87ba6406ba0549d5bd78b42beb7eecfdd236749c6086276d5b2ca49",
+          "version": 1
+        },
+        {
+          "id": "f56e8c3b-8c15-4816-82dc-aad784e02f14",
+          "canonical_url": "https://www.lnzsks.com/newsinfo/IMS_20261015_46548_J15mpXZxio.htm",
+          "digest": "3557acf7675362fa6c8b9b4b103fac22749ff99f12b9b33bc7aeaa701e855ebf",
+          "version": 1
+        },
+        {
+          "id": "61a1e470-93ab-4cc5-a420-205aa931ee4d",
+          "canonical_url": "https://www.lnzsks.com/newsinfo/IMS_20261023_46582_8VnwT7eByO.htm",
+          "digest": "2df782ece00700888703dabe6a4dfae28727a8c55699ac610830577bc9a88bd2",
+          "version": 1
+        },
+        {
+          "id": "5e2a5d3d-9afa-4bd6-bb4d-9eee12c3c31d",
+          "canonical_url": "https://www.lnzsks.com/newsinfo/IMS_20261023_46583_4gXhZ2BPOY.htm",
+          "digest": "35e23f9ed16c0517b6daf1303d9224289383d1a281895b2ea935fda7bce2d79e",
+          "version": 1
+        },
+        {
+          "id": "84c749cd-2445-4b81-8bba-dbfcbb71e207",
+          "canonical_url": "https://www.lnzsks.com/newsinfo/IMS_20261112_46674_8eCJ2cRDE4.htm",
+          "digest": "48304ed61c66236e1d43d26e09a30f0a18daf38514400030ce470fc531061ac8",
+          "version": 1
+        },
+        {
+          "id": "de06ffb0-e9cd-46b2-818d-c49343b6e977",
+          "canonical_url": "https://www.lnzsks.com/newsinfo/IMS_20261112_46675_WXLKovEZTd.htm",
+          "digest": "2c90c2a19eba8cac37f9bbc5463731daf67ed3267156cd1870f2c856a7bfeabd",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查8条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.sneea.cn/",
+      "category": "education-local",
+      "region": "陕西",
+      "checkedAt": "2026-11-14T11:42:38.986Z",
+      "outcome": {
+        "success": true,
+        "drafts": 7,
+        "message": "检查7条候选，新增/变化草稿7条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "b717cefd-6ed1-457b-82af-3f0bc6f1baf4",
+          "canonical_url": "https://www.sneea.cn/info/1029/17850.htm",
+          "digest": "fea2a7b38a42a207d3378ee93d986e5d2959a80b1955d3aff3411e20d2f39ede",
+          "version": 1
+        },
+        {
+          "id": "ee4d8672-a4bc-43ff-a882-936a8b41fcb3",
+          "canonical_url": "https://www.sneea.cn/info/1029/17894.htm",
+          "digest": "a5984fcde5792f8812bdbc9ea5d01c3f8cadf4c6579495758d8170494e678db5",
+          "version": 1
+        },
+        {
+          "id": "cba712e8-3a4b-41ff-94f4-7f5bb1f0a119",
+          "canonical_url": "https://www.sneea.cn/info/1043/17769.htm",
+          "digest": "d832258e3de3eb18ef10d4df388fc39da8f716c3d44d6f2e21666f6389710004",
+          "version": 1
+        },
+        {
+          "id": "b81203f8-0daa-477e-8286-836454a675de",
+          "canonical_url": "https://www.sneea.cn/info/1044/17766.htm",
+          "digest": "4c3eeaccda67d06884c2f8b3c7ad367a0df60179bfa15b8139a85d776a50894c",
+          "version": 1
+        },
+        {
+          "id": "9da788ac-e166-4cb9-9b54-f3897895e048",
+          "canonical_url": "https://www.sneea.cn/info/1061/17920.htm",
+          "digest": "9d5fab8af310b408f3f36503edd82e973390a17d4457842c41354084707262da",
+          "version": 1
+        },
+        {
+          "id": "19c63067-c07c-454f-ab73-a9eefa831bb4",
+          "canonical_url": "https://www.sneea.cn/info/1069/17882.htm",
+          "digest": "2ba3dafa7442640aa2db528f62e46a383ba70cecd0c5570297fb00766868bd83",
+          "version": 1
+        },
+        {
+          "id": "8e058a4b-fdf1-4b6b-8ba8-6b0ce0c91c2c",
+          "canonical_url": "https://www.sneea.cn/info/1334/17927.htm",
+          "digest": "66a4b80d772f4b701c2aebed1324f7cb24a3d1a10437156710328bcf43fa40e0",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查7条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.qhjyks.com",
+      "category": "education-local",
+      "region": "青海",
+      "checkedAt": "2026-11-14T11:42:45.671Z",
+      "outcome": {
+        "success": true,
+        "drafts": 8,
+        "message": "检查8条候选，新增/变化草稿8条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "6b42299e-d851-4e8e-92e8-3a35cc740834",
+          "canonical_url": "https://www.qhjyks.com/gzdt/5592.htm",
+          "digest": "694982a21e44fbdd5de086eb79a965e42940cb97964e1d6299ddc06dd7d0bbcd",
+          "version": 1
+        },
+        {
+          "id": "71f9fc4a-95b5-4dec-b369-855de71d8eee",
+          "canonical_url": "https://www.qhjyks.com/ztzl/ptgkz/5708.htm",
+          "digest": "b46d0fe0cbffa6438a28852d62bce1b52b848dc65bbbc4e41728af1f397c7022",
+          "version": 1
+        },
+        {
+          "id": "300901bf-f19b-4db0-8733-6fea384de18f",
+          "canonical_url": "https://www.qhjyks.com/ztzl/yjsksz/5618.htm",
+          "digest": "d7992bd94fb3ce5a69fc588937ffb4fccc1de7f5fa4df64bfa6e10585e0de832",
+          "version": 1
+        },
+        {
+          "id": "4c8a9a04-15d3-46eb-b0ce-45bd88937eef",
+          "canonical_url": "https://www.qhjyks.com/ztzl/yjsksz/5935.htm",
+          "digest": "12117525fec0f6e68a608da50467bfec5d4562b82006edc912dc5cfb4d69cc92",
+          "version": 1
+        },
+        {
+          "id": "7fc77353-f21b-49b9-a57e-1ef17a79bf2b",
+          "canonical_url": "https://www.qhjyks.com/ztzl/yjsksz/5939.htm",
+          "digest": "13c818003c063bd818c460ee7b90df0293ec0577da073794174b7d0eb6b9851b",
+          "version": 1
+        },
+        {
+          "id": "2fa4c099-cfc8-4275-b23c-38ac45ae1368",
+          "canonical_url": "https://www.qhjyks.com/ztzl/zxksz/5919.htm",
+          "digest": "c5e7c7aa0c9364313989f8e7ccd7ae4721f9fc8e350736e91affdc0ed10d9113",
+          "version": 1
+        },
+        {
+          "id": "cf425710-0857-4e49-91f7-3fd9ba30978b",
+          "canonical_url": "https://www.qhjyks.com/ztzl/zxksz/5975.htm",
+          "digest": "29e4ebd49297539a2103d174c24c4a52b01426e7883e6d0033bc40394b282e54",
+          "version": 1
+        },
+        {
+          "id": "41a88d53-27e7-4d76-8f63-4c5e57336b8d",
+          "canonical_url": "https://www.qhjyks.com/ztzl/zxksz/5977.htm",
+          "digest": "fa1d8de3a580faf662baef158cad89524395ee45e1e726b08094b719a38de207",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查8条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    },
+    {
+      "source": "https://www.lzk.hl.cn",
+      "category": "education-local",
+      "region": "黑龙江",
+      "checkedAt": "2026-11-14T11:43:03.122Z",
+      "outcome": {
+        "success": true,
+        "drafts": 8,
+        "message": "检查8条候选，新增/变化草稿8条，详情失败0条；未自动发布。"
+      },
+      "drafts": [
+        {
+          "id": "803eb1e8-dafa-49ff-aec4-830541e29c7d",
+          "canonical_url": "https://www.lzk.hl.cn/shkspdcs/cet_274/bkxx/202611/t20261112_20011.htm",
+          "digest": "056e7ec78574927985763583d88840f83837940a42d79a5c89aa0a04c38b30d8",
+          "version": 1
+        },
+        {
+          "id": "2eff2f59-754c-4ba1-8ecd-27f36b615534",
+          "canonical_url": "https://www.lzk.hl.cn/tpyw/202603/t20260309_19666.htm",
+          "digest": "afad77f0c91b415f40a40001c07144a50eef7dd301c47dee46dc131757d10d45",
+          "version": 1
+        },
+        {
+          "id": "a9a98c55-2a60-43d0-9408-b1cabadf69a2",
+          "canonical_url": "https://www.lzk.hl.cn/tpyw/202603/t20260316_19669.htm",
+          "digest": "e8d81d6d4588ea278c9598e18c6bba14deaee2c62ea84a3fd0c2fea9ac511da0",
+          "version": 1
+        },
+        {
+          "id": "b8987170-40e0-4e83-91e2-28c6acf39fb8",
+          "canonical_url": "https://www.lzk.hl.cn/tpyw/202604/t20260413_19692.htm",
+          "digest": "d25d1734a38d0df6aaa3626981854495c167de8d9ef896c711c8c8b3616b232e",
+          "version": 1
+        },
+        {
+          "id": "f3d2d75d-b5c4-4084-b932-542869f58d2e",
+          "canonical_url": "https://www.lzk.hl.cn/ykpd/202610/t20261008_19993.htm",
+          "digest": "7f6ab6255a121629099c3aef8679dfa014f818f1a4a0682ac6a0b6d7995c75ae",
+          "version": 1
+        },
+        {
+          "id": "31b62192-2891-4f5b-bc35-812db4260aa8",
+          "canonical_url": "https://www.lzk.hl.cn/ykpd/kyxx/202604/t20260428_19702.htm",
+          "digest": "99f53c83fc336288e1800fa227197f344a30bf57c7c2d93fddbdf33c18b9d06b",
+          "version": 1
+        },
+        {
+          "id": "dbe24171-5fee-4fdd-a995-7c6439a67df4",
+          "canonical_url": "https://www.lzk.hl.cn/ykpd/kyxx/202606/t20260604_19738.htm",
+          "digest": "9f58656295685d9538c752592e6cb359ea5f4cb905cdd1746da3deeab69beb67",
+          "version": 1
+        },
+        {
+          "id": "f457a086-6383-44ca-92b1-eb8fbb1d1098",
+          "canonical_url": "https://www.lzk.hl.cn/ykpd/kyxx/202610/t20261015_20000.htm",
+          "digest": "1e3fcfb8411d71a6e96be4f7426ff3530b0b50b3838488938b2a194e9c3fafd4",
+          "version": 1
+        }
+      ],
+      "repeat": {
+        "drafts": 0,
+        "message": "检查8条候选，新增/变化草稿0条，详情失败0条；未自动发布。"
+      }
+    }
+  ],
+  "summary": {
+    "sources": 18,
+    "succeeded": 12,
+    "failed": 6,
+    "draftVersions": 76,
+    "repeatAdded": 0,
+    "enabledSources": 0,
+    "publishedNotices": 0
+  }
+}

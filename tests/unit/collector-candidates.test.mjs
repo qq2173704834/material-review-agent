@@ -42,3 +42,39 @@ test("其他来源保留其真实文章路径，综合来源过滤低学龄公�
     [],
   );
 });
+
+test("省级导航目录不作为公告，已知文章保留且同源HTTPS详情实际核验", () => {
+  const examples = [
+    ["www.ynzs.cn", "/html/content/8795.html", "/html/web/zkdt-yjsks/index.html"],
+    ["www.bjeea.cn", "/html/yk/tzgg/2026/1007/88385.html", "/html/yk/index.html"],
+    ["www.sceea.cn", "/Html/202610/Newsdetail_4995.html", "/Html/ExamEnrollment.html"],
+    ["eea.gd.gov.cn", "/news/content/post_4971623.html", "/yjsks/index.html"],
+    ["www.xjzk.gov.cn", "/c/2026-11-02/496323.shtml", "/jszgks/"],
+    ["www.hebeea.edu.cn", "/c/2026-11-03/493840.html", "/qgjsjdj/"],
+    ["www.hbea.edu.cn", "/html/2026-11/16239.shtml", "/html/gre/index.html"],
+    ["zsksy.guizhou.gov.cn", "/tzgg/202611/t20261103_91066898.html", "/yjsks/"],
+    ["www.lnzsks.com", "/newsinfo/IMS_20261008_46522_B4cltDL2xk.htm", "/listinfo/zxks_1.html"],
+    ["www.sneea.cn", "/info/1043/17769.htm", "/zc/jsjdjks.htm"],
+    ["www.qhjyks.com", "/ztzl/yjsksz/5935.htm", "/ztzl/yjsksz/"],
+    ["www.lzk.hl.cn", "/ykpd/202610/t20261008_19993.htm", "/ykpd/"],
+  ];
+  for (const [host, article, navigation] of examples) {
+    const source = { url: `https://${host}/`, category: "education-local" };
+    const links = [article, navigation].map((path) => ({
+      url: `http://${host}${path}`,
+      name: "研究生考试通知",
+    }));
+    assert.deepEqual(
+      collectorCandidates(links, source).map((x) => x.url),
+      [`https://${host}${article}`],
+      host,
+    );
+  }
+  assert.deepEqual(
+    collectorCandidates([{ url: "https://www.jxeea.cn/yjsks89/list.html", name: "研究生考试" }], {
+      url: "https://www.jxeea.cn/",
+      category: "education-local",
+    }),
+    [],
+  );
+});

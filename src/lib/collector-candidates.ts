@@ -6,6 +6,20 @@ interface CollectorSource {
   url: string;
   category: string;
 }
+const PROVINCIAL_DETAIL_PATHS: Record<string, RegExp> = {
+  "www.ynzs.cn": /^\/html\/content\/\d+\.html$/i,
+  "www.bjeea.cn": /^\/html\/.+\/\d{4}\/\d{4}\/\d+\.html$/i,
+  "www.sceea.cn": /^\/Html\/\d{6}\/Newsdetail_\d+\.html$/i,
+  "eea.gd.gov.cn": /\/content\/post_\d+\.html$/i,
+  "www.xjzk.gov.cn": /^\/c\/\d{4}-\d{2}-\d{2}\/\d+\.shtml$/i,
+  "www.hebeea.edu.cn": /^\/c\/\d{4}-\d{2}-\d{2}\/\d+\.html$/i,
+  "www.hbea.edu.cn": /^\/html\/\d{4}-\d{1,2}\/\d+\.s?html$/i,
+  "zsksy.guizhou.gov.cn": /\/\d{6}\/t\d{8}_\d+\.html$/i,
+  "www.lnzsks.com": /^\/newsinfo\/IMS_\d{8}_\d+_[a-z0-9]+\.htm$/i,
+  "www.sneea.cn": /^\/info\/\d+\/\d+\.htm$/i,
+  "www.qhjyks.com": /\/\d+\.htm$/i,
+  "www.lzk.hl.cn": /\/\d{6}\/t\d{8}_\d+\.htm$/i,
+};
 const KEYWORDS = /报名|考试|招考|招生|成绩|准考证|资格|考务|通知|公告|考研|推免/;
 
 export function collectorCandidates(
@@ -39,6 +53,13 @@ export function collectorCandidates(
       if (/\.(pdf|docx?|xlsx?|zip)$/i.test(url.pathname)) continue;
       // NEEA report URLs are detail pages; category/folder/home pages are navigation or standing guides.
       if (isNeea && !/^\/html\d*\/report\//i.test(url.pathname)) continue;
+      if (source.category === "education-local") {
+        const detailPath = PROVINCIAL_DETAIL_PATHS[host];
+        // A category page mentioning exams is not an announcement.
+        if (detailPath ? !detailPath.test(url.pathname) : !/\/\d+\.s?html?$/i.test(url.pathname))
+          continue;
+        if (detailPath && new URL(source.url).protocol === "https:") url.protocol = "https:";
+      }
       if (
         source.category === "education-local" &&
         !/研究生|考研|推免|专升本|专接本|四六级|四、六级|四级|六级|计算机|教师资格|普通话|自学考试|同等学力|英语等级|外语水平|书画|汉语水平|职业资格/.test(
