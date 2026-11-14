@@ -21,5 +21,5 @@ test("未保存编辑在离开、后退时提醒且取消后保留输入 OPT-02"
   const leave = page.getByRole("link", { name: "返回任务列表", exact: true }).click();
   await (await leaveDialog).accept();
   await leave;
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/tasks$/);
 });

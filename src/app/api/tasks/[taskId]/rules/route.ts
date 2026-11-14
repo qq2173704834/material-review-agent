@@ -108,6 +108,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
                 sourceVersion: source.version,
                 sourceDisplayName: source.displayName,
                 noticeText: source.originalText,
+                sourceSegments: source.segments,
               }),
             );
             const rules = sourceResults.flatMap((result) => result.rules);

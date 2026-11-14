@@ -98,3 +98,7 @@ HTML报告在`playwright-report/boundaries/`；失败截图和轨迹在`test-res
 `pnpm exec playwright test --config playwright.assistant.config.ts`在独立3145应用与3311受控兼容模型上验证同意门禁、原文引用、幂等、成功/失败耗用及未知Token。数据仅保存在`.local-data/assistant-e2e`，合成密钥、无真实模型计费，不等同独立真实模型效果验收。
 
 `node scripts/check-product-backlog.mjs`只校验EXP/PORT原88条在逐条验收台账无缺漏/重复，不把文档一致性当功能通过。真实来源核验可显式运行`node --experimental-transform-types scripts/audit-exam-sources.mjs --network`，每次建立独立source-audit数据库，草稿不自动发布。
+
+## ENG-055 官方PDF与规则片段定位
+
+生产构建后运行 `pnpm exec playwright test --config playwright.goal-sources.config.ts`，使用3146端口和独立SQLite目录。真实读取NCRE公开考纲PDF，合成公告和材料、模拟规则模型；验证目标未读拦截、双来源提取、引用定位、重复导入和跨账号隔离。网络失败真实报错，不用模拟PDF替代。单元回归 `tests/unit/rule-source-segments.test.mjs` 覆盖不连续片段编号和全局偏移。

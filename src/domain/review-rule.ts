@@ -102,6 +102,12 @@ export interface RuleExtractionInput {
   sourceVersion: number;
   sourceDisplayName?: string;
   noticeText: string;
+  sourceSegments?: Array<{
+    paragraphIndex: number;
+    text: string;
+    startOffset: number;
+    endOffset: number;
+  }>;
 }
 
 export type RuleCollaborationScope = CollaborationScope;

@@ -99,7 +99,17 @@ export function extractMockRules(input: RuleExtractionInput): {
   const rules: ReviewRule[] = [];
   const warnings: RuleExtractionWarning[] = [];
 
-  for (const fragment of splitIntoFragments(input.noticeText)) {
+  const fragments = input.sourceSegments
+    ? input.sourceSegments.flatMap((segment) =>
+        splitIntoFragments(segment.text).map((fragment) => ({
+          ...fragment,
+          paragraphIndex: segment.paragraphIndex,
+          startOffset: segment.startOffset + fragment.startOffset,
+          endOffset: segment.startOffset + fragment.endOffset,
+        })),
+      )
+    : splitIntoFragments(input.noticeText);
+  for (const fragment of fragments) {
     if (!RULE_HINT_PATTERN.test(fragment.text)) continue;
 
     const strength = detectStrength(fragment.text);
