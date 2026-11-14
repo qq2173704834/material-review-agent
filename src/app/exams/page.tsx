@@ -203,9 +203,9 @@ export default async function Page({
           notices={all}
         />
         <details className="rounded-xl border p-5">
-          <summary className="cursor-pointer font-medium">31省级考试机构目录及本次访问核验</summary>
+          <summary className="cursor-pointer font-medium">31省级考试机构目录与历史访问检查</summary>
           <p className="my-3 text-sm">
-            目录来自中国教育考试网官方链接；访问核验时间为2026-11-13。可访问只代表入口可读，公告是否成功采集见下方来源状态。港澳台尚未接入对应考试机构。
+            目录来自中国教育考试网官方链接。以下为历史自动检查结果，不是本次搜索时的实时检测；HTTPS检查未成功不代表官方原始HTTP入口失效。公告采集情况见下方来源状态，港澳台尚未接入对应考试机构。
           </p>
           <ul className="grid gap-3 sm:grid-cols-2">
             {provincialSources.map((source) => (
@@ -220,8 +220,12 @@ export default async function Page({
                 </a>
                 <p>
                   {source.status === "accessible"
-                    ? "入口可访问，已登记采集来源"
-                    : "本次HTTPS访问失败，保留官方入口供人工查询"}
+                    ? "历史HTTPS检查通过；当前是否可访问及采集成功需另行核对"
+                    : "历史HTTPS自动检查未成功；可尝试上方官方原始入口，不代表网站已停用"}
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  检查日期：{source.checkedAt.slice(0, 10)} · 检查方式：HTTPS ·
+                  上方链接保留官方目录原始地址
                 </p>
               </li>
             ))}
