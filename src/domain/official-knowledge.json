@@ -1449,6 +1449,66 @@
         "sourceSha256": "7c92802a4d804aaf9f00f76eb051cad0a03a3c4fe1b44dd72db477f090b33fb4",
         "fetchedAt": "2026-11-14T12:30:09.292Z"
       }
+    },
+    {
+      "key": "python-hashable",
+      "content": {
+        "title": "Python官方文档：可哈希与字典键",
+        "category": "ncre",
+        "region": "全国",
+        "edition": "",
+        "subject": "Python",
+        "kind": "resource",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "Python官方文档（Python Software Foundation）",
+        "url": "https://docs.python.org/3/glossary.html",
+        "text": "Hashability makes an object usable as a dictionary key and a set member, because these data structures use the hash value internally.",
+        "summary": "Python语言官方文档少量引用；不是NCRE考纲、考试政策或官方试题。",
+        "checkedAt": "2026-11-14",
+        "scope": "Python 3.15.2语言文档，2026-11-14读取；不可变与可哈希的区别，NCRE具体版本和考期待核对。",
+        "reviewNote": "已核对Python官方文档原文；只引用少量定义，语言知识与考试要求分开，不把元组不可变推断为总能作字典键。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "英语"
+      },
+      "evidence": {
+        "quote": "Hashability makes an object usable as a dictionary key and a set member, because these data structures use the hash value internally.",
+        "sourceTitle": "Glossary — Python 3.15.2 documentation",
+        "sourceSha256": "661429b6fc4fb20f178425cccb805915e1fc042c5b3be860dcc73a65dfecad60",
+        "fetchedAt": "2026-11-14T13:00:24.895Z"
+      }
+    },
+    {
+      "key": "python-tuple-hashable",
+      "content": {
+        "title": "Python官方文档：元组元素与可哈希条件",
+        "category": "ncre",
+        "region": "全国",
+        "edition": "",
+        "subject": "Python",
+        "kind": "resource",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "Python官方文档（Python Software Foundation）",
+        "url": "https://docs.python.org/3/glossary.html",
+        "text": "Most of Python’s immutable built-in objects are hashable; mutable containers (such as lists or dictionaries) are not; immutable containers (such as tuples and frozensets) are only hashable if their elements are hashable.",
+        "summary": "Python语言官方文档少量引用；不是NCRE考纲、考试政策或官方试题。",
+        "checkedAt": "2026-11-14",
+        "scope": "Python 3.15.2语言文档，2026-11-14读取；不可变与可哈希的区别，NCRE具体版本和考期待核对。",
+        "reviewNote": "已核对Python官方文档原文；只引用少量定义，语言知识与考试要求分开，不把元组不可变推断为总能作字典键。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "英语"
+      },
+      "evidence": {
+        "quote": "Most of Python’s immutable built-in objects are hashable; mutable containers (such as lists or dictionaries) are not; immutable containers (such as tuples and frozensets) are only hashable if their elements are hashable.",
+        "sourceTitle": "Glossary — Python 3.15.2 documentation",
+        "sourceSha256": "661429b6fc4fb20f178425cccb805915e1fc042c5b3be860dcc73a65dfecad60",
+        "fetchedAt": "2026-11-14T13:00:24.895Z"
+      }
     }
   ]
 }

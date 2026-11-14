@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { assistantPolicy } from "../../src/lib/assistant-policy.ts";
+import { assistantPolicy, lacksDatedExamNotice } from "../../src/lib/assistant-policy.ts";
 test("助手限额可配置并有边界，停用与模型模式分离", () => {
   assert.deepEqual(assistantPolicy({}), { enabled: true, hourlyLimit: 20 });
   assert.deepEqual(assistantPolicy({ ASSISTANT_ENABLED: "off", ASSISTANT_HOURLY_LIMIT: "5" }), {
@@ -11,4 +11,28 @@ test("助手限额可配置并有边界，停用与模型模式分离", () => {
     assert.equal(assistantPolicy({ ASSISTANT_HOURLY_LIMIT: value }).hourlyLimit, 20);
   for (const value of ["1", "200"])
     assert.equal(assistantPolicy({ ASSISTANT_HOURLY_LIMIT: value }).hourlyLimit, Number(value));
+});
+
+test("当期日期问题无当期公告时拒绝模型补猜，介绍和旧考期不能替代", () => {
+  const notice = { url: "/exams/synthetic", scope: "全国 · 2027年 · 合成考试", historical: false };
+  for (const question of [
+    "2027年DELE从哪一天开始报名？",
+    "2027年考试时间是什么？",
+    "2027年什么时候缴费？",
+  ]) {
+    assert.equal(lacksDatedExamNotice(question, false, []), true);
+    assert.equal(lacksDatedExamNotice(question, false, [notice]), false);
+    assert.equal(
+      lacksDatedExamNotice(question, false, [{ ...notice, url: "/learn/synthetic" }]),
+      true,
+    );
+    assert.equal(
+      lacksDatedExamNotice(question, false, [{ ...notice, scope: "全国 · 2026年 · 合成考试" }]),
+      true,
+    );
+    assert.equal(lacksDatedExamNotice(question, false, [{ ...notice, historical: true }]), true);
+  }
+  assert.equal(lacksDatedExamNotice("2027年请制定学习时间计划", true, []), false);
+  assert.equal(lacksDatedExamNotice("2026年基金考试成绩有效期是多少？", false, []), false);
+  assert.equal(lacksDatedExamNotice("北京教资学历和报名条件是什么？", false, []), false);
 });

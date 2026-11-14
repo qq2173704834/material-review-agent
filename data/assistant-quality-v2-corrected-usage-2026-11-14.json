@@ -1,0 +1,41 @@
+{
+  "scope": "仅独立质量样例库耗用元数据",
+  "rows": [
+    {
+      "status": "completed",
+      "usage": {
+        "modelCall": {
+          "operation": "exam_assistant",
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "startedAt": "2026-11-14T13:22:21.374Z",
+          "completedAt": "2026-11-14T13:22:26.838Z",
+          "status": "completed",
+          "inputTokens": 1272,
+          "outputTokens": 936,
+          "requestCount": 1,
+          "errorCode": ""
+        },
+        "cost": null
+      }
+    },
+    {
+      "status": "completed",
+      "usage": {
+        "modelCall": {
+          "operation": "exam_assistant",
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "startedAt": "2026-11-14T13:22:26.860Z",
+          "completedAt": "2026-11-14T13:22:29.447Z",
+          "status": "completed",
+          "inputTokens": 1593,
+          "outputTokens": 423,
+          "requestCount": 1,
+          "errorCode": ""
+        },
+        "cost": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "checkedAt": "2026-11-14T13:19:57.423Z",
+  "maximumModelRequests": 1,
+  "maxAttempts": 1,
+  "reference": {
+    "version": "3.14.7",
+    "tuple": "([1, 2, 4], 3)",
+    "hashError": "TypeError",
+    "hashableTuple": true
+  },
+  "blockingCriteria": [
+    "关键事实错误",
+    "引用不属于已审核原文",
+    "把未知报名日期编成确定日期",
+    "把考试合格等同已注册执业资格",
+    "生成练习伪称官方真题",
+    "跨账号读取对话"
+  ],
+  "results": [
+    {
+      "sample": {
+        "id": "dele-unknown-date",
+        "learning": false,
+        "question": "2027年西班牙语DELE考试从哪一天开始报名？",
+        "basis": ["当前库仅有DELE介绍，未有2027报名公告"],
+        "expected": "未知、需查当期公告；不沿用2026首页或详情日期，不编具体日期。"
+      },
+      "start": "2026-11-14T13:19:57.423Z",
+      "status": 200,
+      "payload": {
+        "answer": "尚未检索到对应考期的已审核日程公告，无法确认报名或考试的具体日期。通用考试介绍、历史时间和其他考期不能作为本次安排；请查询考试中心官方入口或补充当期公告。",
+        "kind": "需补充信息",
+        "mode": "retrieval",
+        "citations": [],
+        "conversationId": "f4c87556-8f4c-4783-8469-996407f28152",
+        "warning": "缺少对应考期日程原文，本次未调用模型，不推断具体日期。",
+        "usage": {
+          "modelCall": null,
+          "cost": null
+        }
+      },
+      "review": "待按预登记依据复核，API成功不等于语义正确"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "scope": "仅独立质量样例库中的耗用元数据，不读取账号或凭据",
+  "rows": [
+    {
+      "status": "completed",
+      "usage": {
+        "modelCall": {
+          "operation": "exam_assistant",
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "startedAt": "2026-11-14T13:11:45.758Z",
+          "completedAt": "2026-11-14T13:11:51.126Z",
+          "status": "completed",
+          "inputTokens": 1207,
+          "outputTokens": 910,
+          "requestCount": 1,
+          "errorCode": ""
+        },
+        "cost": null
+      }
+    },
+    {
+      "status": "completed",
+      "usage": {
+        "modelCall": {
+          "operation": "exam_assistant",
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "startedAt": "2026-11-14T13:11:51.150Z",
+          "completedAt": "2026-11-14T13:11:56.719Z",
+          "status": "completed",
+          "inputTokens": 1533,
+          "outputTokens": 958,
+          "requestCount": 1,
+          "errorCode": ""
+        },
+        "cost": null
+      }
+    },
+    {
+      "status": "completed",
+      "usage": {
+        "modelCall": {
+          "operation": "exam_assistant",
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "startedAt": "2026-11-14T13:11:56.738Z",
+          "completedAt": "2026-11-14T13:12:01.093Z",
+          "status": "completed",
+          "inputTokens": 1528,
+          "outputTokens": 812,
+          "requestCount": 1,
+          "errorCode": ""
+        },
+        "cost": null
+      }
+    },
+    {
+      "status": "failed",
+      "usage": {
+        "modelCall": {
+          "operation": "exam_assistant",
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "startedAt": "2026-11-14T13:12:01.111Z",
+          "completedAt": "2026-11-14T13:12:05.510Z",
+          "status": "failed",
+          "inputTokens": 714,
+          "outputTokens": 519,
+          "requestCount": 1,
+          "errorCode": "invalid_response"
+        },
+        "cost": null
+      }
+    }
+  ]
+}

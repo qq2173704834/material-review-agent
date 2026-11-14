@@ -13,7 +13,7 @@ export default defineConfig({
     reuseExistingServer: false,
     env: {
       AI_MODE: "live",
-      AI_MAX_ATTEMPTS: "1",
+      AI_MAX_ATTEMPTS: process.env.REVIEW_QUALITY_MAX_ATTEMPTS ?? "1",
       AI_TIMEOUT_MS: "45000",
       REVIEW_AUTH_MODE: "accounts",
       REVIEW_DATA_DIR: process.env.REVIEW_QUALITY_DATA_DIR,

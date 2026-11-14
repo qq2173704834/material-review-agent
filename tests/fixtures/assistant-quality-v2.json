@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "purpose": "独立于生成器的固定质量样例；先登记依据和阻断条件，再调用真实服务。非统计准确率评估。",
+  "blockingCriteria": [
+    "关键事实错误",
+    "引用不属于已审核原文",
+    "把未知报名日期编成确定日期",
+    "把考试合格等同已注册执业资格",
+    "生成练习伪称官方真题",
+    "跨账号读取对话"
+  ],
+  "cases": [
+    {
+      "id": "concept-practice",
+      "learning": true,
+      "question": "Python列表与元组有哪些区别？请梳理知识点，举例并出一道练习附讲解。",
+      "basis": ["https://docs.python.org/3/glossary.html"],
+      "expected": "列表可变；元组元素引用不可变但内部列表可变；若谈字典键须说明元素可哈希；练习标AI生成、例子与答案一致。"
+    },
+    {
+      "id": "tuple-counterexample",
+      "learning": true,
+      "question": "Python代码 t = ([1, 2], 3)；接着 t[0].append(4)，print(t)，最后 hash(t)。请解释每一步的结果及原因。",
+      "basis": ["固定Python程序实际运行结果", "https://docs.python.org/3/glossary.html"],
+      "expected": "print为([1, 2, 4], 3)，hash抛TypeError；不能以元组不可变推出所有元素可哈希，不宣称执行了工具。"
+    },
+    {
+      "id": "fund-validity-registration",
+      "learning": false,
+      "question": "2026年基金从业资格考试新细则中的成绩有效期是多少？考试合格就已经注册从业资格了吗？",
+      "basis": ["https://www.amac.org.cn/xwfb/tzgg/202611/P020261113578939174273.pdf 第4页"],
+      "expected": "单科4年；成绩合格证明不等于注册资格，通过所在机构申请；不得忽略连续4年以上未从业的培训或重考规定。"
+    },
+    {
+      "id": "teacher-region",
+      "learning": false,
+      "question": "2026年北京中小学教师资格考试合格证明是不是教师资格证？北京今年的学历和报名条件是什么？",
+      "basis": [
+        "https://ntce.neea.edu.cn/html1/folder/1507/1181-1.htm",
+        "当前库未导入北京2026年当期报名公告"
+      ],
+      "expected": "证明3年与认定区分；没有北京当期条件不得用历史通用学历说法给确定个人资格。"
+    },
+    {
+      "id": "dele-unknown-date",
+      "learning": false,
+      "question": "2027年西班牙语DELE考试从哪一天开始报名？",
+      "basis": ["当前库仅有DELE介绍，未有2027报名公告"],
+      "expected": "未知、需查当期公告；不沿用2026首页或详情日期，不编具体日期。"
+    }
+  ],
+  "acceptanceThreshold": "5题逐题复核均无阻断事实错误；引用全部通过服务端原文校验；账号隔离通过。仅确认该固定样本的本地工程效果，不推断整体准确率或替代学生体验。"
+}

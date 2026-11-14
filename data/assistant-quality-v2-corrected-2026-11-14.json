@@ -1,0 +1,138 @@
+{
+  "checkedAt": "2026-11-14T13:22:29.452Z",
+  "maximumModelRequests": 2,
+  "maxAttempts": 1,
+  "reference": {
+    "version": "3.14.7",
+    "tuple": "([1, 2, 4], 3)",
+    "hashError": "TypeError",
+    "hashableTuple": true
+  },
+  "blockingCriteria": [
+    "关键事实错误",
+    "引用不属于已审核原文",
+    "把未知报名日期编成确定日期",
+    "把考试合格等同已注册执业资格",
+    "生成练习伪称官方真题",
+    "跨账号读取对话"
+  ],
+  "results": [
+    {
+      "sample": {
+        "id": "concept-practice",
+        "learning": true,
+        "question": "Python列表与元组有哪些区别？请梳理知识点，举例并出一道练习附讲解。",
+        "basis": ["https://docs.python.org/3/glossary.html"],
+        "expected": "列表可变；元组元素引用不可变但内部列表可变；若谈字典键须说明元素可哈希；练习标AI生成、例子与答案一致。"
+      },
+      "start": "2026-11-14T13:22:26.843Z",
+      "status": 200,
+      "payload": {
+        "answer": "AI学习建议：以下为概念梳理与练习讲解，不是官方真题。\n\n一、列表与元组的主要区别\n1. 可变性：list 可变，可增删改元素（append、remove、赋值等）；tuple 创建后不能增删改元素。对元组“修改元素”会报 TypeError。\n2. 语法：列表用方括号，如 [1, 2, 3]；元组用圆括号加逗号，如 (1, 2, 3)；单元素元组必须写 (1,)，因为 (1) 只是整数 1。空元组是 ()。\n3. 典型用途：列表用于元素数量可能变化的序列；元组常用于固定结构的数据、函数返回多个值、字典键候选等。\n4. 可哈希性：不能把“元组不可变所以一定可哈希”当结论。官方原文说：不可变容器（如元组和 frozenset）只有其元素可哈希时才可哈希；可变容器（如列表、字典）不可哈希。因此 (1, 2) 可作字典键，而 ([1], 2) 因含列表元素不可哈希，作字典键或求 hash 时报 TypeError。\n5. 可哈希的用途：官方原文说明可哈希使对象能作为字典键和集合成员，因为这些结构内部使用哈希值。\n6. 常见误解：创建含列表的元组本身不会报错，如 ([1], 2) 可以创建；只有对它求 hash 或把它作字典键时才报错。\n7. 字面量辨析：{2} 是集合，{} 是空字典；不要混用。\n\n二、例子\nlst = [1, 2, 3]\nlst.append(4)        # 合法，lst 变为 [1, 2, 3, 4]\nt = (1, 2, 3)\n# t[0] = 9           # TypeError，元组不支持元素赋值\nprint((1,))          # 单元素元组\nprint(hash((1, 2)))  # 通常可哈希\n# hash(([1], 2))     # TypeError，因含不可哈希的列表元素\n# d = {([1], 2): 1}  # TypeError，同上\n\n三、练习题（AI学习建议，非官方真题）\n请判断下列哪些可以作为字典键，并说明理由：\nA. (1, 2)\nB. ([1], 2)\nC. [1, 2]\nD. (1, [2])\n\n参考答案与讲解：\nA 可以，元组元素都可哈希。B 不可以，元组含列表元素，整体不可哈希；注意创建这个元组本身不报错，用它作键才报错。C 不可以，列表是可变容器，不可哈希。D 不可以，元组含列表元素，整体不可哈希。结论成立条件是讨论对象在 Python 3 中作为字典键；重要反例是“元组不可变就一定可哈希”的说法不成立，容器可哈希性还取决于元素。\n\n四、考试范围提示\n若涉及 NCRE 二级 Python，现有材料只能核对到“二级Python语言程序设计考试大纲（2025年版）”这一目录信息，PDF 大纲未解析，具体版本和考期应以最新通知为准，不能据此保证考试内容或通过。",
+        "kind": "学习建议",
+        "mode": "live",
+        "citations": [
+          {
+            "id": "a5a215fe3cf8c55bf99f20f101226ec1",
+            "version": 1,
+            "title": "Python官方文档：元组元素与可哈希条件",
+            "url": "/learn/a5a215fe3cf8c55bf99f20f101226ec1",
+            "quote": "Most of Python’s immutable built-in objects are hashable; mutable containers (such as lists or dictionaries) are not; immutable containers (such as tuples and frozensets) are only hashable if their elements are hashable.",
+            "checkedAt": "2026-11-14",
+            "scope": "全国 ·  · Python 3.15.2语言文档，2026-11-14读取；不可变与可哈希的区别，NCRE具体版本和考期待核对。"
+          },
+          {
+            "id": "5f7ee977027442b4d2223b22e2477a81",
+            "version": 1,
+            "title": "Python官方文档：可哈希与字典键",
+            "url": "/learn/5f7ee977027442b4d2223b22e2477a81",
+            "quote": "Hashability makes an object usable as a dictionary key and a set member, because these data structures use the hash value internally.",
+            "checkedAt": "2026-11-14",
+            "scope": "全国 ·  · Python 3.15.2语言文档，2026-11-14读取；不可变与可哈希的区别，NCRE具体版本和考期待核对。"
+          },
+          {
+            "id": "920812d75db95be784a970ac7efd609d",
+            "version": 1,
+            "title": "NCRE官方考纲与教材目录",
+            "url": "/learn/920812d75db95be784a970ac7efd609d",
+            "quote": "二级Python语言程序设计考试大纲（2025年版）",
+            "checkedAt": "2026-11-14",
+            "scope": "全国 ·  · NCRE二级Python；官方目录中2025年版。仅核对目录，PDF大纲未下载解析，适用考期以最新通知为准。"
+          }
+        ],
+        "conversationId": "3e9abb18-ebe0-419f-aca2-76ab1a0914d6",
+        "warning": "AI学习建议需自行核对，考试规定以适用的官方原文为准。费用未返回时不估算为零。",
+        "usage": {
+          "modelCall": {
+            "operation": "exam_assistant",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "startedAt": "2026-11-14T13:22:21.374Z",
+            "completedAt": "2026-11-14T13:22:26.838Z",
+            "status": "completed",
+            "inputTokens": 1272,
+            "outputTokens": 936,
+            "requestCount": 1,
+            "errorCode": ""
+          },
+          "cost": null
+        }
+      },
+      "review": "待按预登记依据复核，API成功不等于语义正确"
+    },
+    {
+      "sample": {
+        "id": "fund-validity-registration",
+        "learning": false,
+        "question": "2026年基金从业资格考试新细则中的成绩有效期是多少？考试合格就已经注册从业资格了吗？",
+        "basis": ["https://www.amac.org.cn/xwfb/tzgg/202611/P020261113578939174273.pdf 第4页"],
+        "expected": "单科4年；成绩合格证明不等于注册资格，通过所在机构申请；不得忽略连续4年以上未从业的培训或重考规定。"
+      },
+      "start": "2026-11-14T13:22:29.452Z",
+      "status": 200,
+      "payload": {
+        "answer": "根据所给2026年基金从业资格考试管理细则原文：成绩方面，原文规定“考试实行百分制，成绩合格分数线为 60 分，单科目考试成绩有效期为 4 年。报考人员考试成绩合格的，可以取得成绩合格证明。”因此，单科成绩有效期为4年，合格取得的是成绩合格证明。关于是否“考试合格就已经注册从业资格”，原文并未规定考试合格即自动注册；相反，原文规定“报考人员考试成绩合格的，可以通过所在机构向协会申请注册基金从业资格”，即成绩合格只是申请注册的前提之一，需通过所在机构申请注册，并非考试合格即已注册。另，原文还规定“自考试通过之日起连续 4 年以上未从事基金业务的人员申请注册从业资格，应当重新通过考试，或者在注册之前 2 年内完成不少于 30 学时后续职业培训。”因此超过4年未从事基金业务者申请注册还有重新考试或完成后续职业培训的要求。政策原文只规定“不得报名”等限制时，不应扩展为不得注册或执业；本回答仅依据上述原文说明成绩有效期与注册关系，不保证个人注册结果，具体注册条件和程序应以协会当期规定为准。",
+        "kind": "考试信息",
+        "mode": "live",
+        "citations": [
+          {
+            "id": "11371e6fccef072a1e4f8ba2fe7c8268",
+            "version": 1,
+            "title": "基金新细则分数与成绩有效期",
+            "url": "/learn/11371e6fccef072a1e4f8ba2fe7c8268",
+            "quote": "考试实行百分制，成绩合格分数线为 60 分，单科目考\n试成绩有效期为 4 年。报考人员考试成绩合格的，可以取得\n成绩合格证明。",
+            "checkedAt": "2026-11-14",
+            "scope": "全国 ·  · 全国；2026-11-13发布生效的基金从业资格考试管理细则。具体考期以当期公告为准。"
+          },
+          {
+            "id": "3bad700d9fa1e75a31afa2b56b89248f",
+            "version": 1,
+            "title": "基金考试合格与注册从业资格的区别",
+            "url": "/learn/3bad700d9fa1e75a31afa2b56b89248f",
+            "quote": "第十五条 报考人员考试成绩合格的，可以通过所在机\n构向协会申请注册基金从业资格；自考试通过之日起连续 4\n年以上未从事基金业务的人员申请注册从业资格，应当重新\n通过考试，或者在注册之前 2 年内完成不少于 30 学时后续\n职业培训。",
+            "checkedAt": "2026-11-14",
+            "scope": "全国 ·  · 全国；2026-11-13发布生效的基金从业资格考试管理细则。具体考期以当期公告为准。"
+          }
+        ],
+        "conversationId": "08da7015-dba4-4166-af97-be0285f407c5",
+        "warning": "AI学习建议需自行核对，考试规定以适用的官方原文为准。费用未返回时不估算为零。",
+        "usage": {
+          "modelCall": {
+            "operation": "exam_assistant",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "startedAt": "2026-11-14T13:22:26.860Z",
+            "completedAt": "2026-11-14T13:22:29.447Z",
+            "status": "completed",
+            "inputTokens": 1593,
+            "outputTokens": 423,
+            "requestCount": 1,
+            "errorCode": ""
+          },
+          "cost": null
+        }
+      },
+      "review": "待按预登记依据复核，API成功不等于语义正确"
+    }
+  ]
+}
