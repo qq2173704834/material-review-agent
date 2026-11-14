@@ -86,6 +86,21 @@ test("ENG-047 截止提醒跨页面一致，日期精度与实时到期正确且
       ).toBeTruthy();
     }
     const page = await context.newPage();
+    await page.goto("/admin/exams");
+    await expect(page.getByText("官方来源与受控调度", { exact: true })).toBeVisible();
+    const sourceSearch = page.getByLabel("搜索来源名称、地区或网址");
+    await sourceSearch.fill("不存在的隔离来源名称");
+    await expect(
+      page.getByText("没有匹配的来源，请调整搜索或状态筛选。", { exact: true }),
+    ).toBeVisible();
+    await sourceSearch.fill(source.name);
+    await expect(page.getByRole("link", { name: source.name, exact: true })).toBeVisible();
+    await page.getByLabel("来源状态", { exact: true }).selectOption("enabled");
+    await expect(
+      page.getByText("没有匹配的来源，请调整搜索或状态筛选。", { exact: true }),
+    ).toBeVisible();
+    await page.getByLabel("来源状态", { exact: true }).selectOption("disabled");
+    await expect(page.getByRole("link", { name: source.name, exact: true })).toBeVisible();
     await page.goto("/?tab=latest");
     await expect(page.getByRole("link", { name: "内容管理", exact: true })).toBeVisible();
     const exact = page.getByRole("article", { name: `合成截止精确-${suffix}`, exact: true });

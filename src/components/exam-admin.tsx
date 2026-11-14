@@ -20,6 +20,8 @@ export function ExamAdmin(): ReactElement {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<ExamNotice | null>(null);
+  const [sourceQuery, setSourceQuery] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const load = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/exams");
@@ -68,6 +70,17 @@ export function ExamAdmin(): ReactElement {
     }
   }
   const content = editing?.content;
+  const visibleSources = data.sources.filter((source) => {
+    const matchesQuery = `${source.name} ${source.region} ${source.url}`
+      .toLocaleLowerCase()
+      .includes(sourceQuery.trim().toLocaleLowerCase());
+    const matchesStatus =
+      sourceFilter === "all" ||
+      (sourceFilter === "enabled" && !!source.enabled) ||
+      (sourceFilter === "disabled" && !source.enabled) ||
+      (sourceFilter === "error" && !!source.error);
+    return matchesQuery && matchesStatus;
+  });
   return (
     <div className="space-y-8">
       <header>
@@ -87,7 +100,40 @@ export function ExamAdmin(): ReactElement {
         <p className="text-sm">
           服务运行期间每分钟检查到期来源；默认每6小时采集，失败退避，上限48小时。关闭本站服务时不会继续采集。
         </p>
-        {data.sources.map((source) => (
+        <p className="text-sm text-muted-foreground">
+          每日补查不提前重试失败来源；优先检查最久未尝试的来源。手动“采集一次”可立即重试，新内容仍只保存草稿。
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-48 flex-1">
+            搜索来源名称、地区或网址
+            <input
+              type="search"
+              className={field}
+              value={sourceQuery}
+              onChange={(event) => setSourceQuery(event.target.value)}
+            />
+          </label>
+          <label>
+            来源状态
+            <select
+              aria-label="来源状态"
+              className={field}
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value)}
+            >
+              <option value="all">全部来源</option>
+              <option value="enabled">已启用</option>
+              <option value="disabled">未启用</option>
+              <option value="error">失败或部分异常</option>
+            </select>
+          </label>
+        </div>
+        <p role="status" className="text-sm">
+          显示{visibleSources.length}/{data.sources.length}个来源，已启用
+          {data.sources.filter((source) => source.enabled).length}个。
+        </p>
+        {!visibleSources.length && <p>没有匹配的来源，请调整搜索或状态筛选。</p>}
+        {visibleSources.map((source) => (
           <div className="flex flex-wrap items-center gap-3 rounded border p-4" key={source.id}>
             <a
               href={source.url}
@@ -99,7 +145,11 @@ export function ExamAdmin(): ReactElement {
             </a>
             <span className="text-sm">
               {source.enabled ? "已启用" : "未启用"} · 每{source.interval_hours}小时 · 下次：
-              {source.enabled ? new Date(source.next_run).toLocaleString("zh-CN") : "暂停"}
+              {source.enabled
+                ? source.next_run > 0
+                  ? `${new Date(source.next_run).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}（北京时间）`
+                  : "等待调度检查"
+                : "暂停"}
             </span>
             <button
               disabled={busy}

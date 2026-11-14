@@ -1,5 +1,6 @@
 import { beijingDay } from "@/lib/portal-feed";
 import { classifyExamTitle } from "@/lib/exam-discovery";
+import { dueCollectorSources } from "@/lib/collector-schedule";
 import "server-only";
 import { fetchPublicWebpage } from "./webpage-fetcher";
 import { officialUrl, saveDraft, sourceById, sources } from "./exam-store";
@@ -129,15 +130,8 @@ export async function collectorTick(): Promise<void> {
     const configured = db
       .prepare<[string], { value: string }>("SELECT value FROM portal_settings WHERE key=?")
       .get("daily-check-hour");
-    const hour = Number(configured?.value ?? 8),
-      nowHour = new Date(Date.now() + 8 * 3600000).getUTCHours();
-    for (const source of enabled
-      .filter(
-        (s) =>
-          s.next_run <= Date.now() ||
-          (nowHour >= hour && (!s.last_attempt || beijingDay(Date.parse(s.last_attempt)) !== day)),
-      )
-      .slice(0, 2)) {
+    const hour = Number(configured?.value ?? 8);
+    for (const source of dueCollectorSources(enabled, Date.now(), hour)) {
       try {
         await collectSource(source.id);
       } catch {
