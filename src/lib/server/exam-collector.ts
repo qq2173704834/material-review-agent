@@ -1,11 +1,11 @@
 import { beijingDay } from "@/lib/portal-feed";
 import { classifyExamTitle, classifyExamCategories } from "@/lib/exam-discovery";
 import { dueCollectorSources } from "@/lib/collector-schedule";
+import { collectorCandidates } from "@/lib/collector-candidates";
 import "server-only";
 import { fetchPublicWebpage } from "./webpage-fetcher";
 import { officialUrl, saveDraft, sourceById, sources } from "./exam-store";
 import { platformDb } from "./platform-db";
-const keywords = /报名|考试|招考|招生|成绩|准考证|资格|考务|通知|公告|考研|推免/;
 export async function collectSource(id: string): Promise<{ drafts: number; message: string }> {
   const source = sourceById(id);
   if (!source) throw new Error("来源不存在。");
@@ -24,26 +24,7 @@ export async function collectSource(id: string): Promise<{ drafts: number; messa
   let failures = 0;
   try {
     const page = await fetchPublicWebpage(source.url);
-    const links = page.links
-      .filter((link) => {
-        try {
-          return (
-            keywords.test(link.name) &&
-            !/^(考试动态|考试大纲|成绩证明|成绩核查|报名流程|考试介绍)$/.test(link.name) &&
-            !/科研课题|采购|少儿|义务教育|中考|普通高考/.test(link.name) &&
-            (source.category !== "education-local" ||
-              /研究生|考研|推免|专升本|专接本|四六级|四、六级|四级|六级|计算机|教师资格|普通话|自学考试|同等学力|英语等级|外语水平|书画|汉语水平|职业资格/.test(
-                link.name,
-              )) &&
-            new URL(link.url).hostname === new URL(source.url).hostname &&
-            !/\.(pdf|docx?|xlsx?|zip)$/i.test(new URL(link.url).pathname)
-          );
-        } catch {
-          return false;
-        }
-      })
-      .sort((a, b) => Number(/\/report\//.test(b.url)) - Number(/\/report\//.test(a.url)))
-      .slice(0, 8);
+    const links = collectorCandidates(page.links, source);
     for (const link of links) {
       try {
         const detail = await fetchPublicWebpage(officialUrl(link.url, source));

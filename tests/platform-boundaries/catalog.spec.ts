@@ -8,6 +8,21 @@ import {
   database,
 } from "../helpers/platform-boundaries";
 
+test("仅查询入口披露未适配和历史时间，不将旧LSAT日期作为当前报名安排", async ({ actors, page }) => {
+  await page.context().addCookies((await actors.student.api.storageState()).cookies);
+  for (const category of ["jlpt", "topik", "lsat"]) {
+    await page.goto(`/exams?category=${category}`);
+    const entry = page.locator(`[data-exam-category="${category}"]`);
+    await expect(
+      entry.getByText(
+        category === "lsat" ? /含2018年考试日期等历史介绍/ : /本入口为考试介绍与报名导航/,
+      ),
+    ).toBeVisible();
+    await expect(entry.getByText("可报名", { exact: true })).toHaveCount(0);
+    await expect(entry.getByRole("link", { name: "官方入口", exact: true })).toHaveCount(1);
+  }
+});
+
 test("同范围知识冲突保留双方引用，撤回即时生效，检索核查定位坏快照", async ({ actors }) => {
   const first = randomUUID(),
     second = randomUUID(),

@@ -127,6 +127,11 @@ export function ExamDirectory({
                           官方入口
                         </a>{" "}
                         · 核验{portal.checkedAt}，入口可读不代表报名开放
+                        {"collectionNote" in portal && (
+                          <span className="block text-xs text-muted-foreground">
+                            {portal.collectionNote}
+                          </span>
+                        )}
                       </p>
                     ))}
                     <Link className="inline-block underline" href={`/me?newCategory=${id}#goals`}>

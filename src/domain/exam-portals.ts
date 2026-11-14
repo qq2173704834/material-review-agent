@@ -77,7 +77,9 @@ export const EXAM_PORTALS = [
     checkedAt: "2026-11-14",
     status: "accessible",
     title: "JLPT - 中国教育考试网",
-    collectionMode: "candidate",
+    collectionMode: "query",
+    collectionNote:
+      "本入口为考试介绍与报名导航，本次未发现公告列表；需到官方报名入口查询当期信息。",
   },
   {
     category: "topik",
@@ -87,7 +89,8 @@ export const EXAM_PORTALS = [
     checkedAt: "2026-11-14",
     status: "accessible",
     title: "TOPIK - 中国教育考试网",
-    collectionMode: "candidate",
+    collectionMode: "query",
+    collectionNote: "本入口为考试介绍与报名导航，本次未发现公告列表；不将导航当自动更新公告。",
   },
   {
     category: "gre",
@@ -147,7 +150,9 @@ export const EXAM_PORTALS = [
     checkedAt: "2026-11-14",
     status: "accessible",
     title: "LSAT - 中国教育考试网",
-    collectionMode: "candidate",
+    collectionMode: "query",
+    collectionNote:
+      "本页含2018年考试日期等历史介绍，未发现当期公告列表；当前安排须到LSAC官方核对。",
   },
   {
     category: "testdaf",
