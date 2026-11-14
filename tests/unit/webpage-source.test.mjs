@@ -24,3 +24,33 @@ test("网页正文和附件解析排除脚本、私网及非文件链接", () =>
     { cwd: process.cwd(), stdio: "pipe" },
   );
 });
+
+test("正文附件优先于大导航且保持数量、去重与地址限制", () => {
+  execFileSync(
+    process.execPath,
+    [
+      "--conditions=react-server",
+      "--input-type=module",
+      "-e",
+      `
+    import assert from 'node:assert/strict';
+    import {extractWebpageContent} from './src/lib/server/webpage-fetcher.ts';
+    const noise = Array.from({length:310},(_,i)=>'<a href="/menu/'+i+'.pdf">导航'+i+'</a>').join('');
+    for(const container of ['article','main','div class="attachment-down textBox"']) {
+      const tag=container.split(' ')[0];
+      const html='<body><div>'+noise+'</div><'+container+'><a href="./rules.pdf">新细则</a><a href="./rules.pdf">重复</a><a href="http://127.0.0.1/private.pdf">私网</a></'+tag+'></body>';
+      const p=extractWebpageContent(html,'https://example.com/notices/detail.html');
+      assert.equal(p.attachments[0].name,'新细则');
+      assert.equal(p.attachments[0].url,'https://example.com/notices/rules.pdf');
+      assert.equal(p.attachments.length,20);
+      assert.equal(p.links.length,300);
+      assert.equal(p.attachments.filter(a=>a.url.endsWith('/rules.pdf')).length,1);
+      assert.ok(!p.attachments.some(a=>a.url.includes('127.0.0.1')));
+    }
+    const p=extractWebpageContent('<body><div><a href="/plain.pdf">普通旧站附件</a></div></body>','https://example.com/');
+    assert.equal(p.attachments[0].name,'普通旧站附件');
+  `,
+    ],
+    { cwd: process.cwd(), stdio: "pipe" },
+  );
+});

@@ -1053,6 +1053,192 @@
         "sourceSha256": "1a265232d09477fe8e4924635bbd5de1c4e7596122c22fcad9ef03f8da52d305",
         "fetchedAt": "2026-11-14T11:35:23.173Z"
       }
+    },
+    {
+      "key": "fund-rules-eligibility",
+      "content": {
+        "title": "基金新细则报名条件",
+        "category": "fund",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "中国证券投资基金业协会",
+        "url": "https://www.amac.org.cn/xwfb/tzgg/202611/P020261113578939174273.pdf",
+        "text": "（一）具有完全民事行为能力；\n（二）报名截止日时年满 18 周岁；\n（三）取得国务院教育行政部门认可的高中以上学历；\n（四）中国证监会和协会规定的其他条件。",
+        "summary": "官方新细则第3页少量引用；不代表全部条款或个人资格结论。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；2026-11-13发布生效的基金从业资格考试管理细则。具体考期以当期公告为准。",
+        "reviewNote": "实际下载并提取15页PDF，本条逐字核对第3页。报考仍需同时核对禁考、特别规定和当期公告；成绩合格证明不等于已注册从业资格。不搬运完整教材、考纲或题库。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "（一）具有完全民事行为能力；\n（二）报名截止日时年满 18 周岁；\n（三）取得国务院教育行政部门认可的高中以上学历；\n（四）中国证监会和协会规定的其他条件。",
+        "sourceTitle": "基金从业资格考试管理细则",
+        "sourceSha256": "4d96952ef01a13e94ac5cbc588ccfe6d63c506d8516177e1708909cbd9b831d8",
+        "fetchedAt": "2026-11-14T12:22:00.109Z",
+        "sourcePage": 3
+      }
+    },
+    {
+      "key": "fund-rules-exclusions",
+      "content": {
+        "title": "基金新细则禁考及限制条件",
+        "category": "fund",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "中国证券投资基金业协会",
+        "url": "https://www.amac.org.cn/xwfb/tzgg/202611/P020261113578939174273.pdf",
+        "text": "（二）在基金、证券、期货从业资格考试以及中国证监\n会或者协会认定的其他纳入联合禁考范围的考试中受到禁\n考处理，禁考期限未满的；\n（三）被中国证监会采取证券市场禁入措施、被中国证\n监会或协会采取撤销或取消基金从业资格，限制期限未满的。",
+        "summary": "官方新细则第3页少量引用；不代表全部条款或个人资格结论。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；2026-11-13发布生效的基金从业资格考试管理细则。具体考期以当期公告为准。",
+        "reviewNote": "实际下载并提取15页PDF，本条逐字核对第3页。报考仍需同时核对禁考、特别规定和当期公告；成绩合格证明不等于已注册从业资格。不搬运完整教材、考纲或题库。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "（二）在基金、证券、期货从业资格考试以及中国证监\n会或者协会认定的其他纳入联合禁考范围的考试中受到禁\n考处理，禁考期限未满的；\n（三）被中国证监会采取证券市场禁入措施、被中国证\n监会或协会采取撤销或取消基金从业资格，限制期限未满的。",
+        "sourceTitle": "基金从业资格考试管理细则",
+        "sourceSha256": "4d96952ef01a13e94ac5cbc588ccfe6d63c506d8516177e1708909cbd9b831d8",
+        "fetchedAt": "2026-11-14T12:22:00.109Z",
+        "sourcePage": 3
+      }
+    },
+    {
+      "key": "fund-rules-form",
+      "content": {
+        "title": "基金新细则考试方式",
+        "category": "fund",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "中国证券投资基金业协会",
+        "url": "https://www.amac.org.cn/xwfb/tzgg/202611/P020261113578939174273.pdf",
+        "text": "第十四条 考试采用闭卷、计算机化考试方式。",
+        "summary": "官方新细则第4页少量引用；不代表全部条款或个人资格结论。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；2026-11-13发布生效的基金从业资格考试管理细则。具体考期以当期公告为准。",
+        "reviewNote": "实际下载并提取15页PDF，本条逐字核对第4页。报考仍需同时核对禁考、特别规定和当期公告；成绩合格证明不等于已注册从业资格。不搬运完整教材、考纲或题库。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "第十四条 考试采用闭卷、计算机化考试方式。",
+        "sourceTitle": "基金从业资格考试管理细则",
+        "sourceSha256": "4d96952ef01a13e94ac5cbc588ccfe6d63c506d8516177e1708909cbd9b831d8",
+        "fetchedAt": "2026-11-14T12:22:00.109Z",
+        "sourcePage": 4
+      }
+    },
+    {
+      "key": "fund-rules-score",
+      "content": {
+        "title": "基金新细则分数与成绩有效期",
+        "category": "fund",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "中国证券投资基金业协会",
+        "url": "https://www.amac.org.cn/xwfb/tzgg/202611/P020261113578939174273.pdf",
+        "text": "考试实行百分制，成绩合格分数线为 60 分，单科目考\n试成绩有效期为 4 年。报考人员考试成绩合格的，可以取得\n成绩合格证明。",
+        "summary": "官方新细则第4页少量引用；不代表全部条款或个人资格结论。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；2026-11-13发布生效的基金从业资格考试管理细则。具体考期以当期公告为准。",
+        "reviewNote": "实际下载并提取15页PDF，本条逐字核对第4页。报考仍需同时核对禁考、特别规定和当期公告；成绩合格证明不等于已注册从业资格。不搬运完整教材、考纲或题库。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "考试实行百分制，成绩合格分数线为 60 分，单科目考\n试成绩有效期为 4 年。报考人员考试成绩合格的，可以取得\n成绩合格证明。",
+        "sourceTitle": "基金从业资格考试管理细则",
+        "sourceSha256": "4d96952ef01a13e94ac5cbc588ccfe6d63c506d8516177e1708909cbd9b831d8",
+        "fetchedAt": "2026-11-14T12:22:00.109Z",
+        "sourcePage": 4
+      }
+    },
+    {
+      "key": "fund-rules-registration",
+      "content": {
+        "title": "基金考试合格与注册从业资格的区别",
+        "category": "fund",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "中国证券投资基金业协会",
+        "url": "https://www.amac.org.cn/xwfb/tzgg/202611/P020261113578939174273.pdf",
+        "text": "第十五条 报考人员考试成绩合格的，可以通过所在机\n构向协会申请注册基金从业资格；自考试通过之日起连续 4\n年以上未从事基金业务的人员申请注册从业资格，应当重新\n通过考试，或者在注册之前 2 年内完成不少于 30 学时后续\n职业培训。",
+        "summary": "官方新细则第4页少量引用；不代表全部条款或个人资格结论。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；2026-11-13发布生效的基金从业资格考试管理细则。具体考期以当期公告为准。",
+        "reviewNote": "实际下载并提取15页PDF，本条逐字核对第4页。报考仍需同时核对禁考、特别规定和当期公告；成绩合格证明不等于已注册从业资格。不搬运完整教材、考纲或题库。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "第十五条 报考人员考试成绩合格的，可以通过所在机\n构向协会申请注册基金从业资格；自考试通过之日起连续 4\n年以上未从事基金业务的人员申请注册从业资格，应当重新\n通过考试，或者在注册之前 2 年内完成不少于 30 学时后续\n职业培训。",
+        "sourceTitle": "基金从业资格考试管理细则",
+        "sourceSha256": "4d96952ef01a13e94ac5cbc588ccfe6d63c506d8516177e1708909cbd9b831d8",
+        "fetchedAt": "2026-11-14T12:22:00.109Z",
+        "sourcePage": 4
+      }
+    },
+    {
+      "key": "fund-rules-schedule",
+      "content": {
+        "title": "基金考试安排以当期公告为准",
+        "category": "fund",
+        "region": "全国",
+        "edition": "",
+        "subject": "",
+        "kind": "knowledge",
+        "format": "资料",
+        "studyStage": "通用",
+        "author": "中国证券投资基金业协会",
+        "url": "https://www.amac.org.cn/xwfb/tzgg/202611/P020261113578939174273.pdf",
+        "text": "考试具体报名时间、考试时间、考试地点和相关要求，\n以协会发布的当期考试公告为准。",
+        "summary": "官方新细则第6页少量引用；不代表全部条款或个人资格结论。",
+        "checkedAt": "2026-11-14",
+        "scope": "全国；2026-11-13发布生效的基金从业资格考试管理细则。具体考期以当期公告为准。",
+        "reviewNote": "实际下载并提取15页PDF，本条逐字核对第6页。报考仍需同时核对禁考、特别规定和当期公告；成绩合格证明不等于已注册从业资格。不搬运完整教材、考纲或题库。",
+        "disposition": "现行",
+        "permission": "仅链接",
+        "fee": "未知",
+        "language": "中文"
+      },
+      "evidence": {
+        "quote": "考试具体报名时间、考试时间、考试地点和相关要求，\n以协会发布的当期考试公告为准。",
+        "sourceTitle": "基金从业资格考试管理细则",
+        "sourceSha256": "4d96952ef01a13e94ac5cbc588ccfe6d63c506d8516177e1708909cbd9b831d8",
+        "fetchedAt": "2026-11-14T12:22:00.109Z",
+        "sourcePage": 6
+      }
     }
   ]
 }

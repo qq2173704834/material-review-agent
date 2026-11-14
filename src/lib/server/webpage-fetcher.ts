@@ -225,6 +225,27 @@ export function extractWebpageContent(
     }
     for (const child of node.childNodes ?? []) findAttachments(child);
   }
+  // Site-wide menus may exhaust the limits before the actual article attachments.
+  // Visit semantic content and explicit attachment blocks first, without lifting limits.
+  function prioritizeContent(node: HtmlNode): void {
+    if (node.tagName && EXCLUDED_ELEMENTS.has(node.tagName)) return;
+    const markers = node.attrs
+      ?.filter((attribute) => attribute.name === "class" || attribute.name === "id")
+      .map((attribute) => attribute.value)
+      .join(" ");
+    if (
+      node.tagName === "article" ||
+      node.tagName === "main" ||
+      /(?:^|\s)(?:attachment[-_](?:down|list|download)|article[-_](?:body|content)|TRS_Editor)(?:\s|$)/i.test(
+        markers ?? "",
+      )
+    ) {
+      findAttachments(node);
+      return;
+    }
+    for (const child of node.childNodes ?? []) prioritizeContent(child);
+  }
+  prioritizeContent(body);
   findAttachments(body);
   return {
     title: titleParts.join(" ").replace(/\s+/g, " ").trim().slice(0, 300),

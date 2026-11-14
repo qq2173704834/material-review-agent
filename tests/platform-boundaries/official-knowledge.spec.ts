@@ -14,7 +14,7 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
   page,
 }) => {
   const entries = (await (await actors.admin.api.get("/api/admin/learning")).json()).entries;
-  expect(officialKnowledge.entries).toHaveLength(35);
+  expect(officialKnowledge.entries).toHaveLength(41);
   for (const record of officialKnowledge.entries) {
     const id = createHash("sha256")
       .update("official-knowledge:" + record.key)
@@ -35,6 +35,17 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
     facts.getByRole("link", { name: "教师资格考试合格证明与认定", exact: true }),
   ).toBeVisible();
   await expect(facts.getByText(/不是个人资格结论/)).toBeVisible();
+  const fund = entries.find(
+    (entry: { content: { title: string } }) => entry.content.title === "基金新细则报名条件",
+  );
+  await page.goto(`/learn/${fund.id}`);
+  await expect(page.getByRole("heading", { name: "基金新细则报名条件" })).toBeVisible();
+  await expect(page.getByText(/报名截止日时年满 18 周岁/)).toBeVisible();
+  await expect(page.getByText(/第3页少量引用/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "前往原始来源" }).first()).toHaveAttribute(
+    "href",
+    /P020261113578939174273\.pdf/,
+  );
   await page.goto("/learn?q=NCRE官方考纲");
   await page.getByRole("link", { name: "NCRE官方考纲与教材目录", exact: true }).click();
   await expect(page.getByText(/PDF大纲未下载解析/)).toBeVisible();
