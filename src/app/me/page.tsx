@@ -6,6 +6,7 @@ import { studentGoals } from "@/lib/server/student-goals";
 import { listNotices } from "@/lib/server/exam-store";
 import type { ReactElement } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { AppShell } from "@/components/app-shell";
 import { ExamActions, LinkVersionActions } from "@/components/exam-actions";
@@ -20,7 +21,7 @@ export default async function Page({
   searchParams: Promise<Record<string, string | undefined>>;
 }): Promise<ReactElement | null> {
   const account = sessionAccount(new Request("http://local", { headers: await headers() }));
-  if (!account) return null;
+  if (!account) redirect("/login?next=%2Fme");
   const filters = await searchParams;
   const goals = studentGoals(account.id);
   const feedback = platformDb()
@@ -65,9 +66,16 @@ export default async function Page({
       <div className="space-y-7">
         <header>
           <h1 className="text-3xl font-semibold">我的考试工作台</h1>
-          <p className="mt-3">
-            {account.nickname}，这里汇总你的考试目标、学习进度、收藏与材料准备。
-          </p>
+          <p className="mt-3">这里汇总你的考试目标、学习进度、收藏与材料准备。</p>
+          <div className="mt-4 space-y-2 rounded-xl border bg-card p-4" aria-label="当前登录身份">
+            <p>
+              当前登录用户名：<strong>{account.username}</strong>
+            </p>
+            <p className="text-sm text-muted-foreground">昵称：{account.nickname}</p>
+            <Link href="/account" className="inline-block text-sm text-primary underline">
+              账号设置与退出登录
+            </Link>
+          </div>
         </header>
         <section className="space-y-2">
           <h2 className="font-semibold">我的内容反馈</h2>
@@ -188,7 +196,9 @@ export default async function Page({
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">关联预审任务</h2>
           {links.map((link) => {
-            const task = store.getTask(link.task_id);
+            const task = store.canAccessTask(link.task_id, account.id)
+              ? store.getTask(link.task_id)
+              : undefined;
             const item = notice(link.notice_id);
             return (
               <article className="space-y-3 rounded border p-4" key={link.task_id}>
@@ -198,7 +208,7 @@ export default async function Page({
                       {task.name}
                     </Link>
                   ) : (
-                    "任务已删除"
+                    "任务已删除或无访问权限"
                   )}{" "}
                   · {link.stage} · {link.target || "具体对象待确认"} · 依据公告v
                   {link.notice_version}

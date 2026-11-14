@@ -1,14 +1,24 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useSyncExternalStore } from "react";
 import type { FormEvent, ReactElement } from "react";
 import { safeNext } from "@/lib/safe-next";
 const field = "mt-1 block w-full rounded-lg border bg-background px-3 py-2";
+function subscribeToHydration(): () => void {
+  return () => {};
+}
 export function AccountForm({
   mode,
 }: {
   mode: "login" | "register" | "recover" | "account";
 }): ReactElement {
+  const router = useRouter();
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
+  );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [codes, setCodes] = useState<string[]>([]);
@@ -62,6 +72,7 @@ export function AccountForm({
         return;
       }
       setMessage("已保存。");
+      if (mode === "account" && action === "profile") router.refresh();
     } catch {
       setMessage("暂时无法连接，请重试。已填写的非敏感信息保留。");
     } finally {
@@ -128,7 +139,12 @@ export function AccountForm({
           </select>
         </label>
       )}
-      <form key={action} onSubmit={(event) => void submit(event)} className="space-y-4">
+      <form
+        key={action}
+        method="post"
+        onSubmit={(event) => void submit(event)}
+        className="space-y-4"
+      >
         {mode !== "account" && (
           <label className="block">
             用户名
@@ -252,7 +268,7 @@ export function AccountForm({
           {message}
         </p>
         <button
-          disabled={busy}
+          disabled={busy || !isHydrated}
           className="w-full rounded-lg bg-primary px-4 py-3 text-primary-foreground disabled:opacity-50"
         >
           {busy
