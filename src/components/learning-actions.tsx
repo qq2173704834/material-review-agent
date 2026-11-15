@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bookmark, Check, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
@@ -43,7 +43,7 @@ export function LearningActions({
     }
   }
   return (
-    <div className="space-y-2 text-sm">
+    <div className="resource-actions space-y-2 text-sm">
       <div className="flex flex-wrap gap-4">
         <button
           disabled={busy}
@@ -89,6 +89,18 @@ export function LearningPreferences({
   retainChat: boolean;
   externalEnabled?: boolean;
 }): ReactElement {
+  const received = { personalized, retainChat, externalEnabled };
+  const signature = JSON.stringify(received);
+  const [previous, setPrevious] = useState(signature);
+  const [baseline, setBaseline] = useState(received);
+  const [draft, setDraft] = useState(received);
+  const pending = useRef(false);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+  if (signature !== previous) {
+    setPrevious(signature);
+    setBaseline(received);
+    if (!dirty) setDraft(received);
+  }
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const router = useRouter();
@@ -114,13 +126,13 @@ export function LearningPreferences({
     >
       <summary className="goal-summary font-medium">学习偏好</summary>
       <form
-        key={open ? "editing" : "closed"}
         className="preferences-panel surface"
         aria-label="学习与隐私偏好"
         onSubmit={async (event) => {
           event.preventDefault();
-          if (busy) return;
-          const values = new FormData(event.currentTarget);
+          if (pending.current) return;
+          pending.current = true;
+          const submitted = { ...draft };
           setBusy(true);
           setMessage("");
           try {
@@ -129,17 +141,19 @@ export function LearningPreferences({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 action: "preferences",
-                personalized: values.has("personalized"),
-                retainChat: values.has("retainChat"),
-                externalEnabled: values.has("externalEnabled"),
+                personalized: submitted.personalized,
+                retainChat: submitted.retainChat,
+                externalEnabled: submitted.externalEnabled,
               }),
             });
             if (!response.ok) throw new Error("保存失败");
+            setBaseline(submitted);
             setMessage("偏好已保存。");
             router.refresh();
           } catch {
             setMessage("保存失败，请重试。");
           } finally {
+            pending.current = false;
             setBusy(false);
           }
         }}
@@ -150,18 +164,36 @@ export function LearningPreferences({
         </div>
         <div className="preference-options">
           <label>
-            <input type="checkbox" name="personalized" defaultChecked={personalized} />
+            <input
+              type="checkbox"
+              name="personalized"
+              disabled={busy}
+              checked={draft.personalized}
+              onChange={(event) => setDraft({ ...draft, personalized: event.target.checked })}
+            />
             按目标推荐
           </label>
           <label>
-            <input type="checkbox" name="retainChat" defaultChecked={retainChat} />
+            <input
+              type="checkbox"
+              name="retainChat"
+              disabled={busy}
+              checked={draft.retainChat}
+              onChange={(event) => setDraft({ ...draft, retainChat: event.target.checked })}
+            />
             保存本站助手会话历史
           </label>
         </div>
         <details className="mt-4 text-sm" id="assistant-privacy" open>
           <summary>AI与隐私设置</summary>
           <label className="mt-3 flex items-start gap-2">
-            <input type="checkbox" name="externalEnabled" defaultChecked={externalEnabled} />
+            <input
+              type="checkbox"
+              name="externalEnabled"
+              disabled={busy}
+              checked={draft.externalEnabled}
+              onChange={(event) => setDraft({ ...draft, externalEnabled: event.target.checked })}
+            />
             使用AI生成回答
           </label>
           <p className="mt-2 text-xs leading-6 text-muted-foreground">
@@ -172,6 +204,19 @@ export function LearningPreferences({
           <p role="status" aria-live="polite">
             {message}
           </p>
+          {dirty && (
+            <button
+              type="button"
+              className="button-secondary"
+              disabled={busy}
+              onClick={() => {
+                setDraft(baseline);
+                setMessage("");
+              }}
+            >
+              放弃修改
+            </button>
+          )}
           <button className="button-primary" disabled={busy}>
             {busy ? "保存中…" : "保存偏好"}
           </button>

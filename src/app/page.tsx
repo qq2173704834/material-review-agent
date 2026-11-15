@@ -183,40 +183,43 @@ export default async function Home({
               </Link>
             ))}
           </nav>
-          <form className="content-toolbar flex flex-wrap items-end gap-3" action="/">
-            <input type="hidden" name="tab" value={selected.id} />
-            <label>
-              近期范围
-              <select
-                aria-label="近期范围"
-                name="days"
-                defaultValue={options.days}
-                className="ml-2 rounded border p-2"
-              >
-                {[7, 30, 60, 90].map((days) => (
-                  <option key={days} value={days}>
-                    未来{days}天
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              展示数量
-              <select
-                aria-label="展示数量"
-                name="size"
-                defaultValue={options.size}
-                className="ml-2 rounded border p-2"
-              >
-                {[6, 12, 24].map((size) => (
-                  <option key={size} value={size}>
-                    {size}条
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button className="rounded border px-3 py-2">应用展示设置</button>
-          </form>
+          <details className="content-settings">
+            <summary>展示设置</summary>
+            <form className="content-toolbar flex flex-wrap items-end gap-3" action="/">
+              <input type="hidden" name="tab" value={selected.id} />
+              <label>
+                近期范围
+                <select
+                  aria-label="近期范围"
+                  name="days"
+                  defaultValue={options.days}
+                  className="ml-2 rounded border p-2"
+                >
+                  {[7, 30, 60, 90].map((days) => (
+                    <option key={days} value={days}>
+                      未来{days}天
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                展示数量
+                <select
+                  aria-label="展示数量"
+                  name="size"
+                  defaultValue={options.size}
+                  className="ml-2 rounded border p-2"
+                >
+                  {[6, 12, 24].map((size) => (
+                    <option key={size} value={size}>
+                      {size}条
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button className="rounded border px-3 py-2">应用展示设置</button>
+            </form>
+          </details>
           <div id="exam-cards" className="scroll-mt-5">
             <p className="mb-4 text-sm text-muted-foreground">{selected.description}</p>
             {!selected.items.length ? (

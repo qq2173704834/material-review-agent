@@ -126,7 +126,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
       if (!forReview) router.refresh();
       return true;
     } catch {
-      setError("暂时无法连接本地服务，请确认服务仍在运行后重试。");
+      setError("暂时无法保存，请检查网络连接后重试。已填写的内容保留。");
       return false;
     } finally {
       saving.current = false;
@@ -152,7 +152,10 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
   return (
     <form
       onSubmit={submitTask}
-      onChangeCapture={() => setIsDirty(true)}
+      onChangeCapture={(event) => {
+        if (event.target instanceof Element && !event.target.closest('[aria-label="选择我的考试"]'))
+          setIsDirty(true);
+      }}
       className="max-w-4xl space-y-8"
     >
       <details

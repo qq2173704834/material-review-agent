@@ -521,5 +521,6 @@ test("四六级共同公告同时匹配四级和六级，单独四级公告不�
   await expect(page.locator("article").filter({ has: page.locator("h2") })).toHaveCount(2);
   await page.getByRole("combobox", { name: "适用地区" }).selectOption("广东");
   await page.getByRole("button", { name: "查找考试", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "暂未收录符合条件的公告" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "没有匹配的考试公告" })).toBeVisible();
+  await expect(page.locator("article").filter({ has: page.locator("h2") })).toHaveCount(0);
 });

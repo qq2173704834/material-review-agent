@@ -1,7 +1,9 @@
 @import "tailwindcss";
+@import "./fonts.css";
 
 :root {
-  --font-sans: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-sans:
+    "Study Sans", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
   --background: #f7f8fb;
   --foreground: #202737;
   --card: #ffffff;
@@ -132,7 +134,7 @@
   padding: 0.2rem 0.6rem;
   background: color-mix(in srgb, var(--primary) 10%, var(--card));
   color: var(--primary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 .prep-columns,
 .prep-calendar-layout {
@@ -246,7 +248,7 @@
 }
 .prep-month-grid small {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 .prep-month-grid .has-events {
@@ -353,7 +355,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-ring: var(--ring);
-  --font-sans: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-sans:
+    "Study Sans", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
 }
 
 @layer base {
@@ -400,8 +403,8 @@
     scrollbar-gutter: stable;
   }
   body {
-    font-size: 15px;
-    line-height: 1.65;
+    font-size: 16px;
+    line-height: 1.75;
   }
   button,
   input,
@@ -667,7 +670,7 @@
     min-height: 40px;
   }
   .assistant-panel .assistant-suggestion {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     color: #514684;
     background: #f7f5ff;
     border-color: #e6e1fb;
@@ -872,7 +875,7 @@ body {
   display: block;
   padding: 0.8rem;
   color: var(--muted-foreground);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 .home-hero {
   display: grid;
@@ -901,7 +904,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: #7056b1;
   border: 1px solid #ded3f3;
   background: #fff8;
@@ -947,7 +950,7 @@ body {
 }
 .next-event-strip small {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: var(--muted-foreground);
   margin-bottom: 0.25rem;
 }
@@ -1071,7 +1074,7 @@ body {
 }
 .resource-cover small {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   opacity: 0.9;
 }
 .resource-cover strong {
@@ -1137,7 +1140,7 @@ body {
 }
 .prep-progress-visual small {
   margin-top: 0.3rem;
-  font-size: 0.65rem;
+  font-size: 0.8125rem;
   color: #756789;
 }
 .prep-countdown {
@@ -1149,7 +1152,7 @@ body {
   font-size: 1.8rem;
 }
 .prep-countdown p {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 .prep-stage-list {
   gap: 1rem;
@@ -1300,7 +1303,7 @@ form:has(#notice-heading) textarea {
 }
 @media (max-width: 639px) {
   .app-topbar > p {
-    font-size: 0.7rem;
+    font-size: 0.8125rem;
   }
   .app-topbar {
     padding: 0.65rem 1rem;
@@ -1312,7 +1315,7 @@ form:has(#notice-heading) textarea {
     max-width: 110px;
   }
   .account-logout {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
   }
   .home-hero {
     grid-template-columns: 1fr;
@@ -1394,5 +1397,145 @@ form:has(#notice-heading) textarea {
   }
   .home-hero h1 {
     font-size: 1.95rem;
+  }
+}
+
+/* ENG-086 typography and interaction hierarchy. */
+@theme inline {
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.65;
+  --text-sm--line-height: 1.7;
+}
+h1,
+h2,
+h3 {
+  text-wrap: pretty;
+  line-height: 1.4;
+}
+p,
+li {
+  overflow-wrap: anywhere;
+}
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-sans);
+}
+time,
+progress,
+.prep-countdown,
+.prep-progress-label {
+  font-variant-numeric: tabular-nums;
+}
+.source-preview pre,
+.assistant-panel article p,
+.assistant-panel blockquote {
+  font-family: var(--font-sans);
+  line-height: 1.85;
+  font-size: 0.9375rem;
+}
+.assistant-panel article p + p {
+  margin-top: 0.75rem;
+}
+.empty-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1.5rem;
+}
+.empty-state h2,
+.empty-state > p {
+  flex-basis: 100%;
+}
+.empty-state h2 {
+  font-weight: 600;
+}
+.empty-state > p {
+  color: var(--muted-foreground);
+}
+.resource-card {
+  gap: 0.5rem;
+}
+.resource-card .resource-cover {
+  min-height: 86px;
+}
+.resource-card > p {
+  margin-top: 0.5rem;
+}
+.resource-actions {
+  position: relative;
+  padding-top: 0.4rem;
+}
+.resource-actions > div {
+  gap: 0.5rem;
+}
+.resource-actions .button-secondary {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8125rem;
+}
+.resource-actions button[aria-pressed="true"] {
+  color: var(--primary);
+  background: #eee9fa;
+  border-color: #d8ccf3;
+}
+.resource-actions > [role="status"]:empty {
+  display: none;
+}
+.resource-actions > [role="status"] {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  max-width: 100%;
+  box-shadow: 0 4px 12px #29213b0d;
+}
+.content-settings {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.6rem 1rem;
+  background: var(--card);
+}
+.content-settings > summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.content-settings .content-toolbar {
+  border: 0;
+  padding: 0.75rem 0 0;
+  box-shadow: none;
+}
+:where(.auth-page, .app-main) :where(input, select, textarea) {
+  scroll-margin-block: 6rem;
+}
+@media (max-width: 639px) {
+  .assistant-widget {
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .assistant-trigger {
+    padding: 0.45rem;
+  }
+  .assistant-trigger svg {
+    width: 32px;
+    height: 32px;
+  }
+  body:has(.app-main input:focus, .app-main textarea:focus, .app-main select:focus)
+    .assistant-widget:not(:has(.assistant-panel)) {
+    visibility: hidden;
+  }
+  .assistant-panel {
+    height: min(75dvh, 720px);
+    padding: 1rem;
+  }
+  .preferences-panel .preference-footer {
+    flex-wrap: wrap;
+  }
+  .home-hero h1 {
+    font-size: clamp(1.8rem, 7.5vw, 2.15rem);
   }
 }

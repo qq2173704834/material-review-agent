@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { ReactElement } from "react";
 import { RotateCcw, Search, X } from "lucide-react";
+import { filterDependencies } from "@/lib/search-filters";
 
 export interface SearchField {
   name: string;
@@ -65,7 +66,9 @@ export function SearchFilters({
       </label>
     );
   }
-  const applied = fields.filter((item) => filters[item.name]);
+  const applied = fields.filter((item) =>
+    item.checkbox ? filters[item.name] === "1" : filters[item.name],
+  );
   return (
     <section className="surface space-y-4">
       <form
@@ -74,12 +77,7 @@ export function SearchFilters({
         onChange={(event) => {
           const target = event.target;
           if (!(target instanceof HTMLSelectElement)) return;
-          const dependencies =
-            target.name === "category"
-              ? ["level", "subject", "language", "examForm"]
-              : target.name === "goal"
-                ? ["subject", "stage"]
-                : [];
+          const dependencies = filterDependencies(target.name);
           for (const name of dependencies) {
             const field = target.form?.elements.namedItem(name);
             if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement)
@@ -113,8 +111,7 @@ export function SearchFilters({
             );
             params.delete(item.name);
             params.delete("page");
-            if (item.name === "category")
-              for (const key of ["level", "subject", "language", "examForm"]) params.delete(key);
+            for (const key of filterDependencies(item.name)) params.delete(key);
             const value =
               item.options?.find((option) => option.value === filters[item.name])?.label ??
               (item.options ? "条件不可用" : item.checkbox ? "是" : filters[item.name]);

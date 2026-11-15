@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { sessionAccount } from "@/lib/server/account-auth";
 import { BrowsePosition } from "@/components/browse-back";
+import { normalizeSearchFilters } from "@/lib/search-filters";
 import { SearchFilters, type SearchField } from "@/components/search-filters";
 import { ExamDirectory } from "@/components/exam-directory";
 import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
@@ -25,9 +26,9 @@ export const dynamic = "force-dynamic";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<ReactElement> {
-  const filters = await searchParams;
+  const filters = normalizeSearchFilters(await searchParams);
   const now = await requestTime();
   const account = sessionAccount(new Request("http://local", { headers: await headers() }));
   const knowledge = learningEntries();
@@ -124,12 +125,17 @@ export default async function Page({
           找到{results.length}条公告 · 第{page}页
         </p>
         {!results.length && (
-          <section className="rounded-xl border border-dashed p-8">
-            <h2 className="font-semibold">暂未收录符合条件的公告</h2>
+          <section className="empty-state surface">
+            <h2 className="font-semibold">
+              {all.length ? "没有匹配的考试公告" : "考试公告正在整理中"}
+            </h2>
             <p className="mt-2 text-muted-foreground">试试调整筛选，或从官方入口了解最新安排。</p>
-            <Link href={pageUrl(1)} className="mt-3 inline-block underline">
-              重新查询
+            <Link href="/exams" className="button-secondary">
+              清除筛选
             </Link>
+            <a href="#exam-directory" className="button-secondary">
+              浏览考试目录
+            </a>
           </section>
         )}
         <div className="grid gap-4">

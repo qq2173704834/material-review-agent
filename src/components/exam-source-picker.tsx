@@ -21,9 +21,14 @@ export function ExamSourcePicker({
   const [selection, setSelection] = useState("");
   const [noticeId, setNoticeId] = useState("");
   const [preview, setPreview] = useState<ExamImportPreview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [retry, setRetry] = useState(0);
+  const [listLoading, setListLoading] = useState(true);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [listError, setListError] = useState("");
+  const [previewError, setPreviewError] = useState("");
+  const [listRetry, setListRetry] = useState(0);
+  const [previewRetry, setPreviewRetry] = useState(0);
+  const loading = listLoading || previewLoading;
+  const error = listError || previewError;
   const [confirmed, setConfirmed] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
@@ -35,17 +40,17 @@ export function ExamSourcePicker({
           .parse(await response.json());
         if (!controller.signal.aborted) {
           setOptions(payload.options);
-          setLoading(false);
+          setListLoading(false);
         }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setError("无法读取我的考试，请重试。");
-          setLoading(false);
+          setListError("无法读取我的考试，请重试。");
+          setListLoading(false);
         }
       });
     return () => controller.abort();
-  }, [retry]);
+  }, [listRetry]);
   useEffect(() => {
     if (!selection || !noticeId) return;
     const controller = new AbortController();
@@ -58,17 +63,17 @@ export function ExamSourcePicker({
         const payload = z.object({ preview: examImportPreviewSchema }).parse(await response.json());
         if (!controller.signal.aborted) {
           setPreview(payload.preview);
-          setLoading(false);
+          setPreviewLoading(false);
         }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setLoading(false);
-          setError("公告已变化或暂不可用，请重新选择。");
+          setPreviewLoading(false);
+          setPreviewError("公告已变化或暂不可用，请重新选择。");
         }
       });
     return () => controller.abort();
-  }, [selection, noticeId, retry]);
+  }, [selection, noticeId, previewRetry]);
   const selected = options.find((option) => option.key === selection);
   return (
     <section className="exam-source-picker" aria-label="选择我的考试">
@@ -99,9 +104,9 @@ export function ExamSourcePicker({
             setSelection(key);
             setNoticeId(option?.candidates.length === 1 ? option.candidates[0]!.id : "");
             setPreview(null);
-            setError("");
+            setPreviewError("");
             setConfirmed(false);
-            setLoading(!!option?.candidates.length && option.candidates.length === 1);
+            setPreviewLoading(!!option?.candidates.length && option.candidates.length === 1);
           }}
         >
           <option value="">请选择</option>
@@ -111,7 +116,8 @@ export function ExamSourcePicker({
                 .filter(
                   (option) =>
                     option.group === group &&
-                    option.label.toLowerCase().includes(query.toLowerCase()),
+                    (option.key === selection ||
+                      option.label.toLowerCase().includes(query.toLowerCase().trim())),
                 )
                 .map((option) => (
                   <option key={option.key} value={option.key}>
@@ -123,6 +129,11 @@ export function ExamSourcePicker({
         </select>
       </label>
       {selected && (
+        <p className="text-sm" role="status">
+          已选：{selected.label}
+        </p>
+      )}
+      {selected && (
         <label className="block text-sm">
           适用公告
           <select
@@ -131,9 +142,9 @@ export function ExamSourcePicker({
             onChange={(event) => {
               setNoticeId(event.target.value);
               setPreview(null);
-              setError("");
+              setPreviewError("");
               setConfirmed(false);
-              setLoading(!!event.target.value);
+              setPreviewLoading(!!event.target.value);
             }}
           >
             <option value="">请选择明确场次</option>
@@ -172,16 +183,24 @@ export function ExamSourcePicker({
             type="button"
             className="text-primary underline"
             onClick={() => {
-              setError("");
-              setLoading(true);
-              setRetry(retry + 1);
+              if (listError) {
+                setListError("");
+                setListLoading(true);
+                setListRetry(listRetry + 1);
+              } else {
+                setPreviewError("");
+                setPreview(null);
+                setPreviewLoading(true);
+                setConfirmed(false);
+                setPreviewRetry(previewRetry + 1);
+              }
             }}
           >
             重试
           </button>
         </p>
       )}
-      {preview && (
+      {preview && !previewError && selected?.candidates.some((item) => item.id === preview.id) && (
         <div className="source-preview">
           <p className="font-semibold">{preview.title}</p>
           <p className="text-sm text-muted-foreground">

@@ -10,15 +10,16 @@ import { studentGoals, portalPreferences } from "@/lib/server/student-goals";
 import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import type { ReactElement } from "react";
 import { ResourceCover } from "@/components/resource-cover";
+import { normalizeSearchFilters } from "@/lib/search-filters";
 export const dynamic = "force-dynamic";
 export default async function Learn({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<ReactElement | null> {
   const account = sessionAccount(new Request("http://local", { headers: await headers() }));
   if (!account) return null;
-  const filters = await searchParams,
+  const filters = normalizeSearchFilters(await searchParams),
     goals = studentGoals(account.id),
     preferences = portalPreferences(account.id);
   const goal = filters.goal ? goals.find((goal) => goal.id === filters.goal) : undefined;
@@ -49,7 +50,7 @@ export default async function Learn({
           (!filters.format || item.content.format === filters.format) &&
           (!filters.stage || item.content.studyStage === filters.stage) &&
           (!filters.subject || item.content.subject.includes(filters.subject.slice(0, 120))) &&
-          (!filters.saved || item.saved),
+          (filters.saved !== "1" || item.saved),
       );
   const page = Math.max(
     1,
@@ -102,9 +103,16 @@ export default async function Learn({
           共{resources.length}条资源 · 第{page}页
         </p>
         {!resources.length && (
-          <p className="rounded border border-dashed p-6">
-            暂时没有匹配资料，试试调整条件或切换目标。
-          </p>
+          <section className="empty-state surface">
+            <h2>{filters.saved === "1" ? "还没有符合条件的收藏" : "暂时没有匹配资料"}</h2>
+            <p>试试调整条件，或查看其他考试的学习资料。</p>
+            <Link href="/learn" className="button-secondary">
+              清除筛选
+            </Link>
+            <Link href="/exams" className="button-secondary">
+              浏览考试
+            </Link>
+          </section>
         )}
         <div className="grid gap-4 md:grid-cols-2">
           {resources.slice((page - 1) * 12, page * 12).map((item) => (
@@ -114,20 +122,19 @@ export default async function Learn({
                 format={item.content.format}
                 label={CATEGORY_LABELS[item.content.category] ?? item.content.category}
               />
-              <p className="text-xs text-primary">
-                {CATEGORY_LABELS[item.content.category]} · {item.content.format} ·{" "}
-                {item.content.studyStage}
-              </p>
+              <p className="text-xs text-primary">{item.content.studyStage}</p>
               <h2 className="font-semibold">
                 <Link href={`/learn/${item.id}?returnTo=${encodeURIComponent(pageUrl(page))}`}>
                   {item.content.title}
                 </Link>
               </h2>
               <p className="text-sm">
-                {!item.content.summary ||
-                /少量|不是NCRE|非完整考纲|不代表已读取/.test(item.content.summary)
-                  ? item.content.text.slice(0, 180)
-                  : item.content.summary}
+                {item.content.text.startsWith("此条为公开官方入口导航")
+                  ? "查看考试介绍、考纲与官方通知，前往原站获取资料。"
+                  : !item.content.summary ||
+                      /少量|不是NCRE|非完整考纲|不代表已读取/.test(item.content.summary)
+                    ? item.content.text.slice(0, 180)
+                    : item.content.summary}
               </p>
 
               <p className="text-xs text-muted-foreground">
