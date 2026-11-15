@@ -33,7 +33,12 @@ import {
   type CampusState,
   type CampusNotice,
 } from "@/domain/campus";
-import { CAMPUS_SCHOOLS } from "@/domain/campus-schools";
+import {
+  CAMPUS_SCHOOLS,
+  CAMPUS_PROVINCES,
+  searchCampusSchools,
+  hasCampusNoticeSource,
+} from "@/domain/campus-schools";
 import {
   campusConflicts,
   campusReminderKey,
@@ -142,6 +147,12 @@ export function CampusHub({
     return () => clearTimeout(timer);
   }, [message]);
   const [schoolQuery, setSchoolQuery] = useState("");
+  const [schoolProvince, setSchoolProvince] = useState("");
+  const schoolResults = searchCampusSchools(schoolQuery, schoolProvince);
+  const selectedSchool = CAMPUS_SCHOOLS.find((item) => item.id === preferences.schoolId);
+  const schoolOptions = [...schoolResults.schools];
+  if (selectedSchool && !schoolOptions.some((item) => item.id === selectedSchool.id))
+    schoolOptions.unshift(selectedSchool);
   const [category, setCategory] = useState(""),
     [unread, setUnread] = useState(false),
     [favoritesOnly, setFavoritesOnly] = useState(false),
@@ -507,8 +518,21 @@ export function CampusHub({
               className={fieldClass}
               value={schoolQuery}
               onChange={(event) => setSchoolQuery(event.target.value)}
-              placeholder="输入学校名称"
+              placeholder="输入学校名称或简称，如北京大学、浙大"
             />
+          </label>
+          <label className="text-sm">
+            学校所在地区
+            <select
+              className={fieldClass}
+              value={schoolProvince}
+              onChange={(event) => setSchoolProvince(event.target.value)}
+            >
+              <option value="">全国</option>
+              {CAMPUS_PROVINCES.map((province) => (
+                <option key={province}>{province}</option>
+              ))}
+            </select>
           </label>
           <label className="text-sm">
             学校
@@ -519,14 +543,17 @@ export function CampusHub({
               onChange={(event) => setPreferences({ ...preferences, schoolId: event.target.value })}
             >
               <option value="">暂不选择，先管理日程</option>
-              {CAMPUS_SCHOOLS.filter(
-                (item) => item.name.includes(schoolQuery) || item.id === preferences.schoolId,
-              ).map((item) => (
+              {schoolOptions.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.name}
+                  {item.name} · {item.province} · {item.level}
                 </option>
               ))}
             </select>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {schoolResults.total
+                ? `找到${schoolResults.total}所学校${schoolResults.total > 40 ? "，先显示40所，可继续输入名称缩小范围" : ""}`
+                : "没有找到匹配学校，可在下方申请添加。"}
+            </span>
           </label>
           <label className="text-sm">
             学院 / 专业
@@ -572,10 +599,12 @@ export function CampusHub({
             保存学校
           </button>
           <p className="text-sm text-muted-foreground sm:col-span-2">
-            {school
-              ? school.id === "sspu"
-                ? "当前提供官网、教务处和学生工作处的公开通知。"
-                : "当前提供教务处的公开通知。"
+            {selectedSchool
+              ? !hasCampusNoticeSource(selectedSchool.id)
+                ? "学校已收录，通知正在整理。你可以先导入收到的通知或管理个人日程。"
+                : selectedSchool.id === "sspu"
+                  ? "当前提供官网、教务处和学生工作处的公开通知。"
+                  : "当前提供教务处的公开通知。"
               : "没有你的学校？可先导入收到的通知或添加个人日程。"}
           </p>
         </form>
@@ -823,7 +852,9 @@ export function CampusHub({
           {!notices.length && (
             <p className="rounded-2xl bg-muted p-6">
               {school
-                ? "暂时没有新通知，可以查看学校原文或到我的日程导入收到的消息。"
+                ? hasCampusNoticeSource(school.id)
+                  ? "暂时没有新通知，可以查看学校原文或到我的日程导入收到的消息。"
+                  : "已选择你的学校，通知正在整理。可先到我的日程导入通知、添加考试或作业安排。"
                 : "选择学校后查看本校通知，也可以先添加个人日程。"}
             </p>
           )}

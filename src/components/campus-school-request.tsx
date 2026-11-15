@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { ReactElement } from "react";
-import { CAMPUS_SCHOOLS } from "@/domain/campus-schools";
+import { searchCampusSchools, hasCampusNoticeSource } from "@/domain/campus-schools";
 export function CampusSchoolRequest({
   onSelectSchool,
 }: {
@@ -11,8 +11,8 @@ export function CampusSchoolRequest({
     [busy, setBusy] = useState(false),
     [name, setName] = useState("");
   const query = name.trim().replace(/\s+/gu, "");
-  const matches =
-    query.length >= 2 ? CAMPUS_SCHOOLS.filter((school) => school.name.includes(query)) : [];
+  const result = query.length >= 2 ? searchCampusSchools(query, "", 8) : { schools: [], total: 0 };
+  const matches = result.schools;
   return (
     <details className="rounded-xl border bg-card p-4 text-sm">
       <summary className="cursor-pointer text-primary">没有找到学校？申请添加学校</summary>
@@ -54,37 +54,48 @@ export function CampusSchoolRequest({
             required
             minLength={2}
             maxLength={100}
-            placeholder="例如：上海第二工业大学"
+            placeholder="输入学校全名或简称"
             className="mt-1 min-h-11 w-full rounded-lg border p-2"
           />
         </label>
         {!!matches.length && (
           <div className="space-y-2 sm:col-span-2">
             <p className="text-muted-foreground">已找到以下学校，可直接选择：</p>
+            {result.total > 8 && (
+              <p className="text-xs text-muted-foreground">
+                共找到{result.total}所，先显示8所，请继续输入学校名称。
+              </p>
+            )}
             {matches.map((school) => (
-              <button
-                key={school.id}
-                type="button"
-                disabled={busy}
-                className="button-secondary"
-                onClick={async () => {
-                  setBusy(true);
-                  setMessage("");
-                  try {
-                    setMessage(
-                      (await onSelectSchool(school.id))
-                        ? `已选择${school.name}，可查看本校通知。`
-                        : "选择失败，请重试。",
-                    );
-                  } catch {
-                    setMessage("选择失败，请重试。");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                选择{school.name}
-              </button>
+              <div key={school.id} className="space-y-1">
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="button-secondary"
+                  onClick={async () => {
+                    setBusy(true);
+                    setMessage("");
+                    try {
+                      setMessage(
+                        (await onSelectSchool(school.id))
+                          ? hasCampusNoticeSource(school.id)
+                            ? `已选择${school.name}，可查看本校通知。`
+                            : `已选择${school.name}，通知正在整理，可先使用个人日程。`
+                          : "选择失败，请重试。",
+                      );
+                    } catch {
+                      setMessage("选择失败，请重试。");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  选择{school.name}
+                </button>
+                <p className="text-xs text-muted-foreground">
+                  {school.province} · {school.level} · {school.status}
+                </p>
+              </div>
             ))}
           </div>
         )}

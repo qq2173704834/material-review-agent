@@ -61,7 +61,7 @@ export function mutateCampus(userId: string, raw: unknown): CampusState {
         input.preferences.schoolId &&
         !CAMPUS_SCHOOLS.some((school) => school.id === input.preferences.schoolId)
       )
-        throw new Error("请选择已登记学校，或提交学校官网。");
+        throw new Error("请选择已收录学校，或按名称申请添加学校。");
       state.preferences = input.preferences;
     } else if (input.action === "save") {
       for (const event of input.events) {
