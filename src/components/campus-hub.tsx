@@ -580,7 +580,19 @@ export function CampusHub({
           </p>
         </form>
       )}
-      {mode === "notices" && <CampusSchoolRequest />}
+      {mode === "notices" && (
+        <CampusSchoolRequest
+          onSelectSchool={async (schoolId) => {
+            const nextPreferences = { ...state.preferences, schoolId };
+            const ok = await mutate({ action: "preferences", preferences: nextPreferences });
+            if (ok) {
+              setPreferences(nextPreferences);
+              setIsSettingsOpen(false);
+            }
+            return ok;
+          }}
+        />
+      )}
       {isImportOpen && (
         <section className="space-y-4 rounded-2xl border bg-card p-5">
           <h2 className="font-semibold">我收到的通知</h2>

@@ -146,13 +146,17 @@ export function CampusAdmin(): ReactElement {
           </button>
         </article>
       ))}
-      <h2 className="font-semibold">学校接入建议</h2>
+      <h2 className="font-semibold">学校添加申请</h2>
       {requests.map((request, index) => (
         <p key={index} className="rounded border p-3 text-sm">
           {request.name} ·{" "}
-          <a href={request.url} target="_blank" rel="noreferrer" className="break-all underline">
-            {request.url}
-          </a>{" "}
+          {request.url ? (
+            <a href={request.url} target="_blank" rel="noreferrer" className="break-all underline">
+              {request.url}
+            </a>
+          ) : (
+            <span className="text-muted-foreground">未提供官网</span>
+          )}{" "}
           · {request.created_at.slice(0, 10)}
         </p>
       ))}

@@ -13,7 +13,10 @@ export function campusDb(): ReturnType<typeof platformDb> {
     CREATE TABLE IF NOT EXISTS campus_notice_history(notice_id TEXT NOT NULL,digest TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(notice_id,digest));
     CREATE TABLE IF NOT EXISTS campus_source_settings(id TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1,interval_hours INTEGER NOT NULL DEFAULT 6);
     CREATE TABLE IF NOT EXISTS campus_source_runs(id TEXT PRIMARY KEY, next_run INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0, last_success TEXT, error TEXT);
-    CREATE TABLE IF NOT EXISTS campus_school_requests(user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, url TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(user_id,url));`);
+    CREATE TABLE IF NOT EXISTS campus_school_requests(user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, url TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(user_id,url));
+    CREATE TABLE IF NOT EXISTS campus_school_requests_v2(user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, request_key TEXT NOT NULL, url TEXT NOT NULL DEFAULT '', name TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(user_id,request_key));
+    INSERT OR IGNORE INTO campus_school_requests_v2(user_id,request_key,url,name,created_at)
+      SELECT user_id,'legacy:' || url,url,name,created_at FROM campus_school_requests;`);
   const seed = db.prepare(
     "INSERT OR IGNORE INTO campus_notices(id,school_id,payload) VALUES (?,?,?)",
   );

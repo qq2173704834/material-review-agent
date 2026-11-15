@@ -21,7 +21,7 @@ export async function GET(request: Request): Promise<Response> {
     ),
     requests: db
       .prepare(
-        "SELECT name,url,created_at FROM campus_school_requests ORDER BY created_at DESC LIMIT 100",
+        "SELECT name,url,created_at FROM campus_school_requests_v2 ORDER BY created_at DESC LIMIT 100",
       )
       .all(),
   });
