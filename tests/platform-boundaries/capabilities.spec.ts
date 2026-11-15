@@ -216,7 +216,7 @@ test("CAP01 CAP02 实际OCR区域、页图隔离、人工确认、增强采用�
   ).toEqual(original);
   await page.context().addCookies((await api.storageState()).cookies);
   await page.goto(`/tasks/${id}?view=prepare`);
-  await page.getByText("核对与修订解析文字", { exact: true }).click();
+  await page.getByText("核对内容或选择材料类型", { exact: true }).click();
   await page.getByText("图像区域、阅读顺序与增强核对", { exact: true }).click();
   const imageElement = page.getByAltText(/识别图像，当前选中区域/);
   await expect(imageElement).toBeVisible();
@@ -630,3 +630,49 @@ for (const layout of scanLayouts)
       JSON.stringify(record, null, 2),
     );
   });
+
+test("UXR35 多材料自动核对融入审查，原始差异与替换后待复检保留", async ({ actors, page }) => {
+  const id = await createTask(actors.student),
+    api = actors.student.api;
+  await upload(api, id, "申请表.txt", Buffer.from("申请人姓名：张三\n项目名称：合成学习项目"));
+  await upload(api, id, "证明.txt", Buffer.from("申请人名字：李四\n项目题目：合成学习项目"));
+  expect((await api.post(`/api/tasks/${id}/rules`)).status()).toBe(201);
+  const execution = await check(api, id);
+  expect(execution.status).toBe("completed");
+  const checks = execution.metadata?.materialConsistency || [];
+  expect(
+    checks.some(
+      (item) => item.field === "姓名" && item.verdict === "failed" && item.evidence.length === 2,
+    ),
+  ).toBe(true);
+  expect(checks.some((item) => item.field === "项目名称" && item.verdict === "passed")).toBe(true);
+  await page.context().addCookies((await api.storageState()).cookies);
+  await page.goto(`/tasks/${id}`);
+  await expect(page.getByText("跨材料字段对齐", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "姓名不一致", exact: true })).toBeVisible();
+  const task = await details(api, id),
+    material = task.materials.find((item) => item.originalFileName === "证明.txt")!;
+  const revision = await api.post(`/api/tasks/${id}/materials/${material.id}/revision`, {
+    data: {
+      action: "correction",
+      version: material.version,
+      segmentIndex: 0,
+      text: "申请人名字：张三\n项目题目：合成学习项目",
+      note: "合成测试核对原文后纠正",
+    },
+  });
+  expect(revision.ok(), await revision.text()).toBe(true);
+  const historical = (await (await api.get(`/api/tasks/${id}/checks`)).json()).executions[0];
+  expect(
+    historical.metadata.materialConsistency.some(
+      (item: { field: string; verdict: string }) =>
+        item.field === "姓名" && item.verdict === "failed",
+    ),
+  ).toBe(true);
+  const next = await check(api, id);
+  expect(
+    next.metadata?.materialConsistency?.some(
+      (item) => item.field === "姓名" && item.verdict === "passed",
+    ),
+  ).toBe(true);
+});

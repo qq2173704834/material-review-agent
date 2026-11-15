@@ -1,4 +1,3 @@
-import { FieldMappings } from "@/components/field-mappings";
 import { TaskExamContext } from "@/components/task-exam-context";
 import { Clock3 } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -79,7 +78,6 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
               通知、指南、模板属于审查依据。它们告诉系统按什么要求检查。
             </p>
             <TaskEditor task={task} />
-            <FieldMappings task={task} />
             {task.noticeSource.inputType === "webpage" ? (
               <p className="mt-4 max-w-4xl break-words border-l-2 border-border pl-3 text-xs leading-5 text-muted-foreground">
                 网页来源：
@@ -92,12 +90,12 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
                   {task.noticeSource.sourceUrl}
                 </a>
                 {task.noticeSource.fetchedAt ? ` · 获取于 ${task.noticeSource.fetchedAt}` : ""}
-                {` · ${task.noticeSource.displayName}`}
+                {` · ${task.noticeSource.displayName.replace(/公告v\d+/gu, "公告")}`}
               </p>
             ) : null}
             {task.noticeSource.inputType === "file" ? (
               <p className="mt-4 max-w-4xl break-words border-l-2 border-border pl-3 text-xs leading-5 text-muted-foreground">
-                文件来源：{task.noticeSource.displayName} · 解析状态：
+                文件来源：{task.noticeSource.displayName.replace(/公告v\d+/gu, "公告")} · 解析状态：
                 {
                   {
                     text_extracted: "已读取",
@@ -241,6 +239,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
           <>
             {" "}
             <ReviewExecutionPanel
+              taskForConfirmation={task}
               taskId={task.id}
               initialExecutions={executions}
               initialRemediationTasks={remediationTasks}

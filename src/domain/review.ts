@@ -1,3 +1,4 @@
+import type { MaterialConsistencyCheck } from "@/lib/material-consistency";
 import type { ModelCall } from "@/domain/model-call";
 import type { MaterialClassification } from "@/lib/material-classification";
 
@@ -225,6 +226,7 @@ export interface ReviewExecution {
     modelCalls: ModelCall[];
     backgroundSnapshot: ReviewTaskBackground;
     limitations: string[];
+    materialConsistency?: MaterialConsistencyCheck[];
   };
   humanResolutions?: HumanResolution[];
   validity?: ResultValidity;

@@ -386,11 +386,16 @@ test("选用历史原件版本不覆盖旧内容 M11", async ({ request, page })
     const material = (await (await request.get(`/api/tasks/${task.id}`)).json()).task.materials[0];
     expect(material.version).toBe(2);
     await page.goto(`/tasks/${task.id}?verdict=all`);
-    await page.getByText("核对与修订解析文字", { exact: true }).click();
+    await page.getByText("核对内容或选择材料类型", { exact: true }).click();
     await page.getByLabel("修订依据", { exact: true }).fill("本轮正式提交采用第一版");
     await page.getByLabel("采用历史版本", { exact: true }).fill("1");
     await page.getByRole("button", { name: "采用此历史版本并生成新版本", exact: true }).click();
-    await expect(page.getByText(/解析修订：采用历史版本/)).toBeVisible();
+    await expect
+      .poll(
+        async () =>
+          (await (await request.get(`/api/tasks/${task.id}`)).json()).task.materials[0].version,
+      )
+      .toBe(3);
     const saved = (await (await request.get(`/api/tasks/${task.id}`)).json()).task.materials[0];
     expect(saved.version).toBe(3);
     expect(saved.extractedText).toBe("第一版真实内容");

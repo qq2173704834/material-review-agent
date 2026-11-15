@@ -303,12 +303,9 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     await page.goto(`/tasks/${taskId}?verdict=all`);
     await expect(page.getByRole("heading", { name: "上传待审查材料" })).toBeVisible();
     await expect(page.getByText("说明.txt", { exact: true })).toBeVisible();
-    await page
-      .locator("li")
-      .filter({ hasText: "说明.txt" })
-      .getByText(/查看 2 个定位片段/)
-      .click();
-    await expect(page.getByText(/第一行说明/)).toBeVisible();
+    const fileRow = page.locator("li").filter({ hasText: "说明.txt" });
+    await expect(fileRow.getByRole("link", { name: "查看文件", exact: true })).toBeVisible();
+    await expect(fileRow.getByText(/定位片段/)).toHaveCount(0);
 
     const revisedText = await request.post(`/api/tasks/${taskId}/materials`, {
       multipart: {
@@ -1806,7 +1803,7 @@ test.describe("本地审查任务 ENG-004 / ENG-005", () => {
     const response = await page.goto("/missing-page");
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { name: "没有找到这个页面" })).toBeVisible();
-    await page.getByRole("link", { name: "返回任务列表" }).click();
+    await page.getByRole("link", { name: "返回首页" }).click();
     await expect(page.getByRole("heading", { name: "我的审查任务" })).toBeVisible();
   });
 });

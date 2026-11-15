@@ -14,11 +14,6 @@ const statusLabels = {
   failed: "读取失败",
   ocr_required: "需要文字识别",
 } as const;
-function formatBytes(fileSizeBytes: number): string {
-  return fileSizeBytes < 1024 * 1024
-    ? `${Math.max(1, Math.round(fileSizeBytes / 1024))} KiB`
-    : `${(fileSizeBytes / (1024 * 1024)).toFixed(1)} MiB`;
-}
 export function MaterialUpload({
   taskId,
   initialMaterials,
@@ -29,6 +24,7 @@ export function MaterialUpload({
   const router = useRouter();
   const queue = useUploadQueue(taskId, "materials");
   const [materials, setMaterials] = useState(initialMaterials);
+  const [correctionIds, setCorrectionIds] = useState<string[]>([]);
   const [previousInitialMaterials, setPreviousInitialMaterials] = useState(initialMaterials);
   if (initialMaterials !== previousInitialMaterials) {
     setPreviousInitialMaterials(initialMaterials);
@@ -76,116 +72,52 @@ export function MaterialUpload({
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="break-words text-sm font-medium">{material.originalFileName}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {material.extension.toUpperCase()} · {formatBytes(material.fileSizeBytes)} · v
-                    {material.version}
-                    {material.pageCount ? ` · ${material.pageCount} 页` : ""}
-                    {material.sheetNames.length
-                      ? ` · 工作表：${material.sheetNames.join("、")}`
-                      : ""}
-                  </p>
                 </div>
                 <span className="text-xs font-medium text-muted-foreground">
                   {statusLabels[material.parseStatus]}
                 </span>
               </div>
-              {material.parseMessage ? (
-                <p className="mt-2 text-xs leading-5 text-amber-800">{material.parseMessage}</p>
-              ) : null}
-              {material.classification ? (
-                <p className="mt-2 text-xs">
-                  材料类型：{material.classification.label} ·{" "}
-                  {material.classification.method === "manual" ? "人工指定" : "内容线索，待核对"} ·{" "}
-                  {material.classification.location}：{material.classification.quote}
-                </p>
-              ) : (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  材料类型待确认，可展开文字核对后纠正。
-                </p>
-              )}
-              {material.revision && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  解析修订：
-                  {material.revision.kind === "correction"
-                    ? "人工修订"
-                    : material.revision.kind === "restore"
-                      ? "恢复原始文字"
-                      : material.revision.kind === "select_version"
-                        ? "采用历史版本"
-                        : material.revision.kind === "classification"
-                          ? "人工分类"
-                          : "单页重试"}{" "}
-                  · 基于 v{material.revision.baseVersion} · {material.createdAt} ·{" "}
-                  {material.revision.note}
+              <a
+                className="mt-2 inline-block text-xs text-primary underline"
+                href={`/api/tasks/${taskId}/materials/${material.id}/versions/${material.version}?file=1`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                查看文件
+              </a>
+              {material.parseStatus !== "text_extracted" && (
+                <p className="mt-2 text-xs text-amber-800">
+                  {material.parseStatus === "partial"
+                    ? "部分内容未能读取，请核对后补充。"
+                    : "暂时无法读取，请重新上传或核对文字。"}
                 </p>
               )}
-              <details className="mt-3 text-xs text-muted-foreground">
-                <summary className="cursor-pointer text-primary">读取与版本详细信息</summary>
-                <p className="mt-2 break-all leading-6">
-                  读取工具：{material.parserName} · 材料编号：{material.id} · 校验值：
-                  {material.sha256}
-                </p>
-              </details>
-              <MaterialRevisionEditor
-                key={`${material.id}-${material.version}`}
-                taskId={taskId}
-                material={material}
-                onSaved={(saved) => {
-                  setMaterials((current) =>
-                    current.map((item) => (item.id === saved.id ? saved : item)),
-                  );
-                  router.refresh();
-                }}
-              />
-              {material.pageCoverage?.length ? (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-xs text-primary">逐页读取范围</summary>
-                  <ul className="mt-2 space-y-2 text-xs leading-5">
-                    {material.pageCoverage.map((page) => (
-                      <li key={page.pageNumber}>
-                        第 {page.pageNumber} 页 ·{" "}
-                        {{ text: "文本层", ocr: "OCR", none: "未读取" }[page.method]}
-                        {" · "}
-                        {
-                          {
-                            read: "已读取",
-                            partial: "部分读取",
-                            failed: "失败",
-                            skipped: "未处理",
-                          }[page.status]
-                        }
-                        {page.confidence === undefined
-                          ? ""
-                          : ` · OCR 分数 ${Math.round(page.confidence)}`}
-                        {" · "}
-                        {page.message}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              ) : null}
-              {material.segments.length ? (
-                <details className="mt-3">
-                  <summary className="cursor-pointer text-xs text-primary">
-                    查看 {material.segments.length} 个定位片段
-                  </summary>
-                  <ol className="mt-3 space-y-2">
-                    {material.segments.map((segment) => (
-                      <li
-                        key={segment.segmentIndex}
-                        id={`material-${material.id}-segment-${segment.segmentIndex}`}
-                        tabIndex={-1}
-                        className="scroll-mt-6 rounded-md bg-muted/50 px-3 py-2 text-xs leading-6 target:bg-amber-100 target:ring-2 target:ring-amber-400"
-                      >
-                        <span className="mr-2 font-mono text-muted-foreground">
-                          {segment.location} · 字符 {segment.startOffset}–{segment.endOffset}
-                        </span>
-                        <span className="whitespace-pre-wrap break-words">{segment.text}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </details>
-              ) : null}
+              {material.parseStatus === "text_extracted" &&
+                material.classification &&
+                !correctionIds.includes(material.id) && (
+                  <button
+                    type="button"
+                    className="ml-4 min-h-11 text-xs text-primary underline"
+                    onClick={() => setCorrectionIds([...correctionIds, material.id])}
+                  >
+                    调整材料
+                  </button>
+                )}
+              {(material.parseStatus !== "text_extracted" ||
+                !material.classification ||
+                correctionIds.includes(material.id)) && (
+                <MaterialRevisionEditor
+                  key={`${material.id}-${material.version}`}
+                  taskId={taskId}
+                  material={material}
+                  onSaved={(saved) => {
+                    setMaterials((current) =>
+                      current.map((item) => (item.id === saved.id ? saved : item)),
+                    );
+                    router.refresh();
+                  }}
+                />
+              )}
             </li>
           ))}
         </ul>

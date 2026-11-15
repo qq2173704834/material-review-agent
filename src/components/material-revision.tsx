@@ -74,7 +74,7 @@ export function MaterialRevisionEditor({
   const buttonClass = "min-h-11 rounded-md border border-border px-3 text-xs disabled:opacity-50";
   return (
     <details className="mt-3" onToggle={(event) => setIsOpen(event.currentTarget.open)}>
-      <summary className="cursor-pointer text-xs text-primary">核对与修订解析文字</summary>
+      <summary className="cursor-pointer text-xs text-primary">核对内容或选择材料类型</summary>
       {isOpen && (
         <div className="mt-3 space-y-3 rounded-md border border-border p-3">
           <p className="text-xs leading-5">

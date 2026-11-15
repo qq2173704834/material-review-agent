@@ -61,10 +61,13 @@ test("文本、扫描、混合 PDF 逐页读取并保留失败范围 ENG-006", a
   expect(byName("超页数.pdf").parseMessage).toContain("第 201–201 页");
   await page.goto("/tasks/" + task.id);
   const material = page.locator("li[id='material-" + byName("混合.pdf").id + "']");
-  await material.getByText("逐页读取范围", { exact: true }).click();
-  await expect(material).toContainText("第 2 页 · OCR · 已读取");
+  await expect(material.getByRole("link", { name: "查看文件", exact: true })).toBeVisible();
+  await expect(material.getByText("逐页读取范围", { exact: true })).toHaveCount(0);
   await page.reload();
-  await material.getByText("逐页读取范围", { exact: true }).click();
-  await expect(material).toContainText("第 2 页 · OCR · 已读取");
+  await expect(material.getByRole("link", { name: "查看文件", exact: true })).toBeVisible();
+  const persisted = (await (await request.get(`/api/tasks/${task.id}`)).json()).task.materials.find(
+    (item: { id: string }) => item.id === byName("混合.pdf").id,
+  );
+  expect(persisted.pageCoverage[1]).toMatchObject({ pageNumber: 2, method: "ocr", status: "read" });
   await request.delete("/api/tasks/" + task.id);
 });

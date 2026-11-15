@@ -1,3 +1,4 @@
+import { materialConsistency } from "@/lib/material-consistency";
 import { randomUUID } from "node:crypto";
 
 import { NextResponse } from "next/server";
@@ -274,6 +275,11 @@ export async function runReviewChecks(request: Request, context: RouteContext): 
             executionStatus = "failed";
             metadata.limitations.push("执行达到 180 秒总时限，剩余规则未执行。");
           }
+          if (executionStatus === "completed")
+            metadata.materialConsistency = materialConsistency(
+              task.materials,
+              task.background.fieldMappings,
+            );
           const completedAt = new Date().toISOString();
           const unexecutedCount = ruleSet.rules.length - results.length;
           store.finishReviewExecution(

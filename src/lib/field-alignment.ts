@@ -72,7 +72,7 @@ export function compareAlignedFields(
   const uncertain = (reason: string): NonNullable<ReturnType<typeof compareAlignedFields>> => ({
     verdict: "needs_confirmation" as const,
     reason,
-    recommendation: "在跨材料字段对齐中核对主体、字段、材料版本及缺失值。",
+    recommendation: "请在本项问题中核对是否属于同一对象，以及原文是否完整。",
     evidence,
   });
   const candidates = fieldCandidates(materials);

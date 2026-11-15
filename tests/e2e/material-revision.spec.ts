@@ -41,11 +41,11 @@ test("文字修订、恢复、历史证据和重复上传不产生虚假版本 E
     (await request.post(endpoint.replace(task.id, randomUUID()), { data: correction })).status(),
   ).toBe(404);
   await page.goto(`/tasks/${task.id}?view=prepare&verdict=all`);
-  await page.getByText("核对与修订解析文字", { exact: true }).click();
+  await page.getByText("核对内容或选择材料类型", { exact: true }).click();
   await page.getByLabel("核对后的文字", { exact: true }).fill(correction.text);
   await page.getByLabel("修订依据", { exact: true }).fill(correction.note);
   await page.getByRole("button", { name: "保存文字修订", exact: true }).click();
-  await expect(page.getByText(/解析修订：人工修订/)).toBeVisible();
+  await expect(page.getByText("证明.txt", { exact: true })).toBeVisible();
   const current = (await (await request.get(`/api/tasks/${task.id}`)).json()).task.materials[0];
   expect(current.version).toBe(2);
   expect(current.revision.note).toBe(correction.note);

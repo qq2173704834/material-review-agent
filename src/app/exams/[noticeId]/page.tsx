@@ -48,7 +48,7 @@ export default async function Page({
               <p>{lifecycle.label}；下方保留原公告历史，不据旧安排确认当前可报名。</p>
               {lifecycle.evidence.map((entry) => (
                 <Link key={entry.id} className="mr-3 underline" href={`/learn/${entry.id}`}>
-                  {entry.content.title} · v{entry.version}
+                  {entry.content.title}
                 </Link>
               ))}
             </div>
@@ -70,7 +70,7 @@ export default async function Page({
             </p>
           ) : null}
           <p>
-            {content.organizer} · 发布：{content.publishedAt || "待核实"} · 公告v{item.version}
+            {content.organizer} · 发布：{content.publishedAt || "待核实"}
           </p>
           <ExamStatus
             disposition={content.disposition}
@@ -98,6 +98,12 @@ export default async function Page({
           href={`/me?newCategory=${content.category}&noticeId=${item.id}#goals`}
         >
           设为我的考试目标并准备材料
+        </Link>
+        <Link
+          className="inline-block rounded-xl border px-4 py-2 text-primary"
+          href={`/learn?category=${content.category}`}
+        >
+          查看该考试的学习资料 →
         </Link>
         <ExamActions id={item.id} saved={saved} />
         <section>
@@ -160,19 +166,21 @@ export default async function Page({
             {content.text}
           </pre>
         </section>
-        <details className="rounded border p-4">
-          <summary>历史版本与更正</summary>
-          {history.map((v) => (
-            <div className="my-3" key={v.version}>
-              <p>
-                v{v.version} · 保存于{v.created_at} · {v.content.title}
-              </p>
-              <pre className="max-h-60 overflow-auto text-sm whitespace-pre-wrap">
-                {v.content.text}
-              </pre>
-            </div>
-          ))}
-        </details>
+        {history.length > 1 && (
+          <details className="rounded border p-4">
+            <summary>公告更新记录</summary>
+            {history.map((v) => (
+              <div className="my-3" key={v.version}>
+                <p>
+                  更新于{v.created_at.slice(0, 10)} · {v.content.title}
+                </p>
+                <pre className="max-h-60 overflow-auto text-sm whitespace-pre-wrap">
+                  {v.content.text}
+                </pre>
+              </div>
+            ))}
+          </details>
+        )}
         {content.relatedId && (
           <Link href={`/exams/${content.relatedId}`} className="text-primary underline">
             查看关联原公告 / 更正公告

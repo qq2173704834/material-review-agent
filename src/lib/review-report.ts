@@ -140,6 +140,21 @@ export function createReviewReport(
       );
     lines.push("");
   }
+  if (execution.metadata?.materialConsistency?.length) {
+    lines.push("## 材料信息核对（系统自查建议）", "");
+    for (const check of execution.metadata.materialConsistency) {
+      lines.push(
+        `### ${plain(check.field)} · ${verdictLabels[check.verdict]}`,
+        plain(check.reason),
+        plain(check.recommendation),
+      );
+      for (const evidence of check.evidence)
+        lines.push(
+          `- ${plain(evidence.location)} · ${plain(evidence.quotedText)} · 材料${evidence.materialId}`,
+        );
+      lines.push("");
+    }
+  }
   const calls = [...ruleSet.modelCalls, ...(execution.metadata?.modelCalls ?? [])];
   lines.push(
     "## 模型调用与限制",

@@ -1,5 +1,6 @@
 "use client";
 
+import { MaterialConsistencyResults } from "@/components/material-consistency-results";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTaskWorkflow } from "@/components/task-workspace";
@@ -27,6 +28,7 @@ import {
 import type { FormEvent, ReactElement } from "react";
 
 interface ReviewExecutionProps {
+  taskForConfirmation?: ReviewTaskDetails;
   taskId: string;
   initialExecutions: ReviewExecution[];
   initialRemediationTasks: RemediationTask[];
@@ -67,6 +69,7 @@ const methodLabels = {
 } as const;
 
 export function ReviewExecutionPanel({
+  taskForConfirmation,
   taskId,
   initialExecutions,
   initialRemediationTasks,
@@ -710,6 +713,10 @@ export function ReviewExecutionPanel({
               。下方保留原始结论，请重新检查当前材料。
             </p>
           ) : null}
+          <MaterialConsistencyResults
+            checks={currentExecution.metadata?.materialConsistency || []}
+            task={taskForConfirmation}
+          />
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
             <span className="font-semibold text-primary">
               {currentExecution.metadata?.mode === "live"
