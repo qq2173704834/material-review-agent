@@ -93,8 +93,9 @@ export async function CampusSummary({ now }: { now: number }): Promise<ReactElem
           >
             <span className="line-clamp-2 font-medium">{node.title}</span>
             <span className="mt-1 block text-xs text-muted-foreground">
-              {node.label} · {formatScheduleTime(node.value)} ·{" "}
-              {scheduleOverdue(node.value, now)
+              {node.label} · {formatScheduleTime(node.value)}
+              {node.endValue && ` 至 ${formatScheduleTime(node.endValue)}`} ·{" "}
+              {scheduleOverdue(node.endValue || node.value, now)
                 ? "已到期 · 待完成"
                 : scheduleCountdown(node.value, now)}
             </span>
@@ -115,7 +116,7 @@ export async function CampusSummary({ now }: { now: number }): Promise<ReactElem
         )}
         {pending > 0 && (
           <Link className="inline-block text-sm text-primary" href="/me/schedule?pending=1#pending">
-            待公布安排 {pending} 项 →
+            时间待定 {pending} 项 →
           </Link>
         )}
       </section>

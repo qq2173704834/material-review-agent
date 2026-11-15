@@ -1,3 +1,9 @@
+import {
+  examTimeline,
+  reviewedExamDates,
+  formatExamPoint,
+  missingExamTimeLabel,
+} from "@/lib/exam-timeline";
 import { BrowseBack } from "@/components/browse-back";
 import { safeBrowseReturn } from "@/lib/browse-return";
 import type { ReactElement } from "react";
@@ -8,7 +14,7 @@ import { AppShell } from "@/components/app-shell";
 import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
 import { requestTime } from "@/lib/server/request-time";
 import { ExamActions } from "@/components/exam-actions";
-import { CATEGORY_LABELS, TIMELINE_LABELS } from "@/domain/exam-catalog";
+import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import { sessionAccount } from "@/lib/server/account-auth";
 import { favorites, notice, publishedHistory } from "@/lib/server/exam-store";
 import { examCatalogState } from "@/lib/server/catalog-state";
@@ -31,6 +37,8 @@ export default async function Page({
     lifecycle.blocked && item.content.disposition === "正常"
       ? { ...item.content, disposition: "待核实" as const }
       : item.content;
+  const timeline = examTimeline(content);
+  const dateReference = reviewedExamDates(content);
   const back = safeBrowseReturn((await searchParams).returnTo, "/exams");
   const history = publishedHistory(noticeId).filter((v) => v.version <= item.version);
   return (
@@ -59,28 +67,32 @@ export default async function Page({
           content.languages?.length ||
           content.examForms?.length ? (
             <p className="text-sm text-muted-foreground">
-              适用考试：
-              {[...new Set([content.category, ...(content.categories ?? [])])]
-                .map((id) => CATEGORY_LABELS[id])
-                .join("、")}{" "}
-              · 等级：{content.levels?.join("、") || "未单独确认"} · 科目：
-              {content.subjects?.join("、") || "未单独确认"} · 语种：
-              {content.languages?.join("、") || "未单独确认"} · 形式：
-              {content.examForms?.join("、") || "未单独确认"}
+              {[
+                content.categories?.length
+                  ? `适用考试：${[...new Set([content.category, ...content.categories])].map((id) => CATEGORY_LABELS[id]).join("、")}`
+                  : "",
+                content.levels?.length ? `等级：${content.levels.join("、")}` : "",
+                content.subjects?.length ? `科目：${content.subjects.join("、")}` : "",
+                content.languages?.length ? `语种：${content.languages.join("、")}` : "",
+                content.examForms?.length ? `形式：${content.examForms.join("、")}` : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
           ) : null}
           <p>
             {content.organizer} · 发布：{content.publishedAt || "待核实"}
           </p>
           <ExamStatus
+            title={content.title}
             disposition={content.disposition}
-            timeline={content.timeline}
+            timeline={timeline}
             stage={content.stage}
             initialNow={now}
           />
           <RegistrationDeadline
             disposition={content.disposition}
-            timeline={content.timeline}
+            timeline={timeline}
             stage={content.stage}
             initialNow={now}
           />
@@ -106,66 +118,80 @@ export default async function Page({
           查看该考试的学习资料 →
         </Link>
         <ExamActions id={item.id} saved={saved} />
-        <section>
-          <h2 className="mb-3 text-xl font-semibold">考试安排 · 北京时间</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {TIMELINE_LABELS.map((label) => {
-              const point = content.timeline.find((p) => p.label === label);
-              return (
-                <div key={label} className="rounded border p-4">
-                  <h3 className="font-medium">{label}</h3>
-                  <p>
-                    {point?.value || "待公布"}
-                    {point?.value.length === 10 ? "（仅日期，具体时刻未公布）" : ""}
+        <section aria-label="考试日程" className="space-y-3">
+          <h2 className="text-xl font-semibold">考试日程</h2>
+          {timeline.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {timeline.map((point) => (
+                <div key={point.label} className="rounded-xl border bg-card p-4">
+                  <h3 className="text-sm text-muted-foreground">{point.label}</h3>
+                  <p className="mt-2 font-medium">
+                    {point.value ? formatExamPoint(point) : missingExamTimeLabel(point)}
                   </p>
-                  {point?.quote && (
-                    <blockquote className="mt-2 border-l-2 pl-3 text-sm text-muted-foreground">
-                      {point.quote}
-                    </blockquote>
+                  {point.value.length === 10 && (
+                    <p className="mt-1 text-xs text-muted-foreground">具体时刻见原文</p>
+                  )}
+                  {point.quote && (
+                    <details className="mt-2 text-sm text-muted-foreground">
+                      <summary>查看时间依据</summary>
+                      <blockquote className="mt-2 border-l-2 pl-3 whitespace-pre-wrap">
+                        {point.quote}
+                      </blockquote>
+                    </details>
                   )}
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
+              本公告未列具体日程，可查看原文中的相关安排。
+            </p>
+          )}
+          {dateReference && (
+            <div className="text-sm text-muted-foreground">
+              {dateReference.note && <p className="mb-2">{dateReference.note}</p>}
+              <a
+                href={dateReference.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline"
+              >
+                日程来源：{dateReference.sourceTitle} ↗
+              </a>
+            </div>
+          )}
         </section>
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">整理摘要与适用人群</h2>
+          <h2 className="text-xl font-semibold">公告摘要</h2>
           <p className="whitespace-pre-wrap">{content.summary || "未提供摘要，请阅读下方原文。"}</p>
           <p className="whitespace-pre-wrap">
             {content.audience || "资格条件尚未整理，不能据此判断个人是否符合。"}
           </p>
-          <p className="text-sm text-muted-foreground">
-            摘要为本站整理，最终以官方原文及具体岗位/科目条件为准。
-          </p>
         </section>
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold">官方附件</h2>
-          {content.attachments.length ? (
-            content.attachments.map((a) => (
-              <p key={a.url}>
-                <a className="text-primary underline" href={a.url} target="_blank" rel="noreferrer">
-                  {a.name}
-                </a>{" "}
-                · {a.status}
-              </p>
-            ))
-          ) : (
-            <p>本次未收录附件，请到官方原文核对。</p>
-          )}
-        </section>
-        <section>
-          <h2 className="mb-3 text-xl font-semibold">
-            {content.textScope === "摘录" ? "原文摘录（非全文）" : "原文快照"}
-          </h2>
-          {content.textScope === "摘录" && (
-            <p className="mb-3 text-sm text-muted-foreground">
-              以下为原文摘录，完整内容请查看官方原文。
-            </p>
-          )}
+        {content.attachments.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">相关附件</h2>
+            {content.attachments.map((attachment) => (
+              <a
+                key={attachment.url}
+                href={attachment.url}
+                target="_blank"
+                rel="noreferrer"
+                className="block text-primary underline"
+              >
+                {attachment.name} ↗
+              </a>
+            ))}
+          </section>
+        )}
+        <details className="rounded-xl border p-5">
+          <summary className="font-semibold">
+            {content.textScope === "摘录" ? "公告摘录" : "公告正文"}
+          </summary>
           <pre className="max-h-[800px] overflow-auto rounded border p-5 font-sans text-sm leading-7 whitespace-pre-wrap">
             {content.text}
           </pre>
-        </section>
+        </details>
         {history.length > 1 && (
           <details className="rounded border p-4">
             <summary>公告更新记录</summary>

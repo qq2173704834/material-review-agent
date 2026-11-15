@@ -1,4 +1,5 @@
 "use client";
+import { examTimeline } from "@/lib/exam-timeline";
 import { useEffect, useRef, useState } from "react";
 import { notifyScheduleChanged } from "@/components/schedule-refresh";
 import type { ScheduleNode } from "@/lib/schedule";
@@ -122,12 +123,12 @@ export function StudentGoals({
                         node.goalIds.includes(goal.id) && /考试|笔试|口试|面试/u.test(node.label),
                     );
                     return node?.value
-                      ? `${node.label}：${formatScheduleTime(node.value)}`
+                      ? `${node.label}：${formatScheduleTime(node.value)}${node.endValue ? ` 至 ${formatScheduleTime(node.endValue)}` : ""}`
                       : node
                         ? missingScheduleDateLabel(node)
                         : goal.edition === "待确认考期"
                           ? "尚未选择考期"
-                          : "考试时间待公布";
+                          : "考试日期未收录";
                   })()}
             </p>
             <details>
@@ -295,7 +296,7 @@ export function StudentGoals({
                 .map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.content.title} · {item.content.region} · {item.content.edition} ·{" "}
-                    {item.content.timeline[0]?.value ?? "时间待公布"}
+                    {examTimeline(item.content)[0]?.value || "本公告未列日程"}
                   </option>
                 ))}
             </select>

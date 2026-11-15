@@ -1,3 +1,4 @@
+import { examTimeline } from "@/lib/exam-timeline";
 import { headers } from "next/headers";
 import { sessionAccount } from "@/lib/server/account-auth";
 import { BrowsePosition } from "@/components/browse-back";
@@ -151,19 +152,20 @@ export default async function Page({
                 </Link>
               </h2>
               <ExamStatus
+                title={item.content.title}
                 disposition={item.content.disposition}
-                timeline={item.content.timeline}
+                timeline={examTimeline(item.content)}
                 stage={item.content.stage}
                 initialNow={now}
               />
               <RegistrationDeadline
                 disposition={item.content.disposition}
-                timeline={item.content.timeline}
+                timeline={examTimeline(item.content)}
                 stage={item.content.stage}
                 initialNow={now}
               />
               <p className="text-xs text-muted-foreground">
-                发布：{item.content.publishedAt || "日期待公布"} · {item.source_name}
+                发布：{item.content.publishedAt || "日期未收录"} · {item.source_name}
               </p>
             </article>
           ))}

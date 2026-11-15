@@ -1,3 +1,4 @@
+import { examTimeline } from "@/lib/exam-timeline";
 import "server-only";
 import { z } from "zod";
 import { platformDb } from "./platform-db";
@@ -63,7 +64,7 @@ export function examScheduleNodes(userId: string): ScheduleNode[] {
     }
     if (
       !source ||
-      !source.content.timeline.some((point) => /考试|笔试|口试|面试/u.test(point.label))
+      !examTimeline(source.content).some((point) => /考试|笔试|口试|面试/u.test(point.label))
     ) {
       unknown.push({
         id: `goal:${goal.id}:exam`,
@@ -105,7 +106,7 @@ export function examScheduleNodes(userId: string): ScheduleNode[] {
       !catalogLifecycle(knowledge, notice.content.category, notice.content.region).blocked;
     const counts = new Map<string, number>();
     let linkedUnknown = false;
-    return notice.content.timeline.map((point): ScheduleNode => {
+    return examTimeline(notice.content).map((point): ScheduleNode => {
       const index = counts.get(point.label) || 0;
       counts.set(point.label, index + 1);
       // The date is deliberately excluded so postponement updates the existing node.
@@ -116,13 +117,16 @@ export function examScheduleNodes(userId: string): ScheduleNode[] {
           : undefined;
       if (/考试|笔试|口试|面试/u.test(point.label)) linkedUnknown = true;
       const prior = saved.get(id) || unknownState;
-      const sourceValue = JSON.stringify([valid, point.value]);
+      const sourceValue = JSON.stringify(
+        point.endValue ? [valid, point.value, point.endValue] : [valid, point.value],
+      );
       const changed = !valid || (!!prior && prior.sourceValue !== sourceValue);
       const date = valid && Number.isFinite(scheduleTimestamp(point.value)) ? point.value : "";
       return {
         id,
         title: notice.content.title,
         label: point.label,
+        endValue: !prior?.date && valid ? point.endValue : undefined,
         value: prior?.date != null ? (changed ? "" : prior.date) : date,
         href: `/exams/${notice.id}?returnTo=${encodeURIComponent("/me/schedule")}`,
         group: scheduleGroup(point.label),

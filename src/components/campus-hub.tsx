@@ -494,13 +494,13 @@ export function CampusHub({
         </div>
       </div>
       {mode === "notices" && school && (
-        <section aria-label="学校信息与通知入口" className="rounded-2xl border bg-card p-5">
+        <section aria-label="学校信息与通知入口" className="rounded-2xl border bg-card px-5 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              {[school.province, school.city !== school.province ? school.city : "", school.level]
-                .filter(Boolean)
-                .join(" · ")}
-              <span className="ml-3">已收录 {notices.length} 条通知</span>
+              学校通知
+              <span className="ml-2 inline-flex rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
+                {notices.length} 条
+              </span>
             </p>
             <div className="flex flex-wrap gap-2">
               {schoolSources.map((source) => (
@@ -979,16 +979,18 @@ export function CampusHub({
                     </details>
                   )}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      className={buttonClass}
-                      onClick={() => {
-                        setOpened(opened === notice.id ? null : notice.id);
-                        if (state.reads[notice.id] !== notice.digest)
-                          void mutate({ action: "read", id: notice.id, digest: notice.digest });
-                      }}
-                    >
-                      查看通知
-                    </button>
+                    {notice.contentStatus !== "external_link" && (
+                      <button
+                        className={buttonClass}
+                        onClick={() => {
+                          setOpened(opened === notice.id ? null : notice.id);
+                          if (state.reads[notice.id] !== notice.digest)
+                            void mutate({ action: "read", id: notice.id, digest: notice.digest });
+                        }}
+                      >
+                        查看通知
+                      </button>
+                    )}
                     {/(?:提交|上传|报送|提供)[^。\n]{0,60}(?:申请表|证明|报告|附件|材料)/u.test(
                       notice.text,
                     ) &&
@@ -1001,9 +1003,31 @@ export function CampusHub({
                           检查申请材料
                         </button>
                       )}
-                    <a href={notice.url} target="_blank" rel="noreferrer" className={buttonClass}>
-                      原文
+                    <a
+                      href={notice.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={buttonClass}
+                      onClick={() => {
+                        if (
+                          notice.contentStatus === "external_link" &&
+                          state.reads[notice.id] !== notice.digest
+                        )
+                          void mutate({ action: "read", id: notice.id, digest: notice.digest });
+                      }}
+                    >
+                      {notice.contentStatus === "external_link" ? "阅读原文 ↗" : "原文"}
                     </a>
+                    {notice.listingUrl && (
+                      <a
+                        href={notice.listingUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={buttonClass}
+                      >
+                        学校发布页 ↗
+                      </a>
+                    )}
                     <button
                       disabled={busy}
                       className={buttonClass}
@@ -1017,20 +1041,22 @@ export function CampusHub({
                     >
                       {state.favorites.includes(notice.id) ? "取消收藏" : "收藏"}
                     </button>
-                    <button
-                      disabled={notice.withdrawn}
-                      className={buttonClass}
-                      onClick={async () => {
-                        const { campusImportPreview } = await import("@/lib/campus");
-                        const items = campusImportPreview(notice.text, notice.publishedAt);
-                        const dated = items.filter((item) => item.start || item.end);
-                        preview(dated.length ? dated : items, notice);
-                      }}
-                    >
-                      {state.events.some((event) => event.sourceId === notice.id)
-                        ? "已加入 · 再选节点"
-                        : "＋ 加入日程"}
-                    </button>
+                    {notice.contentStatus !== "external_link" && (
+                      <button
+                        disabled={notice.withdrawn}
+                        className={buttonClass}
+                        onClick={async () => {
+                          const { campusImportPreview } = await import("@/lib/campus");
+                          const items = campusImportPreview(notice.text, notice.publishedAt);
+                          const dated = items.filter((item) => item.start || item.end);
+                          preview(dated.length ? dated : items, notice);
+                        }}
+                      >
+                        {state.events.some((event) => event.sourceId === notice.id)
+                          ? "已加入 · 再选节点"
+                          : "＋ 加入日程"}
+                      </button>
+                    )}
                   </div>
                   {state.events.some((event) => event.sourceId === notice.id) && (
                     <Link href="/me/schedule" className="mt-3 block text-sm text-primary underline">
@@ -1172,23 +1198,27 @@ export function CampusHub({
             <p className="rounded-2xl bg-muted p-6 text-sm">
               {view === "month"
                 ? "这一天暂无安排。"
-                : "暂无有明确日期的待办，可添加日程或查看下方待公布安排。"}
+                : pendingNodes.length
+                  ? "暂无有明确日期的待办，可查看下方“时间待定”或添加日程。"
+                  : "暂无待办，可添加日程或选择考试目标。"}
             </p>
           )}
-          <details
-            id="pending"
-            className="rounded-2xl border bg-card p-5"
-            open={pendingOpen}
-            onToggle={(event) => setPendingOpen(event.currentTarget.open)}
-          >
-            <summary className="cursor-pointer font-medium">
-              待公布安排 · {pendingNodes.length}
-            </summary>
-            <div className="mt-4 grid gap-4 lg:grid-cols-2">{pendingNodes.map(renderNode)}</div>
-            {!pendingNodes.length && (
-              <p className="mt-3 text-sm text-muted-foreground">暂无时间待定的安排。</p>
-            )}
-          </details>
+          {pendingNodes.length > 0 && (
+            <details
+              id="pending"
+              className="rounded-2xl border bg-card p-5"
+              open={pendingOpen}
+              onToggle={(event) => setPendingOpen(event.currentTarget.open)}
+            >
+              <summary className="cursor-pointer font-medium">
+                时间待定 · {pendingNodes.length}
+              </summary>
+              <p className="mt-3 text-sm text-muted-foreground">
+                选定考期或补充时间后，这些事项会按日期展示。
+              </p>
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">{pendingNodes.map(renderNode)}</div>
+            </details>
+          )}
           {!nodes.length && (
             <Link className="text-sm text-primary underline" href="/me">
               选择考试目标，或添加自己的课程与作业 →

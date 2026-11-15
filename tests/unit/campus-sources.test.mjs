@@ -8,6 +8,7 @@ import {
   campusPublicationDate,
 } from "../../src/lib/campus-article.ts";
 import { campusSourceLinks } from "../../src/lib/campus-source-links.ts";
+import { campusExternalEntries } from "../../src/lib/campus-listing.ts";
 import { CAMPUS_SOURCES, CAMPUS_SCHOOLS } from "../../src/domain/campus-schools.ts";
 
 test("北大通知按PHP查询ID区分且仅接受登记同源，不跟随外链、登录链接或任意路径", () => {
@@ -128,11 +129,23 @@ test("公开通知快照有原文、有效日期和内容摘要，9校均有内�
     const source = CAMPUS_SOURCES.find(
       (item) =>
         item.schoolId === notice.schoolId &&
-        new URL(item.url).origin === new URL(notice.url).origin,
+        new URL(item.url).origin === new URL(notice.listingUrl || notice.url).origin,
     );
     assert.ok(source, notice.url);
     assert.match(notice.publishedAt, /^20\d{2}-\d{2}-\d{2}$/u);
     assert.equal(new Date(notice.publishedAt).toISOString().slice(0, 10), notice.publishedAt);
+    if (notice.contentStatus === "external_link") {
+      assert.ok(source.externalListing);
+      assert.equal(notice.text, "");
+      assert.equal(new URL(notice.url).origin, "https://mp.weixin.qq.com");
+      assert.equal(
+        notice.digest,
+        createHash("sha256")
+          .update(notice.title + notice.publishedAt + notice.url)
+          .digest("hex"),
+      );
+      continue;
+    }
     assert.ok(notice.text.length >= 20);
     assert.ok(!notice.text.includes("\uFFFD"), notice.url);
     assert.equal(
@@ -142,4 +155,47 @@ test("公开通知快照有原文、有效日期和内容摘要，9校均有内�
         .digest("hex"),
     );
   }
+});
+
+test("中山官网外链索引只读取有明确标题日期的通知行，不跟随微信验证码或任意链接", () => {
+  const url = "https://mp.weixin.qq.com/s/abcdefghij12345";
+  const row = (href, date = "2026-11-05T11:02:48+08:00") =>
+    `<div class="newslist"><time datetime="${date}">05</time><div class="title"><a href="${href}">公开通知标题</a></div></div>`;
+  const listing = "https://jwb.sysu.edu.cn/newscenter/notice?page=1";
+  const entries = campusExternalEntries(
+    row(url) +
+      row(url) +
+      row(url, "2026-02-30") +
+      row("https://mp.weixin.qq.com/mp/verify?token=secret") +
+      row("https://attacker.example/s/abcdefghij12345") +
+      row(url + "?redirect=evil"),
+    listing,
+  );
+  assert.deepEqual(entries, [{ url, title: "公开通知标题", publishedAt: "2026-11-05" }]);
+  assert.equal(campusExternalEntries("<h1>环境异常</h1><p>请验证</p>", listing).length, 0);
+  assert.throws(() =>
+    campusExternalEntries(row(url), "https://attacker.example/newscenter/notice"),
+  );
+  assert.equal(
+    campusExternalEntries(Array.from({ length: 30 }, (_, i) => row(url + i)).join(""), listing)
+      .length,
+    20,
+  );
+});
+
+test("同类WebPlus外链通知从真实行日期提取，导航或无日期链接不作为通知", () => {
+  const url = "https://mp.weixin.qq.com/s/upbR7dk7NbSYeyRuQZYcFQ";
+  const row = `<li class="news n1 clearfix"><span class="news_title"><a href="${url}">校内比赛通知</a></span><span class="news_meta">2026-11-13</span></li>`;
+  const listing = "https://xsc.sspu.edu.cn/490/list.htm";
+  assert.deepEqual(campusExternalEntries(row, listing), [
+    { url, title: "校内比赛通知", publishedAt: "2026-11-13" },
+  ]);
+  assert.deepEqual(
+    campusExternalEntries(row.replace('class="news_meta"', 'class="other"'), listing),
+    [],
+  );
+  assert.deepEqual(
+    campusExternalEntries(`<nav><a href="${url}">校内比赛通知</a></nav>`, listing),
+    [],
+  );
 });

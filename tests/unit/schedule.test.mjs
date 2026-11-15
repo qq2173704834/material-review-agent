@@ -22,7 +22,7 @@ test("未选考期、未关联公告与来源未给日期分别表达，不把�
     missingScheduleDateLabel({ missingDateReason: "source-unlinked" }),
     "尚未关联考试公告",
   );
-  assert.equal(missingScheduleDateLabel({}), "时间待公布");
+  assert.equal(missingScheduleDateLabel({}), "考试日期未收录");
 });
 
 test("日程分类区分考试、申请、报告和其他，不把未知标签推断为考试", () => {

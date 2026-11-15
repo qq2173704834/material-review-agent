@@ -84,9 +84,6 @@ export function ExamActions({
           <button disabled={busy} className="rounded bg-primary px-4 py-2 text-primary-foreground">
             用此公告预审材料
           </button>
-          <p className="w-full text-sm">
-            将保存当前正文版本。附件未读取，创建后请按需逐份导入；不同岗位的条件需单独核对。
-          </p>
         </form>
       )}
       <p role="status">{message}</p>

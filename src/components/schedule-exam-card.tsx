@@ -66,7 +66,7 @@ export function ScheduleExamCard({ node, now }: { node: ScheduleNode; now: numbe
             ? "已完成"
             : !node.value
               ? missingScheduleDateLabel(node)
-              : scheduleOverdue(node.value, now)
+              : scheduleOverdue(node.endValue || node.value, now)
                 ? "已到期 · 待完成"
                 : scheduleCountdown(node.value, now)}
         </span>
@@ -79,6 +79,7 @@ export function ScheduleExamCard({ node, now }: { node: ScheduleNode; now: numbe
       {node.value && (
         <p className="text-sm text-muted-foreground">
           {formatScheduleTime(node.value)}
+          {node.endValue && ` 至 ${formatScheduleTime(node.endValue)}`}
           {node.value.length === 10 ? " · 仅日期" : " · 北京时间"}
           {node.manual ? " · 我的安排" : ""}
         </p>

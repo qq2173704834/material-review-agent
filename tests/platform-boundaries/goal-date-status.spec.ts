@@ -103,7 +103,7 @@ test("BUG056 已选考期却无公告和公告确实未给日期保持不同提�
     ).json()
   ).goal;
   await page.goto(`/me/schedule?goal=${known.id}&pending=1`);
-  await expect(page.getByText("时间待公布", { exact: true })).toBeVisible();
+  await expect(page.getByText("考试日期未收录", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "选择考期", exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "查看来源", exact: true })).toHaveAttribute(
     "href",

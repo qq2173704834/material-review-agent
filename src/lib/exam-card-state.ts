@@ -1,8 +1,10 @@
-import { beijingDay, nodeTimestamp } from "./portal-feed.ts";
+import { nodeTimestamp } from "./portal-feed.ts";
+import { examTimeline, type ExamTimePoint } from "./exam-timeline.ts";
 interface ExamSchedule {
   stage?: string;
   disposition: string;
-  timeline: Array<{ label: string; value: string }>;
+  timeline: ExamTimePoint[];
+  title?: string;
 }
 export interface ExamCardState {
   kind: "registration" | "exam" | "upcoming" | "closed" | "unknown" | "paused";
@@ -12,6 +14,7 @@ export interface ExamCardState {
   current: boolean;
 }
 export function examCardState(content: ExamSchedule, now = Date.now()): ExamCardState {
+  const timeline = examTimeline(content);
   if (content.disposition !== "正常")
     return {
       kind: "paused",
@@ -21,7 +24,7 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
       current: false,
     };
   if (content.stage === "成绩") {
-    const resultDate = content.timeline.find((node) => node.label === "成绩")?.value;
+    const resultDate = timeline.find((node) => node.label === "成绩")?.value;
     const isFuture = !!resultDate && nodeTimestamp(resultDate) > now;
     return {
       kind: "upcoming",
@@ -31,8 +34,8 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
       current: false,
     };
   }
-  const start = content.timeline.find((node) => node.label === "报名开始")?.value ?? "",
-    end = content.timeline.find((node) => node.label === "报名截止")?.value ?? "";
+  const start = timeline.find((node) => node.label === "报名开始")?.value ?? "",
+    end = timeline.find((node) => node.label === "报名截止")?.value ?? "";
   const startTime = nodeTimestamp(start),
     endTime = nodeTimestamp(end) + (end.length === 10 ? 86400000 - 1 : 0);
   if (
@@ -53,13 +56,20 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
       current: true,
     };
   }
-  const exams = content.timeline.filter(
-    (node) => /^(笔试|面试|考试)$/.test(node.label) && Number.isFinite(nodeTimestamp(node.value)),
+  const exams = timeline.filter(
+    (node) =>
+      /^(笔试|面试|口试|考试)$/.test(node.label) && Number.isFinite(nodeTimestamp(node.value)),
   );
-  if (exams.some((node) => beijingDay(nodeTimestamp(node.value)) === beijingDay(now)))
+  const examEnd = (point: ExamTimePoint): number => {
+    const value = point.endValue || point.value.slice(0, 10);
+    return nodeTimestamp(value) + (value.length === 10 ? 86400000 - 1 : 0);
+  };
+  if (exams.some((node) => now >= nodeTimestamp(node.value) && now <= examEnd(node)))
     return {
       kind: "exam",
-      label: "今日考试",
+      label: exams.some((node) => node.endValue && node.endValue !== node.value)
+        ? "考试进行中"
+        : "今日考试",
       tone: "blue",
       detail: "今日有已公布考试安排，具体场次以准考证为准",
       current: true,
@@ -80,6 +90,14 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
       detail: "已公布后续考试节点，请核对具体安排",
       current: false,
     };
+  if (exams.length && exams.every((point) => examEnd(point) < now))
+    return {
+      kind: "closed",
+      label: "考试已结束",
+      tone: "gray",
+      detail: "本考期已公布的考试日期已过",
+      current: false,
+    };
   if (Number.isFinite(endTime) && endTime < now)
     return {
       kind: "closed",
@@ -90,9 +108,13 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
     };
   return {
     kind: "unknown",
-    label: "时间待确认",
+    label: /证书|合格证/u.test(content.title || "")
+      ? "证书通知"
+      : content.stage === "考试"
+        ? "考试通知"
+        : "日程未收录",
     tone: "amber",
-    detail: "尚无完整适用时间，不推断当前可报名",
+    detail: "本公告未列完整日程，可查看原文或对应考期的安排通知",
     current: false,
   };
 }

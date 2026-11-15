@@ -59,6 +59,8 @@ export interface CampusNotice {
   updatedAt: string;
   withdrawn?: boolean;
   relatedUrls?: string[];
+  contentStatus?: "external_link";
+  listingUrl?: string;
 }
 export interface CampusState {
   revision: number;

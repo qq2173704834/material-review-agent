@@ -1,6 +1,7 @@
 import { personalSchedule } from "./personal-schedule";
 import { scheduleDate } from "@/lib/schedule";
 import { campusState, campusNotices } from "./campus-store";
+import { reviewedExamDates } from "@/lib/exam-timeline";
 import { campusQuestionEvents } from "@/lib/campus";
 import { CAMPUS_SCHOOLS } from "@/domain/campus-schools";
 import "server-only";
@@ -82,7 +83,7 @@ export function assistantSources(userId: string, input: AssistantInput): Context
     const notices = /本周|今天/u.test(input.question)
       ? []
       : campusNotices(state.preferences.schoolId)
-          .filter((notice) => !notice.withdrawn)
+          .filter((notice) => !notice.withdrawn && notice.contentStatus !== "external_link")
           .slice(0, 8);
     const publicSources: ContextSource[] = notices.map((notice) => ({
       id: notice.id,
@@ -135,7 +136,7 @@ export function assistantSources(userId: string, input: AssistantInput): Context
             node.origin === "campus"
               ? node.href
               : `/me/schedule${node.goalIds[0] ? `?goal=${node.goalIds[0]}` : ""}`,
-          text: `${node.title}；${node.label}；时间：${node.value || "时间待公布"}；课程：${event.course}；地点：${event.location}；备注：${event.note}`,
+          text: `${node.title}；${node.label}；时间：${node.value || "时间待定"}${node.endValue ? ` 至 ${node.endValue}` : ""}；课程：${event.course}；地点：${event.location}；备注：${event.note}`,
           checkedAt: "",
           scope: "本人日程",
           historical: false,
@@ -165,22 +166,54 @@ export function assistantSources(userId: string, input: AssistantInput): Context
           (!goal || item.content.region === "全国" || item.content.region === goal.region) &&
           (!goal || goal.edition === "待确认考期" || item.content.edition === goal.edition),
       )
-      .map((item) => ({
-        id: item.id,
-        version: item.version,
-        title: item.content.title,
-        url: `/exams/${item.id}`,
-        text: item.content.text,
-        checkedAt: item.last_success ?? item.content.publishedAt,
-        scope: `${item.content.region} · ${item.content.edition} · ${item.content.audience}`,
-        historical:
-          item.content.disposition !== "正常" ||
-          catalogLifecycle(
-            knowledge,
-            item.content.category,
-            region ?? goal?.region ?? item.content.region,
-          ).blocked,
-      })),
+      .flatMap((item) => {
+        const reference = reviewedExamDates(item.content);
+        const supplement: ContextSource[] = reference
+          ? [
+              {
+                id: `dates:${item.id}`,
+                version: item.version,
+                title: reference.sourceTitle,
+                url: reference.sourceUrl,
+                text:
+                  reference.timeline
+                    .map(
+                      (point) =>
+                        `${point.label}：${point.value}${"endValue" in point ? ` 至 ${point.endValue}` : ""}；${point.quote}`,
+                    )
+                    .join("\n") + `\n${reference.note}`,
+                checkedAt: reference.checkedAt,
+                scope: `${item.content.region} · ${item.content.edition}`,
+                historical:
+                  item.content.disposition !== "正常" ||
+                  catalogLifecycle(
+                    knowledge,
+                    item.content.category,
+                    region ?? goal?.region ?? item.content.region,
+                  ).blocked,
+              },
+            ]
+          : [];
+        return [
+          ...supplement,
+          {
+            id: item.id,
+            version: item.version,
+            title: item.content.title,
+            url: `/exams/${item.id}`,
+            text: item.content.text,
+            checkedAt: item.last_success ?? item.content.publishedAt,
+            scope: `${item.content.region} · ${item.content.edition} · ${item.content.audience}`,
+            historical:
+              item.content.disposition !== "正常" ||
+              catalogLifecycle(
+                knowledge,
+                item.content.category,
+                region ?? goal?.region ?? item.content.region,
+              ).blocked,
+          },
+        ];
+      }),
     ...knowledge
       .filter((item) =>
         input.learning ? item.content.kind !== "school" : item.content.kind === "knowledge",

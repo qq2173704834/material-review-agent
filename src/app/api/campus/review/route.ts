@@ -24,6 +24,8 @@ export async function POST(request: Request): Promise<Response> {
       );
     if (!notice || notice.withdrawn || notice.digest !== input.digest)
       throw new Error("通知已更新或不属于当前学校，请刷新核对。");
+    if (notice.contentStatus === "external_link")
+      throw new Error("请先导入原文中的材料要求，再进行材料自查。");
     if (!/(?:提交|上传|报送|提供)[^。\n]{0,60}(?:申请表|证明|报告|附件|材料)/u.test(notice.text))
       throw new Error("该通知没有识别到明确材料要求，请先核对原文。");
     const db = campusDb(),

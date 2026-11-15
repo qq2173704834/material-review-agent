@@ -2,6 +2,7 @@ import officialSourceProvenance from "@/domain/official-source-provenance.json";
 import { EXAM_PORTALS } from "@/domain/exam-portals";
 import provincialSources from "@/domain/provincial-exam-sources.json";
 import "server-only";
+import { examTimeline, unrecordedExamDates } from "@/lib/exam-timeline";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { EXAM_CATEGORIES, EXAM_REGIONS, EXAM_STAGES, TIMELINE_LABELS } from "@/domain/exam-catalog";
@@ -40,11 +41,12 @@ export const noticeInputSchema = z
           .object({
             label: z.enum(TIMELINE_LABELS),
             value: z.string().max(40),
+            endValue: z.string().max(40).optional(),
             quote: z.string().max(2000),
           })
           .strict(),
       )
-      .max(7)
+      .max(TIMELINE_LABELS.length)
       .default([]),
     attachments: z
       .array(
@@ -257,19 +259,33 @@ export function saveDraft(
   })();
 }
 export function validatePublication(content: NoticeContent): void {
+  if (unrecordedExamDates(content).length)
+    throw new Error("正文已有明确考试日期，请补齐对应考试时间后发布。");
   const labels = new Set<string>();
   for (const point of content.timeline) {
     if (labels.has(point.label)) throw new Error("时间节点重复。");
     labels.add(point.label);
+    if (!point.value && point.endValue) throw new Error("时间范围需要开始日期。");
     if (!point.value) continue;
+    for (const value of [point.value, point.endValue].filter((value): value is string => !!value)) {
+      if (
+        !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}\+08:00)?$/.test(value) ||
+        !Number.isFinite(Date.parse(value)) ||
+        (value.length > 10 &&
+          (Number(value.slice(11, 13)) > 23 ||
+            Number(value.slice(14, 16)) > 59 ||
+            Number(value.slice(17, 19)) > 59))
+      )
+        throw new Error("日期须为YYYY-MM-DD或带+08:00的完整时间；未知请留空。");
+      const date = value.slice(0, 10);
+      const normalized = new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10);
+      if (normalized !== date) throw new Error("日期不存在，不能发布。");
+    }
     if (
-      !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}\+08:00)?$/.test(point.value) ||
-      !Number.isFinite(Date.parse(point.value))
+      point.endValue &&
+      (point.endValue.length !== point.value.length || point.endValue < point.value)
     )
-      throw new Error("日期须为YYYY-MM-DD或带+08:00的完整时间；未知请留空。");
-    const date = point.value.slice(0, 10);
-    const normalized = new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10);
-    if (normalized !== date) throw new Error("日期不存在，不能发布。");
+      throw new Error("时间范围应使用相同精度，结束不能早于开始。");
     if (!point.quote || !content.text.includes(point.quote))
       throw new Error("每项已知日期需要可在原文中定位的引用。");
   }
@@ -368,8 +384,8 @@ export function favorite(userId: string, id: string, enabled: boolean, seen = fa
 }
 export function registrationState(content: NoticeContent, now = Date.now()): string {
   if (content.disposition !== "正常") return content.disposition;
-  const start = content.timeline.find((p) => p.label === "报名开始")?.value;
-  const end = content.timeline.find((p) => p.label === "报名截止")?.value;
+  const start = examTimeline(content).find((p) => p.label === "报名开始")?.value;
+  const end = examTimeline(content).find((p) => p.label === "报名截止")?.value;
   if (!start || !end) return "报名时间未完整确认";
   if (start.length === 10 || end.length === 10) return "仅公布日期，请核对官方具体时刻";
   if (now < Date.parse(start)) return "尚未开始";

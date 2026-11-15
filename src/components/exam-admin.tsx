@@ -336,6 +336,7 @@ export function ExamAdmin(): ReactElement {
             const timeline = TIMELINE_LABELS.map((label, index) => ({
               label,
               value: String(values[`time${index}`] ?? ""),
+              ...(values[`timeEnd${index}`] ? { endValue: String(values[`timeEnd${index}`]) } : {}),
               quote: String(values[`quote${index}`] ?? ""),
             })).filter((p) => p.value || p.quote);
             let attachments;
@@ -583,6 +584,15 @@ export function ExamAdmin(): ReactElement {
                   maxLength={40}
                   className={field}
                   defaultValue={content?.timeline.find((t) => t.label === label)?.value}
+                />
+              </label>
+              <label>
+                结束时间（可选，用于多日考试或时间范围）
+                <input
+                  name={`timeEnd${index}`}
+                  maxLength={40}
+                  className={field}
+                  defaultValue={content?.timeline.find((t) => t.label === label)?.endValue}
                 />
               </label>
               <label>

@@ -1,3 +1,4 @@
+import { examTimeline } from "@/lib/exam-timeline";
 import { CampusSummary } from "@/components/campus-summary";
 import { connection } from "next/server";
 import { examCardState } from "@/lib/exam-card-state";
@@ -40,7 +41,7 @@ export default async function Home({
   const recent = items.filter(
     (item) =>
       item.content.disposition === "正常" &&
-      item.content.timeline.some((node) => isUpcoming(node.value, now, options.days)),
+      examTimeline(item.content).some((node) => isUpcoming(node.value, now, options.days)),
   );
   const latest = [...items].sort((a, b) => b.created_at.localeCompare(a.created_at));
   const popular = platformDb()
@@ -66,7 +67,7 @@ export default async function Home({
       title: "考试临近",
       description: `未来${options.days}天内及今日的已公布考试安排。`,
       items: recent.filter((item) =>
-        item.content.timeline.some(
+        examTimeline(item.content).some(
           (node) =>
             /^(考试|笔试|面试)$/.test(node.label) && isUpcoming(node.value, now, options.days),
         ),
@@ -83,7 +84,7 @@ export default async function Home({
       title: "即将截止",
       description: "未来7天内的报名截止安排，具体时刻请核对官方公告。",
       items: recent.filter((item) =>
-        item.content.timeline.some(
+        examTimeline(item.content).some(
           (node) => node.label === "报名截止" && isUpcoming(node.value, now, 7),
         ),
       ),
@@ -112,7 +113,7 @@ export default async function Home({
   const selected = sections.find((section) => section.id === filters.tab) ?? defaultSection;
   const nextEvent = recent
     .flatMap((item) =>
-      item.content.timeline
+      examTimeline(item.content)
         .filter(
           (node) =>
             isUpcoming(node.value, now, 90) &&
@@ -254,8 +255,9 @@ export default async function Home({
                           {CATEGORY_LABELS[item.content.category]}
                         </span>
                         <ExamStatus
+                          title={item.content.title}
                           disposition={item.content.disposition}
-                          timeline={item.content.timeline}
+                          timeline={examTimeline(item.content)}
                           stage={item.content.stage}
                           initialNow={now}
                         />
@@ -277,7 +279,7 @@ export default async function Home({
                       </p>
                       <RegistrationDeadline
                         disposition={item.content.disposition}
-                        timeline={item.content.timeline}
+                        timeline={examTimeline(item.content)}
                         stage={item.content.stage}
                         initialNow={now}
                       />

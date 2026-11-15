@@ -17,6 +17,13 @@ export function campusDb(): ReturnType<typeof platformDb> {
     CREATE TABLE IF NOT EXISTS campus_school_requests_v2(user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, request_key TEXT NOT NULL, url TEXT NOT NULL DEFAULT '', name TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY(user_id,request_key));
     INSERT OR IGNORE INTO campus_school_requests_v2(user_id,request_key,url,name,created_at)
       SELECT user_id,'legacy:' || url,url,name,created_at FROM campus_school_requests;`);
+  if (
+    !db
+      .prepare("PRAGMA table_info(campus_source_runs)")
+      .all()
+      .some((column) => (column as { name: string }).name === "summary")
+  )
+    db.exec("ALTER TABLE campus_source_runs ADD COLUMN summary TEXT");
   const seed = db.prepare(
     "INSERT OR IGNORE INTO campus_notices(id,school_id,payload) VALUES (?,?,?)",
   );
@@ -90,6 +97,8 @@ export function mutateCampus(userId: string, raw: unknown): CampusState {
             : campusNotices(state.preferences.schoolId).find((item) => item.id === event.sourceId);
           if (!notice || notice.withdrawn || notice.digest !== event.sourceDigest)
             throw new Error("通知已更新，请重新预览后加入日程。");
+          if (notice.contentStatus === "external_link")
+            throw new Error("请阅读原文后自行添加日程，这条通知没有可用于识别安排的正文。");
         }
         const same = state.events.find(
           (item) =>
@@ -157,6 +166,8 @@ export function saveCampusNotice(notice: CampusNotice): void {
     .get(notice.id);
   if (prior) {
     const previous = JSON.parse(prior.payload) as CampusNotice;
+    if (notice.contentStatus === "external_link" && previous.text.trim() && !previous.contentStatus)
+      return;
     if (previous.digest !== notice.digest)
       db.prepare(
         "INSERT OR IGNORE INTO campus_notice_history(notice_id,digest,payload) VALUES (?,?,?)",

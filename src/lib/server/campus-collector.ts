@@ -3,7 +3,8 @@ import { CAMPUS_SOURCES } from "@/domain/campus-schools";
 import { campusArticle, campusPublicationDate, campusArticleTitle } from "@/lib/campus-article";
 import { decodeHtml } from "@/lib/html-decoding";
 import { campusSourceLinks } from "@/lib/campus-source-links";
-import { fetchPublicResource, fetchPublicWebpage } from "./webpage-fetcher";
+import { campusExternalEntries } from "@/lib/campus-listing";
+import { extractWebpageContent, fetchPublicResource } from "./webpage-fetcher";
 import { campusDb, campusDigest, saveCampusNotice } from "./campus-store";
 
 export async function collectCampusSource(id: string): Promise<number> {
@@ -23,13 +24,56 @@ export async function collectCampusSource(id: string): Promise<number> {
     .run(now + 180000, id, now);
   if (!locked.changes) return 0;
   try {
-    const page = await fetchPublicWebpage(source.url);
-    if (new URL(page.url).origin !== new URL(source.url).origin)
-      throw new Error("通知列表跳转至其他站点。");
-    const links = campusSourceLinks(page.links, source);
-    if (!links.length) throw new Error("未识别到通知链接，等待维护核对。");
+    const links = new Set<string>();
+    let indexed = 0;
+    const indexedUrls = new Set<string>();
+    let pageFailures = 0;
+    // Only the two verified SYSU list pages are read. External bodies are never fetched.
+    const listingUrls =
+      source.externalListing === "sysu" ? [source.url, `${source.url}?page=1`] : [source.url];
+    for (const listingUrl of listingUrls) {
+      try {
+        const resource = await fetchPublicResource(listingUrl);
+        if (
+          new URL(resource.url).origin !== new URL(source.url).origin ||
+          !/text\/html|application\/xhtml\+xml/iu.test(resource.contentType)
+        )
+          throw new Error("通知列表不是登记站点的HTML页面。");
+        const html = decodeHtml(resource.bytes, resource.contentType);
+        const page = extractWebpageContent(html, resource.url);
+        for (const url of campusSourceLinks(page.links, source)) links.add(url);
+        if (source.externalListing) {
+          for (const entry of campusExternalEntries(html, resource.url)) {
+            if (indexedUrls.has(entry.url)) continue;
+            saveCampusNotice({
+              ...entry,
+              id: campusDigest(`${source.schoolId}:${entry.url}`).slice(0, 32),
+              schoolId: source.schoolId,
+              department: source.department,
+              text: "",
+              contentStatus: "external_link",
+              listingUrl: resource.url,
+              category: /奖学金|评优|资助/u.test(entry.title)
+                ? "奖助评优"
+                : /竞赛|大赛/u.test(entry.title)
+                  ? "竞赛"
+                  : /教务|本科生院/u.test(source.department)
+                    ? "教务考试"
+                    : "校园活动",
+              digest: campusDigest(entry.title + entry.publishedAt + entry.url),
+              updatedAt: new Date().toISOString(),
+            });
+            indexed++;
+            indexedUrls.add(entry.url);
+          }
+        }
+      } catch {
+        pageFailures++;
+      }
+    }
     let count = 0;
-    for (const url of links) {
+    const articleUrls = [...links].slice(0, 10);
+    for (const url of articleUrls) {
       try {
         const resource = await fetchPublicResource(url);
         if (new URL(resource.url).origin !== new URL(source.url).origin)
@@ -62,14 +106,19 @@ export async function collectCampusSource(id: string): Promise<number> {
         /* Keep last successful notice; other details remain independent. */
       }
     }
-    if (!count) throw new Error("详情未能获取，保留已有通知。");
-    db.prepare("UPDATE campus_source_runs SET next_run=?,last_success=?,error=? WHERE id=?").run(
+    if (!count && !indexed) throw new Error("通知未能获取，保留已有通知。");
+    db.prepare(
+      "UPDATE campus_source_runs SET next_run=?,last_success=?,summary=?,error=? WHERE id=?",
+    ).run(
       now + intervalMs,
       new Date().toISOString(),
-      count < links.length ? `部分读取：${count}/${links.length}` : null,
+      `全文${count}/${articleUrls.length}；官网外链索引${indexed}条（未读取外链正文）`,
+      count < articleUrls.length || pageFailures
+        ? `部分读取：全文${count}/${articleUrls.length}；列表失败${pageFailures}页`
+        : null,
       id,
     );
-    return count;
+    return count + indexed;
   } catch (error) {
     db.prepare("UPDATE campus_source_runs SET next_run=?,error=? WHERE id=?").run(
       now + intervalMs,

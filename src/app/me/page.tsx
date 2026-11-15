@@ -1,3 +1,4 @@
+import { examTimeline } from "@/lib/exam-timeline";
 import { personalSchedule } from "@/lib/server/personal-schedule";
 import { safeBrowseReturn } from "@/lib/browse-return";
 import { savedLearningItems } from "@/lib/server/learning-store";
@@ -172,15 +173,16 @@ export default async function Page({
                 <p>
                   {item.changed ? "未读 · 公告有更新" : "已读"} ·{" "}
                   <ExamStatus
+                    title={item.content.title}
                     disposition={item.withdrawn ? "公告已撤回" : item.content.disposition}
-                    timeline={item.content.timeline}
+                    timeline={examTimeline(item.content)}
                     stage={item.content.stage}
                     initialNow={now}
                   />
                 </p>
                 <RegistrationDeadline
                   disposition={item.withdrawn ? "公告已撤回" : item.content.disposition}
-                  timeline={item.content.timeline}
+                  timeline={examTimeline(item.content)}
                   stage={item.content.stage}
                   initialNow={now}
                 />

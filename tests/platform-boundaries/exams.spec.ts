@@ -13,6 +13,20 @@ import type { ReviewTaskDetails } from "../../src/domain/review";
 
 const invalidPublications: Array<[string, Partial<NoticeContent>, RegExp]> = [
   [
+    "结束早于开始",
+    {
+      timeline: [{ label: "考试", value: "2027-03-22", endValue: "2027-03-21", quote: "合成通知" }],
+    },
+    /结束不能早于开始/,
+  ],
+  [
+    "结束日期不存在",
+    {
+      timeline: [{ label: "考试", value: "2027-02-28", endValue: "2027-02-30", quote: "合成通知" }],
+    },
+    /日期不存在/,
+  ],
+  [
     "不存在的日期",
     { timeline: [{ label: "报名开始", value: "2027-02-30", quote: "合成通知" }] },
     /日期不存在/,
@@ -75,12 +89,12 @@ test("日期未知允许发布并明确未知；仅有日期不推断具体报�
   );
   await publish(actors.admin, unknown.id);
   expect(await (await actors.student.api.get(`/exams/${unknown.id}`)).text()).toContain(
-    "时间待确认",
+    "日程未收录",
   );
   const datesOnly = await draft(actors.admin);
   await publish(actors.admin, datesOnly.id);
   expect(await (await actors.student.api.get(`/exams/${datesOnly.id}`)).text()).toContain(
-    "仅日期，具体时刻未公布",
+    "具体时刻见原文",
   );
 });
 

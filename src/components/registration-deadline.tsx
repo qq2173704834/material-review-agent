@@ -18,7 +18,8 @@ function useCurrentTime(initialNow: number): number {
 }
 interface ScheduleProps {
   disposition: string;
-  timeline: Array<{ label: string; value: string }>;
+  timeline: Array<{ label: string; value: string; endValue?: string }>;
+  title?: string;
   initialNow: number;
   stage?: string;
 }

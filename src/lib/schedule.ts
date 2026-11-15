@@ -7,6 +7,7 @@ export interface ScheduleNode {
   title: string;
   label: string;
   value: string;
+  endValue?: string;
   href: string;
   group: ScheduleGroup;
   goalIds: string[];
@@ -26,7 +27,7 @@ export function missingScheduleDateLabel(node: Pick<ScheduleNode, "missingDateRe
     ? "尚未选择考期"
     : node.missingDateReason === "source-unlinked"
       ? "尚未关联考试公告"
-      : "时间待公布";
+      : "考试日期未收录";
 }
 
 export function scheduleGroup(label: string): ScheduleGroup {

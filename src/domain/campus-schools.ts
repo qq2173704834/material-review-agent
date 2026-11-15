@@ -172,6 +172,7 @@ export interface CampusSource {
   pattern: string;
   profile?: CampusArticleProfile;
   linkTextPattern?: string;
+  externalListing?: "sysu" | "webplus";
 }
 
 export const CAMPUS_SOURCES: readonly CampusSource[] = [
@@ -194,14 +195,15 @@ export const CAMPUS_SOURCES: readonly CampusSource[] = [
     schoolId: "sspu",
     department: "学生工作处",
     url: "https://xsc.sspu.edu.cn/490/list.htm",
+    externalListing: "webplus",
     pattern: "/20\\d{2}/\\d{4}/c490a\\d+/page.htm",
   },
   {
     id: "shnu-jwc",
     schoolId: "shnu",
     department: "教务处",
-    url: "https://jwc.shnu.edu.cn/tzgg/list.htm",
-    pattern: "/[a-f0-9]{2}/[a-f0-9]{2}/c\\d+a\\d+/page.htm",
+    url: "https://jwc.shnu.edu.cn/17118/list.htm",
+    pattern: "/[a-f0-9]{2}/[a-f0-9]{2}/c17118a\\d+/page.htm",
   },
   {
     id: "sues-jwc",
@@ -249,6 +251,7 @@ export const CAMPUS_SOURCES: readonly CampusSource[] = [
     url: "https://jwb.sysu.edu.cn/newscenter/notice",
     pattern: "^/article/\\d+$",
     profile: "sysu",
+    externalListing: "sysu",
   },
   {
     id: "scu-jwc",

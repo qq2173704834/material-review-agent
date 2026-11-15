@@ -494,7 +494,9 @@ export function PreparationCenter({
             </div>
             <div className="prep-countdown">
               <p>{upcoming[0]?.label ?? "考试时间"}</p>
-              <strong>{upcoming[0] ? countdownLabel(upcoming[0].date, now) : "待公布"}</strong>
+              <strong>
+                {upcoming[0] ? countdownLabel(upcoming[0].date, now) : "暂无近期安排"}
+              </strong>
               {upcoming[0] && <p>{formatExamTime(upcoming[0].date)}</p>}
             </div>
           </section>

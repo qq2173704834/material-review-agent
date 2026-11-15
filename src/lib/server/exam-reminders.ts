@@ -1,3 +1,4 @@
+import { examTimeline } from "@/lib/exam-timeline";
 import "server-only";
 import { platformDb } from "./platform-db";
 import { favorites, listNotices, type ExamNotice } from "./exam-store";
@@ -45,7 +46,7 @@ export function examReminders(
         !catalogLifecycle(knowledge, item.content.category, item.content.region).blocked,
     )
     .flatMap((item) =>
-      item.content.timeline
+      examTimeline(item.content)
         .filter((point) => isUpcoming(point.value, now))
         .map((point) => ({
           id: item.id,
