@@ -3,6 +3,11 @@ import assert from "node:assert/strict";
 import { decodeHtml } from "../../src/lib/html-decoding.ts";
 const legacy = (head) =>
   Buffer.concat([Buffer.from(head), Buffer.from("d6d0cec4", "hex"), Buffer.from("</title>")]);
+test("BUG053 混合编码头仅在首声明和文档meta一致时接受", () => {
+  const text = '<meta charset="utf-8"><title>通知正文</title>';
+  assert.equal(decodeHtml(Buffer.from(text), "text/html; charset=utf-8,gbk"), text);
+  assert.throws(() => decodeHtml(Buffer.from(text), "text/html; charset=gbk,utf-8"), /不支持/u);
+});
 test("仅HTML声明的GB2312/GBK页面保留中文标题而非乱码", () => {
   for (const head of [
     '<meta http-equiv="Content-Type" content="text/html; charset=gb2312"><title>',

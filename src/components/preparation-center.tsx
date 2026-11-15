@@ -655,7 +655,9 @@ export function PreparationCenter({
               )}
             </section>
           </div>
-          {!events.some((event) => /笔试|考试|口试|面试/.test(event.label)) &&
+          {!events.some(
+            (event) => event.href.startsWith("/exams/") && /笔试|考试|口试|面试/.test(event.label),
+          ) &&
             goal.state === "active" && (
               <section className="surface">
                 <h3 className="font-semibold">时间待公布</h3>

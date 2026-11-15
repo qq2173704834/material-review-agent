@@ -1,4 +1,11 @@
-import { BookOpen, ClipboardCheck, LayoutDashboard, Compass, Files } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardCheck,
+  LayoutDashboard,
+  Compass,
+  Files,
+  GraduationCap,
+} from "lucide-react";
 import Link from "next/link";
 import {
   AccountMenu,
@@ -11,7 +18,8 @@ import { cn } from "@/lib/utils";
 import type { ReactElement, ReactNode } from "react";
 
 interface AppShellProps {
-  activePage: "home" | "learn" | "tasks" | "setup" | "task-detail" | "exams" | "me" | "admin";
+  activePage:
+    "home" | "learn" | "tasks" | "setup" | "task-detail" | "exams" | "me" | "admin" | "campus";
   children: ReactNode;
 }
 
@@ -20,6 +28,7 @@ const navigationItems = [
   { page: "learn", href: "/learn", title: "学习", icon: BookOpen },
   { page: "exams", href: "/exams", title: "考试中心", icon: Compass },
   { page: "me", href: "/me", title: "备考中心", icon: ClipboardCheck },
+  { page: "campus", href: "/campus", title: "校园事务", icon: GraduationCap },
   { page: "tasks", href: "/tasks", title: "材料预审", icon: Files },
 ] as const;
 
@@ -52,7 +61,7 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
 
           <nav
             aria-label="主导航"
-            className="flex w-full flex-wrap items-center gap-1 px-3 pb-3 lg:mt-3 lg:block lg:space-y-2 lg:px-4"
+            className="grid w-full grid-cols-3 items-center gap-1 sm:flex sm:flex-wrap px-3 pb-3 lg:mt-3 lg:block lg:space-y-2 lg:px-4"
           >
             {navigationItems.map(({ page, href, title, icon: Icon }) => (
               <Link
@@ -88,9 +97,11 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
                       ? "考试中心"
                       : activePage === "me"
                         ? "备考中心"
-                        : activePage === "admin"
-                          ? "内容管理"
-                          : "审查任务"}
+                        : activePage === "campus"
+                          ? "校园事务"
+                          : activePage === "admin"
+                            ? "内容管理"
+                            : "审查任务"}
             </p>
             <AccountMenu />
           </header>

@@ -1,3 +1,4 @@
+import { campusCollectorTick } from "./campus-collector";
 import { beijingDay } from "@/lib/portal-feed";
 import { classifyExamTitle, classifyExamCategories } from "@/lib/exam-discovery";
 import { dueCollectorSources } from "@/lib/collector-schedule";
@@ -112,6 +113,10 @@ export async function collectorTick(
   if (ticking) return;
   ticking = true;
   try {
+    if (collect === collectSource)
+      void campusCollectorTick().catch(() => {
+        /* Per-source failures are persisted by the campus scheduler. */
+      });
     const day = beijingDay(),
       db = platformDb(),
       enabled = sources().filter((source) => source.enabled);

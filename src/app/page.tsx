@@ -1,3 +1,4 @@
+import { CampusSummary } from "@/components/campus-summary";
 import { connection } from "next/server";
 import { examCardState } from "@/lib/exam-card-state";
 import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
@@ -150,6 +151,7 @@ export default async function Home({
             <StudyIllustration />
           </div>
         </header>
+        <CampusSummary now={now} />
         {nextEvent && (
           <Link href={`/exams/${nextEvent.item.id}`} className="next-event-strip">
             <span className="next-event-icon">

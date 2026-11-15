@@ -1,3 +1,6 @@
+import { campusState, campusNotices, campusDisplayEvents } from "./campus-store";
+import { campusQuestionEvents } from "@/lib/campus";
+import { CAMPUS_SCHOOLS } from "@/domain/campus-schools";
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -71,6 +74,41 @@ export function assistantUsage(userId: string): {
   return usage;
 }
 export function assistantSources(userId: string, input: AssistantInput): ContextSource[] {
+  if (/学校|校园|校内|作业|期中|期末|本周|今天先做/u.test(input.question)) {
+    const state = campusState(userId),
+      school = CAMPUS_SCHOOLS.find((item) => item.id === state.preferences.schoolId);
+    const notices = /本周|今天/u.test(input.question)
+      ? []
+      : campusNotices(state.preferences.schoolId)
+          .filter((notice) => !notice.withdrawn)
+          .slice(0, 8);
+    const publicSources: ContextSource[] = notices.map((notice) => ({
+      id: notice.id,
+      version: 1,
+      title: notice.title,
+      url: notice.url,
+      text: notice.text,
+      checkedAt: notice.updatedAt.slice(0, 10),
+      scope: `${school?.name || "本校"} · ${notice.publishedAt} · ${notice.department}`,
+      historical: false,
+      sourceType: "官方来源",
+    }));
+    const personalSources: ContextSource[] = input.useContext
+      ? campusQuestionEvents(campusDisplayEvents(userId), input.question, Date.now())
+          .slice(0, 8)
+          .map((event) => ({
+            id: event.id,
+            version: state.revision || 1,
+            title: event.title,
+            url: "/campus",
+            text: `${event.title}；${event.kind}；课程：${event.course}；开始：${event.start || "时间待定"}；结束/截止：${event.end || "时间待定"}；地点：${event.location}；备注：${event.note}`,
+            checkedAt: "",
+            scope: "本人校园日程",
+            historical: false,
+          }))
+      : [];
+    return [...personalSources, ...publicSources].slice(0, 8);
+  }
   const goal = input.useContext && input.goalId ? studentGoal(userId, input.goalId) : undefined;
   if (input.useContext && input.goalId && !goal) throw new Error("考试目标不存在。");
   const explicitCategory = classifyExamTitle(input.question, "education-local");
@@ -269,7 +307,29 @@ export async function askExamAssistant(
           .map(([, edition]) => edition)
           .filter((edition) => edition && edition !== "待确认考期"),
       ).size > 1;
-    if (!input.learning && sources.length && (scopeUnknown || scopeConflict)) {
+    if (/学校|校园|校内|作业|期中|期末|本周|今天先做/u.test(input.question)) {
+      answer = {
+        answer: sources.length
+          ? `找到以下${input.useContext ? "本人与本校" : "本校公开"}安排：\n${sources.map((source) => `${source.title}：${source.text.slice(0, 300)}`).join("\n\n")}\n需要添加或调整日程时，请到校园事务核对预览后保存。`
+          : `尚无可用的${input.useContext ? "个人或本校" : "本校公开"}安排。请先在校园事务选择学校或导入收到的通知。${input.useContext ? "" : "查询私人作业和考试时，请启用个人上下文。"}`,
+        ...(/添加|新建|安排|调整|改到/u.test(input.question)
+          ? {
+              actionLink: {
+                href: `/campus?proposal=${encodeURIComponent(input.question)}${input.useContext && campusState(userId).events.filter((event) => input.question.includes(event.title)).length === 1 ? `&edit=${campusState(userId).events.find((event) => input.question.includes(event.title))!.id}` : ""}`,
+                label: "核对日程建议",
+              },
+            }
+          : {}),
+        kind: "学习建议",
+        mode: "retrieval",
+        conversationId,
+        citations: sources.map(({ text, historical, ...source }) => {
+          void historical;
+          return { ...source, quote: text.slice(0, 300) };
+        }),
+        warning: "",
+      };
+    } else if (!input.learning && sources.length && (scopeUnknown || scopeConflict)) {
       answer = {
         answer:
           "请确认考试、地区、具体考期和科目后再咨询，或选择明确的考试目标并授权使用。本次资料的适用范围尚未统一，或已登记相互冲突，不能拼接成确定结论。",

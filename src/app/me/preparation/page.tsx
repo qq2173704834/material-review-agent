@@ -1,3 +1,4 @@
+import { campusDisplayEvents } from "@/lib/server/campus-store";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -129,7 +130,18 @@ export default async function Page({
         initialState={preparationState(account.id, goal.id)}
         initialView={filters.view ?? "overview"}
         initialStage={filters.stage ?? ""}
-        events={events}
+        events={[
+          ...events,
+          ...campusDisplayEvents(account.id)
+            .filter((event) => !event.done)
+            .map((event) => ({
+              id: event.id,
+              date: event.kind === "考试" ? event.start : event.end || event.start,
+              label: event.kind,
+              title: event.title,
+              href: "/campus",
+            })),
+        ]}
         resources={preparationResources(account.id, goal.id).map((item) => ({
           id: item.id,
           version: item.version,

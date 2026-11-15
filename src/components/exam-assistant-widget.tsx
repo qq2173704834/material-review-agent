@@ -329,6 +329,14 @@ function AssistantPanel(): ReactElement {
                         </p>
                       </details>
                     )}
+                    {message.payload.actionLink?.href.startsWith("/campus?") && (
+                      <Link
+                        className="button-secondary mt-3"
+                        href={message.payload.actionLink.href}
+                      >
+                        {message.payload.actionLink.label}
+                      </Link>
+                    )}
                     {message.payload.answer && (
                       <ContentFeedback
                         answer={message.payload.answer}

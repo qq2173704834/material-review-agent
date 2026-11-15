@@ -106,6 +106,9 @@ export function AccountNavigation(): ReactElement {
           <Link href="/admin/exams" className="account-admin-link">
             内容管理
           </Link>
+          <Link href="/admin/campus" className="account-admin-link">
+            校园来源
+          </Link>
           <Link href="/admin/learning" className="account-admin-link">
             学习与知识管理
           </Link>

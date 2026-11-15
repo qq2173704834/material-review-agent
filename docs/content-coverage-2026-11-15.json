@@ -1,0 +1,180 @@
+{
+  "scope": "仅审计仓库公共内容快照，不访问现用用户数据库；数量不代表独立教学质量验收。",
+  "examDirectory": 79,
+  "originalResources": 123,
+  "examResources": 100,
+  "certificateOverviewReferences": 11,
+  "coverage": [
+    {
+      "category": "cet4",
+      "label": "大学英语四级",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["英语综合"]
+    },
+    {
+      "category": "cet6",
+      "label": "大学英语六级",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["英语综合"]
+    },
+    {
+      "category": "ncre",
+      "label": "全国计算机等级考试",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["程序设计与办公基础"]
+    },
+    {
+      "category": "software",
+      "label": "计算机技术与软件专业技术资格考试",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["计算机基础"]
+    },
+    {
+      "category": "graduate",
+      "label": "全国硕士研究生招生考试",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["数学与学习方法"]
+    },
+    {
+      "category": "transfer",
+      "label": "普通专升本",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["公共基础"]
+    },
+    {
+      "category": "teacher",
+      "label": "中小学教师资格考试",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["教育教学"]
+    },
+    {
+      "category": "mandarin",
+      "label": "普通话水平测试",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["语音表达"]
+    },
+    {
+      "category": "civil-national",
+      "label": "中央机关及其直属机构公务员招考",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["行政职业能力与申论"]
+    },
+    {
+      "category": "civil-province",
+      "label": "省级公务员招考",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["行政职业能力与申论"]
+    },
+    {
+      "category": "public",
+      "label": "事业单位公开招聘",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["公共基础与职测"]
+    },
+    {
+      "category": "selection",
+      "label": "选调生招录",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["材料概括与论证"]
+    },
+    {
+      "category": "tem4",
+      "label": "英语专业四级",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["英语语言运用"]
+    },
+    {
+      "category": "tem8",
+      "label": "英语专业八级",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["高级英语读写"]
+    },
+    {
+      "category": "ielts",
+      "label": "雅思",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["英语语言能力"]
+    },
+    {
+      "category": "toefl",
+      "label": "托福",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["学术英语"]
+    },
+    {
+      "category": "jlpt",
+      "label": "日本语能力测试",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["日语语法阅读"]
+    },
+    {
+      "category": "catti",
+      "label": "翻译专业资格（水平）考试CATTI",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["翻译实践"]
+    },
+    {
+      "category": "accounting",
+      "label": "会计专业技术资格考试",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["会计基础"]
+    },
+    {
+      "category": "cpa",
+      "label": "注册会计师全国统一考试",
+      "resources": 5,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": ["会计审计与财管"]
+    },
+    {
+      "category": "education-local",
+      "label": "地方教育考试综合公告",
+      "resources": 23,
+      "formats": ["课程", "资料", "练习"],
+      "subjects": [
+        "高等数学",
+        "线性代数",
+        "概率统计",
+        "大学英语",
+        "程序设计基础",
+        "学术写作与课程报告",
+        "竞赛备赛"
+      ]
+    }
+  ],
+  "campus": {
+    "notices": 36,
+    "schools": ["sspu", "shnu", "sues"],
+    "sources": ["sspu:学校办公室", "sspu:教务处", "sspu:学生工作处", "shnu:教务处", "sues:教务处"]
+  },
+  "exclusions": [
+    "官网首页导航不计学习资料包",
+    "公开通知不计学习资源",
+    "个人导入不计公共内容",
+    "原创微课不冒充外部完整课程或官方真题"
+  ],
+  "pending": [
+    "独立人工教学质量抽审",
+    "三校真实学生端到端试用",
+    "TCF/CCNA/华为/CMA/C2候选细目实源核验"
+  ]
+}

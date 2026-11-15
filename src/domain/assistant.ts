@@ -10,6 +10,7 @@ export interface AssistantCitation {
   sourceType?: "官方来源" | "非官方参考" | "未分类";
 }
 export interface AssistantAnswer {
+  actionLink?: { href: string; label: string };
   answer: string;
   kind: "考试信息" | "学习建议" | "需补充信息";
   mode: "mock" | "live" | "retrieval";

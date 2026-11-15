@@ -35,6 +35,27 @@ test("已知场次自动关联且六级目标识别合并公告；未知目标�
   const known = await goal(actors.student.api, { edition, category: "cet6" });
   expect(known.noticeId).toBe(item.id);
   const unknown = await goal(actors.student.api, { category: "ncre" });
+  const campus = (await (await actors.student.api.get("/api/campus")).json()).state;
+  expect(
+    (
+      await actors.student.api.post("/api/campus", {
+        data: {
+          action: "save",
+          expectedRevision: campus.revision,
+          events: [
+            {
+              id: randomUUID(),
+              title: "合成独立校内期末",
+              kind: "考试",
+              start: "2027-01-05T09:00",
+              end: "2027-01-05T11:00",
+            },
+          ],
+        },
+      })
+    ).ok(),
+  ).toBe(true);
+
   const context = await browser.newContext({
     storageState: await actors.student.api.storageState(),
   });

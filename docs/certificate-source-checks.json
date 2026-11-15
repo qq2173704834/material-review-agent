@@ -1,0 +1,166 @@
+{
+  "checkedAt": "2026-11-15",
+  "records": [
+    {
+      "id": "toeic",
+      "name": "TOEIC托业",
+      "group": "语言",
+      "url": "https://www.ets.org/toeic.html",
+      "finalUrl": "https://www.ets.org/toeic.html",
+      "status": 200,
+      "title": "TOEIC",
+      "size": 133616
+    },
+    {
+      "id": "pte",
+      "name": "PTE Academic",
+      "group": "留学语言",
+      "url": "https://www.pearsonpte.com/pte-academic",
+      "finalUrl": "https://www.pearsonpte.com/pte-academic/",
+      "status": 200,
+      "title": "PTE Academic | Pearson PTE",
+      "size": 195741
+    },
+    {
+      "id": "det",
+      "name": "Duolingo English Test",
+      "group": "留学语言",
+      "url": "https://englishtest.duolingo.com/",
+      "finalUrl": "https://englishtest.duolingo.com/",
+      "status": 200,
+      "title": "Duolingo English Test",
+      "size": 5994
+    },
+    {
+      "id": "tcf-tef",
+      "name": "TCF与TEF法语测试",
+      "group": "留学语言",
+      "url": "https://www.france-education-international.fr/test/tcf-tout-public",
+      "finalUrl": "https://www.france-education-international.fr/test/tcf-tout-public",
+      "status": 200,
+      "title": "",
+      "size": 1977
+    },
+    {
+      "id": "siele",
+      "name": "SIELE西班牙语评估",
+      "group": "留学语言",
+      "url": "https://siele.org/",
+      "finalUrl": "https://siele.org/",
+      "status": 200,
+      "title": "SIELE | Certificación Oficial de Español",
+      "size": 81687
+    },
+    {
+      "id": "cambridge-advanced",
+      "name": "剑桥C1 Advanced",
+      "group": "语言",
+      "url": "https://www.cambridgeenglish.org/exams-and-tests/advanced/",
+      "finalUrl": "https://www.cambridgeenglish.org/exams-and-tests/qualifications/advanced/",
+      "status": 200,
+      "title": "C1 Advanced | Cambridge English",
+      "size": 76139
+    },
+    {
+      "id": "acca",
+      "name": "ACCA特许公认会计师",
+      "group": "国际财经",
+      "url": "https://www.accaglobal.com/gb/en/qualifications.html",
+      "finalUrl": "https://www.accaglobal.com/gb/en/qualifications.html",
+      "status": 200,
+      "title": "Our qualifications | ACCA Global",
+      "size": 136717
+    },
+    {
+      "id": "cfa",
+      "name": "CFA特许金融分析师",
+      "group": "国际财经",
+      "url": "https://www.cfainstitute.org/programs/cfa-program",
+      "finalUrl": "https://www.cfainstitute.org/programs/cfa-program",
+      "status": 200,
+      "title": "CFA® Program | Become a Chartered Financial Analyst®",
+      "size": 470887
+    },
+    {
+      "id": "frm",
+      "name": "FRM金融风险管理师",
+      "group": "国际财经",
+      "url": "https://www.garp.org/frm",
+      "finalUrl": "https://www.garp.org/frm",
+      "status": 200,
+      "title": "FRM® Exam, Financial Risk Manager Certification | GARP",
+      "size": 253212
+    },
+    {
+      "id": "cma",
+      "name": "CMA管理会计师",
+      "group": "国际财经",
+      "url": "https://www.imanet.org/en/IMA-Certifications/CMA-Certification",
+      "finalUrl": "https://www.imaglobal.org/join",
+      "status": 200,
+      "title": "Join IMA: Become a Member of the Global Association of Management Accountants | IMA",
+      "size": 131027
+    },
+    {
+      "id": "huawei-cert",
+      "name": "华为HCIA与HCIP认证",
+      "group": "技术认证",
+      "url": "https://e.huawei.com/en/talent/portal/#/certification",
+      "finalUrl": "https://e.huawei.com/en/talent/portal/#/certification",
+      "status": 200,
+      "title": "",
+      "size": 22173
+    },
+    {
+      "id": "ccna",
+      "name": "Cisco CCNA",
+      "group": "技术认证",
+      "url": "https://www.cisco.com/site/us/en/learn/training-certifications/certifications/associate/ccna/index.html",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "id": "aliyun-cert",
+      "name": "阿里云ACA与ACP认证",
+      "group": "技术认证",
+      "url": "https://edu.alibabacloud.com/certification",
+      "finalUrl": "https://edu.alibabacloud.com/certification",
+      "status": 200,
+      "title": "Alibaba Cloud Academy",
+      "size": 91597
+    },
+    {
+      "id": "aws-cert",
+      "name": "AWS云认证",
+      "group": "技术认证",
+      "url": "https://aws.amazon.com/certification/",
+      "finalUrl": "https://aws.amazon.com/certification/",
+      "status": 200,
+      "title": "AWS Certification - Validate AWS Cloud Skills - Get AWS Certified",
+      "size": 481827
+    },
+    {
+      "id": "microsoft-fundamentals",
+      "name": "Microsoft基础认证",
+      "group": "技术认证",
+      "url": "https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/",
+      "finalUrl": "https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/",
+      "status": 200,
+      "title": "Microsoft Certified: Azure Fundamentals - Certifications | Microsoft Learn",
+      "size": 43907
+    }
+  ],
+  "adopted": [
+    "toeic",
+    "pte",
+    "det",
+    "siele",
+    "cambridge-advanced",
+    "acca",
+    "cfa",
+    "frm",
+    "aliyun-cert",
+    "aws-cert",
+    "microsoft-fundamentals"
+  ],
+  "pending": ["tcf-tef", "cma", "huawei-cert", "ccna", "cambridge-c2"]
+}

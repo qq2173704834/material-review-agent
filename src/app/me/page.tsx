@@ -1,3 +1,5 @@
+import { CampusHub } from "@/components/campus-hub";
+import { campusState, campusNotices, campusLinkedNotices } from "@/lib/server/campus-store";
 import { savedLearningItems } from "@/lib/server/learning-store";
 import { learningEntries } from "@/lib/server/learning-store";
 import { catalogLifecycle } from "@/lib/catalog-lifecycle";
@@ -71,6 +73,7 @@ export default async function Page({
     >("SELECT * FROM exam_task_links WHERE user_id=?")
     .all(account.id);
   const nodes = examReminders(account.id, now);
+  const campus = campusState(account.id);
   return (
     <AppShell activePage="me">
       <div className="space-y-7">
@@ -78,6 +81,16 @@ export default async function Page({
           <h1 className="text-3xl font-semibold">我的考试</h1>
           <p className="mt-3">这里汇总你的考试目标、学习进度、收藏与材料准备。</p>
         </header>
+        {view === "overview" && (
+          <CampusHub
+            key={account.id}
+            sourceNotices={campusLinkedNotices(account.id)}
+            compact
+            initialNow={now}
+            initialState={campus}
+            initialNotices={campusNotices(campus.preferences.schoolId)}
+          />
+        )}
         <nav className="page-tabs" aria-label="个人内容导航">
           {[
             ["overview", "考试与日程"],
@@ -212,8 +225,7 @@ export default async function Page({
                   )}
                 </h3>
                 <p>
-                  {item.changed ? "公告已更新 / 状态变化，请核对" : "已阅当前版本"} · v
-                  {item.version} ·{" "}
+                  {item.changed ? "未读 · 公告有更新" : "已读"} ·{" "}
                   <ExamStatus
                     disposition={item.withdrawn ? "公告已撤回" : item.content.disposition}
                     timeline={item.content.timeline}
@@ -237,7 +249,7 @@ export default async function Page({
                 )}
                 <ExamActions id={item.id} saved withdrawn={item.withdrawn} />
                 <form action={`/api/exams/${item.id}`}>
-                  <SeenButton id={item.id} />
+                  {item.changed && !item.withdrawn && <SeenButton id={item.id} />}
                 </form>
               </article>
             ))}

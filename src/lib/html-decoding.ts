@@ -14,8 +14,14 @@ export function decodeHtml(bytes: Uint8Array, contentType: string): string {
     .decode(bytes.subarray(0, 4096))
     .replace(/<!--[\s\S]*?(?:-->|$)/g, "");
   const meta = prefix.match(/<meta\b[^>]*\bcharset\s*=\s*["']?\s*([a-z0-9._-]+)/i)?.[1];
+  // Some public servers concatenate charset tokens. Accept only when the explicit
+  // document declaration agrees with the first token; do not guess from body text.
+  const declared =
+    header?.includes(",") && meta && header.split(",")[0]?.toLowerCase() === meta.toLowerCase()
+      ? meta
+      : header;
   try {
-    return new TextDecoder(bom ?? header ?? meta ?? "utf-8").decode(bytes);
+    return new TextDecoder(bom ?? declared ?? meta ?? "utf-8").decode(bytes);
   } catch {
     throw new Error("网页使用了暂不支持的文字编码。");
   }
