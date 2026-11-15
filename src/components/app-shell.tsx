@@ -15,7 +15,7 @@ const navigationItems = [
   { page: "home", href: "/", title: "首页", icon: LayoutDashboard },
   { page: "learn", href: "/learn", title: "学习", icon: BookOpen },
   { page: "exams", href: "/exams", title: "考试中心", icon: LayoutDashboard },
-  { page: "me", href: "/me", title: "我的考试", icon: ClipboardCheck },
+  { page: "me", href: "/me", title: "备考中心", icon: ClipboardCheck },
   { page: "tasks", href: "/tasks", title: "材料预审", icon: LayoutDashboard },
 ] as const;
 
@@ -82,7 +82,7 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
                   : activePage === "exams"
                     ? "考试中心"
                     : activePage === "me"
-                      ? "我的考试"
+                      ? "备考中心"
                       : activePage === "admin"
                         ? "内容管理"
                         : "审查任务"}

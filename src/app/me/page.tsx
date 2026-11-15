@@ -9,6 +9,8 @@ import { ReminderRead } from "@/components/reminder-read";
 import { StudentGoals } from "@/components/student-goals";
 import { studentGoals } from "@/lib/server/student-goals";
 import { listNotices } from "@/lib/server/exam-store";
+import { resolvedGoalNotice } from "@/lib/goal-schedule";
+import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -170,8 +172,31 @@ export default async function Page({
                 </p>
               ))
             ) : (
-              <p>近期暂无考试安排。关注考试后，在这里查看重要日期。</p>
+              <p>
+                {goals.some((goal) => goal.state === "active")
+                  ? "未来30天暂无已公布的日期，可查看下方目标的全部安排。"
+                  : "添加考试目标或关注考试，在这里查看重要日期。"}
+              </p>
             )}
+            {goals
+              .filter((goal) => goal.state === "active")
+              .map((goal) => {
+                const source = resolvedGoalNotice(goal, listNotices());
+                const hasDates = source?.content.timeline.some((point) =>
+                  /^\d{4}-\d{2}-\d{2}/.test(point.value),
+                );
+                return (
+                  <p key={goal.id}>
+                    <Link
+                      href={`/me/preparation?goal=${goal.id}&view=calendar`}
+                      className="text-primary"
+                    >
+                      {CATEGORY_LABELS[goal.category]} · {goal.edition}
+                    </Link>{" "}
+                    · {hasDates ? "查看全部考试安排" : "时间待公布"}
+                  </p>
+                );
+              })}
           </section>
         )}
         {view === "favorites" && (
@@ -192,7 +217,11 @@ export default async function Page({
                   {item.withdrawn ? (
                     item.content.title
                   ) : (
-                    <Link href={`/exams/${item.id}`}>{item.content.title}</Link>
+                    <Link
+                      href={`/exams/${item.id}?returnTo=${encodeURIComponent("/me?view=favorites")}`}
+                    >
+                      {item.content.title}
+                    </Link>
                   )}
                 </h3>
                 <p>
@@ -219,7 +248,6 @@ export default async function Page({
                     </a>
                   </p>
                 )}
-                <p className="text-xs">最近成功核查：{item.last_success || "未自动核查"}</p>
                 <ExamActions id={item.id} saved withdrawn={item.withdrawn} />
                 <form action={`/api/exams/${item.id}`}>
                   <SeenButton id={item.id} />
@@ -279,7 +307,10 @@ export default async function Page({
                     {link.notice_version}
                   </p>
                   {item ? (
-                    <Link href={`/exams/${item.id}`} className="underline">
+                    <Link
+                      href={`/exams/${item.id}?returnTo=${encodeURIComponent("/me?view=favorites")}`}
+                      className="underline"
+                    >
                       返回考试公告
                     </Link>
                   ) : (

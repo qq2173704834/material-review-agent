@@ -70,11 +70,11 @@ export default async function TasksPage(): Promise<ReactElement> {
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div>
           <div className="mb-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <span className="h-px w-5 bg-primary" /> 审查工作空间
+            <span className="h-px w-5 bg-primary" /> 考试材料自查
           </div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">我的审查任务</h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            把复杂的提交要求，变成有依据、可追踪的逐项核验。
+            提交考试材料前，检查缺项、格式和信息一致性。自查供准备材料参考，最终审核以考试组织方为准。
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">

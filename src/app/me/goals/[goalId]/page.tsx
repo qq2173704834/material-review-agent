@@ -1,3 +1,4 @@
+import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import { goalReviewReadiness } from "@/lib/server/goal-review";
 import { annotateLinkedExecutions } from "@/lib/server/exam-execution-validity";
 import { goalReviewPolicy } from "@/lib/goal-review-policy";
@@ -48,12 +49,15 @@ export default async function GoalPage({
         <Link href="/me" className="underline">
           返回个人中心
         </Link>
-        <h1 className="text-3xl font-semibold">考试目标 · 材料准备</h1>
+        <h1 className="text-3xl font-semibold">考试材料自查</h1>
+        <p>提交前，检查报名材料是否齐全、格式是否符合要求，及时发现需要补充或修改的地方。</p>
         <p>
-          {goal.category} · {goal.region} · {goal.edition} · {goal.subject || "科目待确认"}
+          {CATEGORY_LABELS[goal.category]} · {goal.region} · {goal.edition} ·{" "}
+          {goal.subject || "科目待确认"}
         </p>
         <p>
-          目标状态：{goal.state}；进度：{goal.progress || "尚未记录"}
+          目标状态：{{ active: "备考中", paused: "已暂停", archived: "已归档" }[goal.state]}；进度：
+          {goal.progress || "尚未记录"}
         </p>
         <Link className="underline" href={`/learn?goal=${goal.id}`}>
           查看目标学习资源
@@ -96,28 +100,39 @@ export default async function GoalPage({
           {last && (
             <div className="rounded border p-3">
               <p>
-                上次实际执行：{last.completedAt || last.createdAt} · {last.status} · 已执行
+                上次实际执行：{last.completedAt || last.createdAt} ·{" "}
+                {
+                  { running: "自查中", completed: "已完成", cancelled: "已取消", failed: "已中断" }[
+                    last.status
+                  ]
+                }{" "}
+                · 已执行
                 {last.results.length}项，未执行{last.unexecutedCount}项。
               </p>
               {last.validity === "needs_recheck" && (
                 <p role="status">结果待复核：{last.invalidationReasons?.join("；")}</p>
               )}
-              <p className="text-sm">
-                本次模型请求
-                {last.metadata?.modelCalls.reduce((count, call) => count + call.requestCount, 0) ??
-                  0}
-                次；已知输入/输出Token{" "}
-                {last.metadata?.modelCalls.reduce(
-                  (count, call) => count + (call.inputTokens ?? 0),
-                  0,
-                ) ?? 0}
-                /
-                {last.metadata?.modelCalls.reduce(
-                  (count, call) => count + (call.outputTokens ?? 0),
-                  0,
-                ) ?? 0}
-                。未返回Token时合计仅为已知部分，费用未知，以服务商账单为准。
-              </p>
+              <details className="text-sm">
+                <summary>使用详情</summary>
+                <p>
+                  本次模型请求
+                  {last.metadata?.modelCalls.reduce(
+                    (count, call) => count + call.requestCount,
+                    0,
+                  ) ?? 0}
+                  次；已知输入/输出Token{" "}
+                  {last.metadata?.modelCalls.reduce(
+                    (count, call) => count + (call.inputTokens ?? 0),
+                    0,
+                  ) ?? 0}
+                  /
+                  {last.metadata?.modelCalls.reduce(
+                    (count, call) => count + (call.outputTokens ?? 0),
+                    0,
+                  ) ?? 0}
+                  。未返回Token时合计仅为已知部分，费用未知，以服务商账单为准。
+                </p>
+              </details>
               <p>
                 五类结果：通过{last.results.filter((item) => item.verdict === "passed").length} ·
                 未通过{last.results.filter((item) => item.verdict === "failed").length} · 待确认
@@ -133,7 +148,17 @@ export default async function GoalPage({
           {jobs.length ? (
             jobs.map((job) => (
               <p key={job.id}>
-                {job.created_at} · {job.status} · {job.reason}
+                {job.created_at} ·{" "}
+                {{
+                  queued: "等待执行",
+                  running: "执行中",
+                  completed: "已完成",
+                  failed: "未完成",
+                  cancelled: "已取消",
+                  pending: "等待执行",
+                  skipped: "已跳过",
+                }[job.status] ?? "已记录"}{" "}
+                · {job.reason}
               </p>
             ))
           ) : (

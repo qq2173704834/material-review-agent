@@ -8,18 +8,16 @@ import {
   database,
 } from "../helpers/platform-boundaries";
 
-test("仅查询入口披露未适配和历史时间，不将旧LSAT日期作为当前报名安排", async ({ actors, page }) => {
+test("考试官网导航不输出采集适配诊断，也不把官网入口当可报名", async ({ actors, page }) => {
   await page.context().addCookies((await actors.student.api.storageState()).cookies);
   for (const category of ["jlpt", "topik", "lsat"]) {
     await page.goto(`/exams?category=${category}`);
     const entry = page.locator(`[data-exam-category="${category}"]`);
-    await expect(
-      entry.getByText(
-        category === "lsat" ? /含2018年考试日期等历史介绍/ : /本入口为考试介绍与报名导航/,
-      ),
-    ).toBeVisible();
+    await expect(entry.getByRole("link", { name: "访问考试官网 ↗", exact: true })).toHaveCount(1);
     await expect(entry.getByText("可报名", { exact: true })).toHaveCount(0);
-    await expect(entry.getByRole("link", { name: "官方入口", exact: true })).toHaveCount(1);
+    await expect(
+      entry.getByText(/采集待接入|尚无采集成功记录|含2018年考试日期等历史介绍/),
+    ).toHaveCount(0);
   }
 });
 

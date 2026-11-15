@@ -28,10 +28,10 @@ export default async function NewTaskPage({
         </Link>
       </Button>
       <div className="mb-8">
-        <p className="text-xs font-medium text-primary">ENG-004 · 本地任务</p>
+        <p className="text-xs font-medium text-primary">考试材料自查</p>
         <h1 className="mt-2 text-2xl font-semibold">新建审查任务</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          粘贴原文、读取公开网页，或上传 PDF、DOCX、TXT 要求文件。
+          提交前，检查材料是否齐全、格式是否符合要求，及时发现需要补充或修改的地方。先选择考试要求或导入原文，再上传材料开始自查。
         </p>
       </div>
       {filters.reference && (

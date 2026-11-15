@@ -1,3 +1,5 @@
+import { BrowseBack } from "@/components/browse-back";
+import { safeBrowseReturn } from "@/lib/browse-return";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -13,8 +15,10 @@ import { examCatalogState } from "@/lib/server/catalog-state";
 export const dynamic = "force-dynamic";
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ noticeId: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }): Promise<ReactElement> {
   const { noticeId } = await params;
   const now = await requestTime();
@@ -27,13 +31,12 @@ export default async function Page({
     lifecycle.blocked && item.content.disposition === "正常"
       ? { ...item.content, disposition: "待核实" as const }
       : item.content;
+  const back = safeBrowseReturn((await searchParams).returnTo, "/exams");
   const history = publishedHistory(noticeId).filter((v) => v.version <= item.version);
   return (
     <AppShell activePage="exams">
       <article className="max-w-5xl space-y-7">
-        <Link href="/exams" className="text-primary underline">
-          返回考试中心
-        </Link>
+        <BrowseBack href={back} label={back.startsWith("/me") ? "返回我的考试" : "返回考试中心"} />
         <header className="space-y-3">
           <p className="text-sm text-primary">
             {CATEGORY_LABELS[content.category]} · {content.region} · {content.edition} ·{" "}
@@ -89,9 +92,6 @@ export default async function Page({
           >
             查看官方原文
           </a>
-          <p className="text-xs text-muted-foreground">
-            本站版本保存：{item.created_at} · 最近来源成功核查：{item.last_success || "未自动核查"}
-          </p>
         </header>
         <Link
           className="inline-block rounded bg-primary px-4 py-2 text-primary-foreground"
@@ -101,7 +101,7 @@ export default async function Page({
         </Link>
         <ExamActions id={item.id} saved={saved} />
         <section>
-          <h2 className="mb-3 text-xl font-semibold">考试时间线 · Asia/Shanghai</h2>
+          <h2 className="mb-3 text-xl font-semibold">考试安排 · 北京时间</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {TIMELINE_LABELS.map((label) => {
               const point = content.timeline.find((p) => p.label === label);
@@ -109,7 +109,7 @@ export default async function Page({
                 <div key={label} className="rounded border p-4">
                   <h3 className="font-medium">{label}</h3>
                   <p>
-                    {point?.value || "未公布 / 未核实"}
+                    {point?.value || "待公布"}
                     {point?.value.length === 10 ? "（仅日期，具体时刻未公布）" : ""}
                   </p>
                   {point?.quote && (
@@ -153,7 +153,7 @@ export default async function Page({
           </h2>
           {content.textScope === "摘录" && (
             <p className="mb-3 text-sm text-muted-foreground">
-              以下仅保留已核验的部分条款，不覆盖全部资格或考试要求，请同时阅读官方原文。
+              以下为原文摘录，完整内容请查看官方原文。
             </p>
           )}
           <pre className="max-h-[800px] overflow-auto rounded border p-5 font-sans text-sm leading-7 whitespace-pre-wrap">

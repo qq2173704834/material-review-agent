@@ -95,7 +95,7 @@ export default async function Home({
     sections.push({
       id: "popular",
       title: "大家在关注",
-      description: "至少3个账号实际收藏的公告，不代表报名人数。",
+      description: "看看大家近期关注的考试。",
       items: popular.flatMap((row) => {
         const item = items.find((item) => item.id === row.notice_id);
         return item ? [item] : [];
@@ -193,7 +193,7 @@ export default async function Home({
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {selected.id === "latest"
-                    ? "目前还没有已审核发布的公告，可到考试中心查看目录和官方入口。"
+                    ? "暂无近期公告，去考试中心看看感兴趣的考试。"
                     : "可切换“最近更新”，或到考试中心查看目录和官方入口。"}
                 </p>
                 <Link

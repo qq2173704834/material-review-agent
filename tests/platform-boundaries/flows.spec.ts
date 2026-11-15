@@ -93,7 +93,9 @@ test("公告分页保留筛选条件，第二页不重复且越界页码回到�
   expect(actual.searchParams.get("page")).toBe("2");
   const last = await page.locator("article h2 a").getAttribute("href");
   expect(firstPage).not.toContain(last);
-  expect(new Set([...firstPage, last])).toEqual(new Set(ids.map((id) => `/exams/${id}`)));
+  expect(
+    new Set([...firstPage, last].map((href) => new URL(href!, "http://local").pathname)),
+  ).toEqual(new Set(ids.map((id) => `/exams/${id}`)));
   await expect(page.getByRole("link", { name: "下一页", exact: true })).toHaveCount(0);
   query.set("page", "999");
   await page.goto(`/exams?${query}`);

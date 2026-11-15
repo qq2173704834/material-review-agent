@@ -1,29 +1,21 @@
 import "server-only";
 import { platformDb } from "./platform-db";
-import { favorites, listNotices, matchesExamCategory, type ExamNotice } from "./exam-store";
+import { favorites, listNotices, type ExamNotice } from "./exam-store";
 import { studentGoals } from "./student-goals";
 import { learningEntries } from "./learning-store";
 import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 import { isUpcoming, nodeTimestamp } from "@/lib/portal-feed";
+import { resolvedGoalNotice } from "@/lib/goal-schedule";
 
 export function reminderNotices(userId: string): ExamNotice[] {
   const goals = studentGoals(userId).filter((goal) => goal.state === "active");
   const selected = new Map(
     favorites(userId).map((item) => [item.id, item] as [string, ExamNotice]),
   );
-  for (const item of listNotices()) {
-    if (
-      goals.some((goal) =>
-        goal.noticeId
-          ? goal.noticeId === item.id
-          : matchesExamCategory(item.content, goal.category) &&
-            (item.content.region === "全国" || goal.region === item.content.region) &&
-            goal.edition !== "待确认考期" &&
-            goal.edition === item.content.edition,
-      )
-    ) {
-      selected.set(item.id, item);
-    }
+  const notices = listNotices();
+  for (const goal of goals) {
+    const item = resolvedGoalNotice(goal, notices);
+    if (item) selected.set(item.id, item);
   }
   return [...selected.values()];
 }

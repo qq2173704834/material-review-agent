@@ -509,7 +509,7 @@ test("四六级共同公告同时匹配四级和六级，单独四级公告不�
   await publish(actors.admin, onlyFour.id);
   await page.context().addCookies((await actors.student.api.storageState()).cookies);
   await page.goto(`/exams?${new URLSearchParams({ q: marker, category: "cet6" })}`);
-  await expect(page.locator("article")).toHaveCount(1);
+  await expect(page.locator("article").filter({ has: page.locator("h2") })).toHaveCount(1);
   await expect(
     page.getByRole("link", { name: `${marker}英语四六级通知`, exact: true }),
   ).toBeVisible();
@@ -517,9 +517,9 @@ test("四六级共同公告同时匹配四级和六级，单独四级公告不�
     page.getByRole("link", { name: `${marker}英语四级单独通知`, exact: true }),
   ).toHaveCount(0);
   await page.getByRole("combobox", { name: "考试类别" }).selectOption("cet4");
-  await page.getByRole("button", { name: "筛选", exact: true }).click();
-  await expect(page.locator("article")).toHaveCount(2);
+  await page.getByRole("button", { name: "查找考试", exact: true }).click();
+  await expect(page.locator("article").filter({ has: page.locator("h2") })).toHaveCount(2);
   await page.getByRole("combobox", { name: "适用地区" }).selectOption("广东");
-  await page.getByRole("button", { name: "筛选", exact: true }).click();
+  await page.getByRole("button", { name: "查找考试", exact: true }).click();
   await expect(page.getByRole("heading", { name: "暂未收录符合条件的公告" })).toBeVisible();
 });

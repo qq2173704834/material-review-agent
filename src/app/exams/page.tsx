@@ -1,3 +1,7 @@
+import { headers } from "next/headers";
+import { sessionAccount } from "@/lib/server/account-auth";
+import { BrowsePosition } from "@/components/browse-back";
+import { SearchFilters, type SearchField } from "@/components/search-filters";
 import { ExamDirectory } from "@/components/exam-directory";
 import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
 import { requestTime } from "@/lib/server/request-time";
@@ -25,6 +29,7 @@ export default async function Page({
 }): Promise<ReactElement> {
   const filters = await searchParams;
   const now = await requestTime();
+  const account = sessionAccount(new Request("http://local", { headers: await headers() }));
   const knowledge = learningEntries();
   const all = listNotices().map((item) =>
     catalogLifecycle(knowledge, item.content.category, item.content.region).blocked &&
@@ -62,141 +67,66 @@ export default async function Page({
     params.set("page", String(number));
     return `/exams?${params}`;
   }
+  const options = (values: readonly string[]): { value: string; label: string }[] =>
+    values.map((value) => ({ value, label: value }));
+  const common: SearchField[] = [
+    { name: "q", label: "关键词" },
+    {
+      name: "category",
+      label: "考试类别",
+      options: EXAM_CATEGORIES.map(([value, label]) => ({ value, label })),
+    },
+    { name: "region", label: "适用地区", options: options(EXAM_REGIONS) },
+  ];
+  const extra: SearchField[] = [
+    { name: "group", label: "考试方向", options: options(EXAM_GROUPS) },
+    {
+      name: "year",
+      label: "年份",
+      options: options([...new Set(all.map((item) => String(item.content.year)))].sort().reverse()),
+    },
+    { name: "stage", label: "公告阶段", options: options(EXAM_STAGES) },
+  ];
+  for (const [name, label, key] of [
+    ["level", "等级", "levels"],
+    ["subject", "科目", "subjects"],
+    ["language", "语种", "languages"],
+    ["examForm", "考试形式", "examForms"],
+  ] as const) {
+    const values = [
+      ...new Set(
+        all
+          .filter(
+            (item) => !filters.category || matchesExamCategory(item.content, filters.category),
+          )
+          .flatMap((item) => item.content[key] ?? []),
+      ),
+    ];
+    if (values.length || filters[name]) extra.push({ name, label, options: options(values) });
+  }
+  const returnTo = encodeURIComponent(pageUrl(page));
   return (
     <AppShell activePage="exams">
       <div className="space-y-7">
         <header>
           <p className="text-sm text-primary">学生考试信息</p>
           <h1 className="mt-2 text-3xl font-semibold">下一场考试，从这里准备</h1>
-          <p className="mt-3 text-muted-foreground">
-            升学、语言、计算机、职业资格与就业招录。报名条件因地区、考期和学籍不同，请核对官方要求。
-          </p>
         </header>
-        <form action="/exams" className="surface grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <label>
-            关键词
-            <input
-              className="mt-1 w-full rounded border p-2"
-              name="q"
-              defaultValue={filters.q}
-              maxLength={100}
-              placeholder="考试名 / 公告关键词"
-            />
-          </label>
-          <label>
-            考试方向
-            <select
-              name="group"
-              defaultValue={filters.group ?? ""}
-              className="mt-1 w-full rounded border p-2"
-            >
-              <option value="">全部方向</option>
-              {EXAM_GROUPS.map((group) => (
-                <option key={group}>{group}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            考试类别
-            <select
-              name="category"
-              defaultValue={filters.category ?? ""}
-              className="mt-1 w-full rounded border p-2"
-            >
-              <option value="">全部类别</option>
-              {EXAM_CATEGORIES.map(([id, name, group]) => (
-                <option key={id} value={id}>
-                  {group} · {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            适用地区
-            <select
-              name="region"
-              defaultValue={filters.region ?? ""}
-              className="mt-1 w-full rounded border p-2"
-            >
-              <option value="">全部地区</option>
-              {EXAM_REGIONS.map((region) => (
-                <option key={region}>{region}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            年份
-            <input
-              name="year"
-              type="number"
-              min={2000}
-              max={2100}
-              defaultValue={filters.year}
-              className="mt-1 w-full rounded border p-2"
-            />
-          </label>
-          <label>
-            公告阶段
-            <select
-              name="stage"
-              defaultValue={filters.stage ?? ""}
-              className="mt-1 w-full rounded border p-2"
-            >
-              <option value="">全部阶段</option>
-              {EXAM_STAGES.map((stage) => (
-                <option key={stage}>{stage}</option>
-              ))}
-            </select>
-          </label>
-          {(
-            [
-              ["level", "等级"],
-              ["subject", "科目"],
-              ["language", "语种"],
-              ["examForm", "考试形式"],
-            ] as const
-          ).map(([key, label]) => (
-            <label key={key}>
-              {label}
-              <input
-                name={key}
-                maxLength={120}
-                defaultValue={filters[key]}
-                placeholder="按已审核维度精确筛选"
-                className="mt-1 w-full rounded border p-2"
-              />
-            </label>
-          ))}
-          <div className="flex items-end gap-4">
-            <button className="rounded bg-primary px-5 py-2 text-primary-foreground">筛选</button>
-            <Link href="/exams" className="underline">
-              清除
-            </Link>
-          </div>
-        </form>
+        {account && <BrowsePosition identity={account.id} />}
+        <SearchFilters
+          path="/exams"
+          filters={filters}
+          common={common}
+          extra={extra}
+          submit="查找考试"
+        />
         <p role="status">
-          当前筛选：
-          {[
-            filters.q,
-            CATEGORY_LABELS[filters.category ?? ""],
-            filters.region,
-            filters.year,
-            filters.stage,
-            filters.level,
-            filters.subject,
-            filters.language,
-            filters.examForm,
-          ]
-            .filter(Boolean)
-            .join(" / ") || "全部"}{" "}
-          · 共{results.length}条已发布公告（最多显示最近2000条）
+          找到{results.length}条公告 · 第{page}页
         </p>
         {!results.length && (
           <section className="rounded-xl border border-dashed p-8">
             <h2 className="font-semibold">暂未收录符合条件的公告</h2>
-            <p className="mt-2 text-muted-foreground">
-              这不代表没有考试或尚未发布。可调整筛选或前往下方官方入口查询；尚未审核的采集草稿不会出现在列表。
-            </p>
+            <p className="mt-2 text-muted-foreground">试试调整筛选，或从官方入口了解最新安排。</p>
             <Link href={pageUrl(1)} className="mt-3 inline-block underline">
               重新查询
             </Link>
@@ -210,7 +140,7 @@ export default async function Page({
                 {item.content.edition} · {item.content.stage}
               </p>
               <h2 className="text-lg font-semibold">
-                <Link className="hover:underline" href={`/exams/${item.id}`}>
+                <Link className="hover:underline" href={`/exams/${item.id}?returnTo=${returnTo}`}>
                   {item.content.title}
                 </Link>
               </h2>
@@ -227,8 +157,7 @@ export default async function Page({
                 initialNow={now}
               />
               <p className="text-xs text-muted-foreground">
-                发布：{item.content.publishedAt || "待核实"} · {item.source_name} · 最近成功核查：
-                {item.last_success || "手工录入，未自动核查"}
+                发布：{item.content.publishedAt || "日期待公布"} · {item.source_name}
               </p>
             </article>
           ))}
@@ -246,54 +175,59 @@ export default async function Page({
           sourceList={sourceList}
           notices={all}
         />
-        <details className="rounded-xl border p-5">
-          <summary className="cursor-pointer font-medium">31省级考试机构目录与历史访问检查</summary>
-          <p className="my-3 text-sm">
-            目录来自中国教育考试网官方链接。以下为历史自动检查结果，不是本次搜索时的实时检测；HTTPS检查未成功不代表官方原始HTTP入口失效。公告采集情况见下方来源状态，港澳台尚未接入对应考试机构。
-          </p>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {provincialSources.map((source) => (
-              <li key={source.region} className="rounded border p-3 text-sm">
-                <a
-                  href={source.referenceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary underline"
-                >
-                  {source.region} · {source.name}
-                </a>
-                <p>
-                  {source.status === "accessible"
-                    ? "历史HTTPS检查通过；当前是否可访问及采集成功需另行核对"
-                    : "历史HTTPS自动检查未成功；可尝试上方官方原始入口，不代表网站已停用"}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  检查日期：{source.checkedAt.slice(0, 10)} · 检查方式：HTTPS ·
-                  上方链接保留官方目录原始地址
-                </p>
-              </li>
-            ))}
+        <details className="surface">
+          <summary className="goal-summary font-medium">各省考试院</summary>
+          <ul className="grid gap-3 sm:grid-cols-2 mt-4">
+            {provincialSources
+              .filter(
+                (source) =>
+                  !filters.region || filters.region === "全国" || source.region === filters.region,
+              )
+              .map((source) => (
+                <li className="rounded-xl border p-4" key={source.region}>
+                  <h3 className="font-medium">
+                    {source.region} · {source.name}
+                  </h3>
+                  <a
+                    className="button-secondary mt-3"
+                    href={source.referenceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    进入官网 ↗
+                  </a>
+                </li>
+              ))}
           </ul>
         </details>
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">官方信息入口与更新状态</h2>
-          {sourceList.map((source) => (
-            <div key={source.id} className="rounded border p-4 text-sm">
-              <a
-                href={source.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline"
-              >
-                {source.name}
-              </a>
-              <p className="mt-1">
-                {source.region} · {source.enabled ? "定时检查已启用" : "定时检查未启用"} ·
-                最近成功：{source.last_success || "尚未采集成功"}
-              </p>
-              {source.error && <p className="mt-1">最近采集情况：{source.error}</p>}
-            </div>
-          ))}
+          <h2 className="text-xl font-semibold">官方入口</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {sourceList
+              .filter(
+                (source) =>
+                  !provincialSources.some(
+                    (item) =>
+                      item.referenceUrl.replace(/\/$/, "") === source.url.replace(/\/$/, ""),
+                  ) &&
+                  (!filters.region || source.region === filters.region) &&
+                  (!filters.category || source.category === filters.category),
+              )
+              .map((source) => (
+                <article key={source.id} className="surface">
+                  <h3 className="font-medium">{source.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-2">{source.region}</p>
+                  <a
+                    href={source.url}
+                    className="button-secondary mt-3"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    进入官网 ↗
+                  </a>
+                </article>
+              ))}
+          </div>
         </section>
       </div>
     </AppShell>

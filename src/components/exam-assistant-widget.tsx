@@ -258,11 +258,14 @@ function AssistantPanel(): ReactElement {
                   <p className="mt-2 text-xs">{message.payload.warning}</p>
                 )}
                 {message.payload.usage && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {message.payload.usage.modelCall
-                      ? `模型请求${message.payload.usage.modelCall.requestCount}次 · 输入Token：${message.payload.usage.modelCall.inputTokens ?? "未知"} · 输出Token：${message.payload.usage.modelCall.outputTokens ?? "未知"} · 费用未知，请核对服务商账单`
-                      : "本次未调用外部模型"}
-                  </p>
+                  <details className="mt-2 text-xs text-muted-foreground">
+                    <summary>使用详情</summary>
+                    <p>
+                      {message.payload.usage.modelCall
+                        ? `模型请求${message.payload.usage.modelCall.requestCount}次 · 输入Token：${message.payload.usage.modelCall.inputTokens ?? "未知"} · 输出Token：${message.payload.usage.modelCall.outputTokens ?? "未知"} · 费用未知，请核对服务商账单`
+                        : "本次未调用外部模型"}
+                    </p>
+                  </details>
                 )}
                 {message.payload.answer && (
                   <ContentFeedback

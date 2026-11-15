@@ -43,7 +43,7 @@ for (const viewport of [
       .getByRole("link", { name: "考试中心", exact: true })
       .click();
     await page.getByLabel("关键词", { exact: true }).fill(title);
-    await page.getByRole("button", { name: "筛选", exact: true }).click();
+    await page.getByRole("button", { name: "查找考试", exact: true }).click();
     await page.getByRole("link", { name: title, exact: true }).click();
     await page.getByRole("button", { name: "收藏公告", exact: true }).click();
     await expect(page.getByRole("button", { name: "取消收藏", exact: true })).toBeVisible();
@@ -82,7 +82,7 @@ for (const viewport of [
     await expect(trigger).toBeFocused();
     await page
       .getByRole("navigation", { name: "主导航" })
-      .getByRole("link", { name: "我的考试", exact: true })
+      .getByRole("link", { name: "备考中心", exact: true })
       .click();
     await page.getByRole("link", { name: "材料准备与预审", exact: true }).click();
     await page.getByRole("button", { name: "建立目标材料任务", exact: true }).click();
@@ -108,6 +108,12 @@ for (const viewport of [
       (entry: { id: string }) => entry.id === goal.id,
     );
     expect(retained.taskId).toBe(taskId);
+    await page.goto(`/me/preparation?goal=${goal.id}&view=materials`);
+    await expect(page.getByText(/模拟自查/)).toBeVisible();
+    await page.getByText("已提供材料 · 1份", { exact: true }).click();
+    await expect(page.getByText(/学籍证明.txt · 当前版本1/)).toBeVisible();
+    await page.getByRole("button", { name: "查看材料", exact: true }).click();
+    await expect(page.getByRole("link", { name: "打开原件 v1", exact: true })).toBeVisible();
     await page.goto(`/exams/${item.id}`);
     await expect(page.getByRole("button", { name: "取消收藏", exact: true })).toBeVisible();
     expect(

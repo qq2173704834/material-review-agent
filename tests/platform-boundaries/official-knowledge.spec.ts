@@ -30,11 +30,11 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
   await page.goto("/exams?category=teacher#exam-directory");
   const facts = page.getByTestId("exam-facts-teacher");
   await facts.locator("summary").click();
-  await expect(facts.getByText("通用介绍，非当期公告", { exact: false }).first()).toBeVisible();
+  await expect(facts.getByText("考试介绍", { exact: false }).first()).toBeVisible();
   await expect(
     facts.getByRole("link", { name: "教师资格考试合格证明与认定", exact: true }),
   ).toBeVisible();
-  await expect(facts.getByText(/不是个人资格结论/)).toBeVisible();
+  await expect(facts.getByText(/不是个人资格结论/)).toHaveCount(0);
   const fund = entries.find(
     (entry: { content: { title: string } }) => entry.content.title === "基金新细则报名条件",
   );
@@ -42,7 +42,7 @@ test("官方引用知识可检索，考纲说明保留阅读边界，种子不�
   await expect(page.getByRole("heading", { name: "基金新细则报名条件" })).toBeVisible();
   await expect(page.getByText(/报名截止日时年满 18 周岁/)).toBeVisible();
   await expect(page.getByText(/第3页少量引用/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "前往原始来源" }).first()).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "访问原站 ↗" }).first()).toHaveAttribute(
     "href",
     /P020261113578939174273\.pdf/,
   );
@@ -164,7 +164,7 @@ test("非官方资料显著标识、政策仅参考且不能单独改变举办�
   await page.goto("/exams?category=valuation#exam-directory");
   const facts = page.getByTestId("exam-facts-valuation");
   await facts.locator("summary").click();
-  await expect(facts.getByText("非官方参考 · 政策待核实").first()).toBeVisible();
+  await expect(facts.getByText("第三方参考").first()).toBeVisible();
   const response = await actors.student.api.post("/api/assistant", {
     data: {
       requestId: randomUUID(),
@@ -229,7 +229,7 @@ test("新增学生考试资料可见，官方证书规则与经济师非官方�
     await page.context().addCookies((await actors.student.api.storageState()).cookies);
     await page.goto(`/learn/${entry.id}`);
     await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "前往原始来源" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "访问原站 ↗" })).toHaveAttribute(
       "href",
       entry.content.url,
     );
@@ -271,7 +271,7 @@ test("国际成绩期限与北京证书形态保留范围并显示原始引用",
     expect(entry.content.scope).toContain(scope);
     await page.goto(`/learn/${entry.id}`);
     await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "前往原始来源" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "访问原站 ↗" })).toHaveAttribute(
       "href",
       entry.content.url,
     );

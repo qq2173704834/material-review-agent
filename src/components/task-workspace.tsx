@@ -12,6 +12,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Check, FileText, FolderOpen, Play, X } from "lucide-react";
+import { safeBrowseReturn } from "@/lib/browse-return";
 import { nextTaskAction } from "@/lib/task-flow";
 import { QuickGuide } from "@/components/quick-guide";
 import type { TaskTool, TaskView } from "@/lib/task-flow";
@@ -384,9 +385,12 @@ export function TaskWorkspace({
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <Link
               className="min-h-11 py-3 text-sm text-muted-foreground hover:text-primary"
-              href="/"
+              href={safeBrowseReturn(searchParams.get("returnTo") ?? undefined, "/tasks")}
             >
-              ← 返回任务列表
+              ←{" "}
+              {searchParams.get("returnTo")?.startsWith("/me/preparation")
+                ? "返回备考中心"
+                : "返回任务列表"}
             </Link>
             <QuickGuide />
           </div>

@@ -9,9 +9,9 @@ export default function NotFound(): ReactElement {
     <main className="flex min-h-screen flex-col items-center justify-center gap-5 px-6 text-center">
       <p className="text-sm font-medium text-primary">404</p>
       <h1 className="text-2xl font-semibold">没有找到这个页面</h1>
-      <p className="text-sm text-muted-foreground">地址可能有误，或对应功能尚未开放。</p>
+      <p className="text-sm text-muted-foreground">地址可能有误，或内容已被移除。</p>
       <Button asChild>
-        <Link href="/">返回任务列表</Link>
+        <Link href="/">返回首页</Link>
       </Button>
     </main>
   );

@@ -67,7 +67,7 @@ test("UXR偏好保存独立操作行，失败保留输入且持久关闭AI不可
   await page.context().addCookies((await actors.student.api.storageState()).cookies);
   await page.goto("/learn");
   const form = page.getByRole("form", { name: "学习与隐私偏好" });
-  await form.getByText("AI与隐私设置", { exact: true }).click();
+  await page.getByText("学习偏好", { exact: true }).first().click();
   await form.getByLabel("使用AI生成回答").uncheck();
   await page.route("**/api/learning", (route) =>
     route.fulfill({ status: 503, json: { error: "合成保存失败" } }),
@@ -101,7 +101,7 @@ test("UXR偏好保存独立操作行，失败保留输入且持久关闭AI不可
   expect(response.status(), await response.text()).toBe(200);
   expect(await response.json()).toMatchObject({ mode: "retrieval", usage: { modelCall: null } });
   await page.reload();
-  await form.getByText("AI与隐私设置", { exact: true }).click();
+  await page.getByText("学习偏好", { exact: true }).first().click();
   await expect(form.getByLabel("使用AI生成回答")).not.toBeChecked();
 });
 

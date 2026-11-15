@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Minus, LoaderCircle, Check } from "lucide-react";
 import type { ReactElement } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -20,13 +21,29 @@ export function StudentGoals({
   const router = useRouter(),
     [editing, setEditing] = useState<StudentGoal | null>(null),
     [message, setMessage] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [failed, setFailed] = useState(false);
+  const editor = useRef<HTMLDetailsElement>(null),
+    saving = useRef(false);
+  useEffect(() => {
+    if (!message || failed) return;
+    const timer = setTimeout(() => setMessage(""), 2200);
+    return () => clearTimeout(timer);
+  }, [message, failed]);
+  useEffect(() => {
+    if (editing) {
+      editor.current?.scrollIntoView({ block: "center", behavior: "instant" });
+      editor.current?.querySelector<HTMLInputElement>("input[name=edition]")?.focus();
+    }
+  }, [editing]);
   const selected = notices.find((item) => item.id === noticeId);
   const [category, setCategory] = useState(newCategory ?? selected?.content.category ?? "cet4");
   async function save(form: HTMLFormElement): Promise<void> {
-    if (busy) return;
+    if (saving.current) return;
+    saving.current = true;
     setBusy(true);
     setMessage("");
+    setFailed(false);
     const values = Object.fromEntries(new FormData(form));
     try {
       const response = await fetch("/api/goals", {
@@ -48,17 +65,19 @@ export function StudentGoals({
       setEditing(null);
       router.refresh();
     } catch (error) {
+      setFailed(true);
       setMessage(error instanceof Error ? error.message : "保存失败，请重试。");
     } finally {
+      saving.current = false;
       setBusy(false);
     }
   }
   return (
     <section id="goals" className="surface space-y-5">
       <h2 className="text-xl font-semibold">我的考试目标</h2>
-      <p className="text-sm text-muted-foreground">
-        可同时关注不同考试；专业、考期和地区条件仍以当期公告为准。
-      </p>
+      <Link href="/me/preparation" className="button-primary">
+        打开备考中心 →
+      </Link>
       <div className="grid gap-3 md:grid-cols-2">
         {!goals.length && (
           <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground md:col-span-2">
@@ -76,17 +95,22 @@ export function StudentGoals({
             </p>
             <p className="text-sm">
               {goal.studyStage} ·{" "}
-              {goal.minutesPerDay ? `每天${goal.minutesPerDay}分钟` : "时间未设定"}
+              {goal.minutesPerDay ? `每天学习${goal.minutesPerDay}分钟` : "每日学习时长未设置"}
             </p>
             <p className="text-sm">{goal.progress || "暂无个人进度记录"}</p>
             <details>
-              <summary>清除目标</summary>
+              <summary className="goal-summary">
+                <Minus size={16} aria-hidden="true" />
+                清除目标
+              </summary>
               <p>仅清除目标与对应自动计划；历史材料任务、结果和收藏保留。</p>
               <button
                 disabled={busy}
                 className="underline"
                 onClick={async () => {
                   setBusy(true);
+                  setFailed(false);
+                  setMessage("");
                   try {
                     const response = await fetch("/api/goals", {
                       method: "DELETE",
@@ -97,6 +121,7 @@ export function StudentGoals({
                     router.refresh();
                     setMessage("目标已清除，历史任务可从材料预审入口查看。");
                   } catch {
+                    setFailed(true);
                     setMessage("清除失败，请重试。");
                   } finally {
                     setBusy(false);
@@ -106,15 +131,19 @@ export function StudentGoals({
                 确认清除此目标
               </button>
             </details>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <Link className="underline" href={`/learn?goal=${goal.id}`}>
+            <div className="goal-actions">
+              <Link className="button-secondary" href={`/me/preparation?goal=${goal.id}`}>
+                我的备考
+              </Link>
+              <Link className="button-secondary" href={`/learn?goal=${goal.id}`}>
                 目标学习资源
               </Link>
-              <Link className="underline" href={`/me/goals/${goal.id}`}>
+              <Link className="button-secondary" href={`/me/goals/${goal.id}`}>
                 材料准备与预审
               </Link>
               <button
-                className="underline"
+                className="button-secondary"
+                disabled={busy}
                 onClick={() => {
                   setEditing(goal);
                   setCategory(goal.category);
@@ -127,10 +156,12 @@ export function StudentGoals({
         ))}
       </div>
       <details
+        ref={editor}
         open={!!(newCategory || noticeId || editing)}
         className="rounded-xl border bg-card p-5"
       >
-        <summary className="cursor-pointer font-medium">
+        <summary className="goal-summary font-medium">
+          <Plus size={17} aria-hidden="true" />
           {editing ? "编辑考试目标" : "添加考试目标"}
         </summary>
         <form
@@ -209,7 +240,8 @@ export function StudentGoals({
                 )
                 .map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.content.title} · {item.content.region} · v{item.version}
+                    {item.content.title} · {item.content.region} · {item.content.edition} ·{" "}
+                    {item.content.timeline[0]?.value ?? "时间待公布"}
                   </option>
                 ))}
             </select>
@@ -318,7 +350,16 @@ export function StudentGoals({
           </div>
         </form>
       </details>
-      <p role="status">{message}</p>
+      {(busy || message) && (
+        <div className="save-toast" role={failed ? "alert" : "status"} aria-live="polite">
+          {busy ? (
+            <LoaderCircle size={17} className="animate-spin" />
+          ) : !failed ? (
+            <Check size={17} />
+          ) : null}
+          {busy ? "保存中…" : message}
+        </div>
+      )}
     </section>
   );
 }

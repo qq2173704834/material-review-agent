@@ -36,6 +36,15 @@ export interface Actor {
   api: APIRequestContext;
 }
 export async function createActor(playwright: Playwright, prefix: string): Promise<Actor> {
+  // Fixture setup runs many synthetic registrations in one minute. Reset only the
+  // global setup budget in the enforced isolated test database; auth cases keep
+  // exercising the real route and per-account limits without changing production.
+  const fixtureDb = database();
+  try {
+    fixtureDb.prepare("DELETE FROM rate_limits WHERE key='auth-global:register'").run();
+  } finally {
+    fixtureDb.close();
+  }
   const api = await playwright.request.newContext({ baseURL });
   const username = unique(prefix);
   const response = await api.post("/api/auth/register", { data: { username, password } });

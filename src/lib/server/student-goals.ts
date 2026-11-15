@@ -1,7 +1,8 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { platformDb } from "./platform-db";
-import { notice, matchesExamCategory } from "./exam-store";
+import { notice, listNotices, matchesExamCategory } from "./exam-store";
+import { resolvedGoalNotice } from "@/lib/goal-schedule";
 import { goalInputSchema, type GoalInput, type StudentGoal } from "@/domain/student-goal";
 interface GoalRow {
   id: string;
@@ -43,7 +44,10 @@ export function saveGoal(userId: string, raw: GoalInput, id?: string): StudentGo
     if (id && !previous) throw new Error("考试目标不存在。");
     if (!id && studentGoals(userId).length >= 50)
       throw new Error("最多保留50个考试目标，请归档或整理。");
-    const source = input.noticeId ? notice(input.noticeId) : undefined;
+    const source = input.noticeId
+      ? notice(input.noticeId)
+      : resolvedGoalNotice(input, listNotices());
+    if (source && !input.noticeId) input.noticeId = source.id;
     if (
       input.noticeId &&
       (!source ||
@@ -52,6 +56,7 @@ export function saveGoal(userId: string, raw: GoalInput, id?: string): StudentGo
         (input.edition !== "待确认考期" && input.edition !== source.content.edition))
     )
       throw new Error("公告不存在或与考试/地区不匹配。");
+    if (source && input.edition === "待确认考期") input.edition = source.content.edition;
     const changedScope =
       previous &&
       [

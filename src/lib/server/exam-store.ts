@@ -211,7 +211,7 @@ export function noticeVersion(
 }
 export function listNotices(admin = false): ExamNotice[] {
   const ids = platformDb()
-    .prepare<[], { id: string }>("SELECT id FROM exam_notices ORDER BY created_at DESC LIMIT 2000")
+    .prepare<[], { id: string }>("SELECT id FROM exam_notices ORDER BY created_at DESC")
     .all();
   return ids.flatMap((row) => {
     const item = notice(row.id, !admin);
