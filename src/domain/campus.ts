@@ -23,6 +23,7 @@ export const campusEventSchema = z
     sourceUrl: z.union([z.literal(""), z.url().refine((url) => /^https?:/u.test(url))]).default(""),
     sourceId: z.string().max(100).default(""),
     sourceDigest: z.string().max(64).default(""),
+    sourceNodeKey: z.string().max(200).optional(),
     resourceIds: z
       .array(z.string().regex(/^[a-f0-9-]{32,36}$/u))
       .max(5)

@@ -8,7 +8,7 @@ interface NavigationEvent extends Event {
 }
 
 /** Chromium Navigation API covers SPA links and history traversal; unload remains a fallback. */
-export function useUnsavedChanges(isDirty: boolean): () => void {
+export function useUnsavedChanges(isDirty: boolean, protectQueryChanges = false): () => void {
   const active = useRef(false);
   useEffect(() => {
     active.current = isDirty;
@@ -23,7 +23,9 @@ export function useUnsavedChanges(isDirty: boolean): () => void {
       const target = new URL(url, window.location.href);
       if (
         !active.current ||
-        (target.origin === location.origin && target.pathname === location.pathname)
+        (target.origin === location.origin &&
+          target.pathname === location.pathname &&
+          (!protectQueryChanges || target.search === location.search))
       )
         return true;
       const confirmed = window.confirm("有尚未保存的编辑。离开将丢失这些内容，是否继续？");
@@ -54,7 +56,7 @@ export function useUnsavedChanges(isDirty: boolean): () => void {
       navigation?.removeEventListener("navigate", navigate);
       document.removeEventListener("click", click, true);
     };
-  }, []);
+  }, [protectQueryChanges]);
   return () => {
     active.current = false;
   };

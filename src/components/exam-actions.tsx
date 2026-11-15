@@ -1,4 +1,5 @@
 "use client";
+import { notifyScheduleChanged } from "@/components/schedule-refresh";
 import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -34,6 +35,8 @@ export function ExamActions({
       }
       if (action === "favorite" || action === "unfavorite") setSaved(action === "favorite");
       setMessage(payload.message ?? "已保存。");
+      notifyScheduleChanged();
+      router.refresh();
     } catch {
       setMessage("网络失败，请重试。");
     } finally {

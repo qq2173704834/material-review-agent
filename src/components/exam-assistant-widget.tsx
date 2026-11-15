@@ -329,7 +329,8 @@ function AssistantPanel(): ReactElement {
                         </p>
                       </details>
                     )}
-                    {message.payload.actionLink?.href.startsWith("/campus?") && (
+                    {(message.payload.actionLink?.href.startsWith("/me/schedule?") ||
+                      message.payload.actionLink?.href.startsWith("/campus?")) && (
                       <Link
                         className="button-secondary mt-3"
                         href={message.payload.actionLink.href}

@@ -22,6 +22,8 @@ import type { PrepState, PrepTask, PrepStage, PrepAssessment } from "@/domain/pr
 import type { StudentGoal } from "@/domain/student-goal";
 import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import { beijingDay } from "@/lib/portal-feed";
+import { notifyScheduleChanged } from "@/components/schedule-refresh";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { BrowsePosition } from "@/components/browse-back";
 import { countdownLabel, formatExamTime } from "@/lib/goal-schedule";
 import { learningDays, learningSummary, prepProgress, comparableScores } from "@/lib/preparation";
@@ -56,11 +58,9 @@ export interface PrepMaterial {
 }
 const views = [
   ["overview", "备考概览"],
-  ["calendar", "考试日历"],
   ["roadmap", "备考路线"],
   ["plan", "AI学习计划"],
   ["materials", "材料自查"],
-  ["records", "学习回顾"],
 ] as const;
 const verdictLabels: Record<string, string> = {
   passed: "通过",
@@ -86,7 +86,9 @@ export function PreparationCenter({
   initialNow,
   initialView,
   initialStage,
+  recordsOnly = false,
 }: {
+  recordsOnly?: boolean;
   goal: StudentGoal;
   goals: StudentGoal[];
   initialState: PrepState;
@@ -104,12 +106,15 @@ export function PreparationCenter({
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [error, setError] = useState("");
+  const [previousInitial, setPreviousInitial] = useState(initialState);
+  if (previousInitial !== initialState) {
+    setPreviousInitial(initialState);
+    if (initialState.revision >= state.revision) setState(initialState);
+  }
   const [view, setView] = useState(
-    views.some(([id]) => id === initialView) ? initialView : "overview",
+    recordsOnly ? "records" : views.some(([id]) => id === initialView) ? initialView : "overview",
   );
-  const [now, setNow] = useState(initialNow),
-    [month, setMonth] = useState(beijingDay(initialNow).slice(0, 7)),
-    [day, setDay] = useState(beijingDay(initialNow));
+  const [now, setNow] = useState(initialNow);
   const [stageId, setStageId] = useState(
       initialState.stages.find((stage) => stage.id === initialStage)?.id ??
         initialState.stages[0]?.id ??
@@ -131,6 +136,7 @@ export function PreparationCenter({
     [heatDay, setHeatDay] = useState(beijingDay(initialNow)),
     [assessmentId, setAssessmentId] = useState(""),
     [compareId, setCompareId] = useState("");
+  useUnsavedChanges(!!editingTask || !!editingStage || !!editingAssessment);
   const controller = useRef<AbortController | null>(null),
     pending = useRef(false);
   useEffect(() => {
@@ -148,11 +154,11 @@ export function PreparationCenter({
   useEffect(() => {
     const restore = (): void => {
       const next = new URL(location.href).searchParams.get("view") ?? "overview";
-      setView(views.some(([id]) => id === next) ? next : "overview");
+      setView(recordsOnly ? "records" : views.some(([id]) => id === next) ? next : "overview");
     };
     window.addEventListener("popstate", restore);
     return () => window.removeEventListener("popstate", restore);
-  }, []);
+  }, [recordsOnly]);
   function navigate(next: string): void {
     setView(next);
     const url = new URL(location.href);
@@ -174,6 +180,7 @@ export function PreparationCenter({
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       setState(body.state);
+      notifyScheduleChanged();
       setMessage("已保存");
       return true;
     } catch (cause) {
@@ -192,19 +199,6 @@ export function PreparationCenter({
       event.date.includes("T") ? Date.parse(event.date) >= now : event.date.slice(0, 10) >= today,
     )
     .sort((a, b) => a.date.localeCompare(b.date));
-  const taskEvents: PrepEvent[] =
-    goal.state === "active"
-      ? state.tasks
-          .filter((task) => task.date)
-          .map((task) => ({
-            id: task.id,
-            date: task.date,
-            title: task.title,
-            label: "学习任务",
-            href: `/me/preparation?goal=${goal.id}&view=roadmap`,
-          }))
-      : [];
-  const allEvents = [...events, ...taskEvents];
   const draft = state.drafts.at(-1),
     days = learningDays(state.tasks);
   const thisWeek = learningSummary(state.tasks, shiftDay(today, -6), today),
@@ -355,7 +349,7 @@ export function PreparationCenter({
       <header className="page-heading">
         <p className="text-sm text-primary">MY PREPARATION</p>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-semibold">备考中心</h1>
+          <h1 className="text-3xl font-semibold">{recordsOnly ? "学习记录" : "目标详情"}</h1>
           <Link className="button-secondary" href="/me">
             管理考试目标
           </Link>
@@ -376,9 +370,18 @@ export function PreparationCenter({
             <select
               aria-label="切换备考目标"
               value={goal.id}
-              onChange={(event) =>
-                router.push(`/me/preparation?goal=${event.target.value}&view=${view}`)
-              }
+              onChange={(event) => {
+                if (
+                  (editingTask || editingStage || editingAssessment) &&
+                  !window.confirm("有尚未保存的编辑，切换目标将丢失这些内容，是否继续？")
+                )
+                  return;
+                router.push(
+                  recordsOnly
+                    ? `/me/records?goal=${event.target.value}`
+                    : `/me/preparation?goal=${event.target.value}&view=${view}`,
+                );
+              }}
             >
               {goals.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -389,18 +392,25 @@ export function PreparationCenter({
           </label>
         )}
       </div>
-      <nav className="page-tabs" aria-label="备考中心页面">
-        {views.map(([id, label]) => (
-          <button
-            type="button"
-            key={id}
-            aria-current={view === id ? "page" : undefined}
-            onClick={() => navigate(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      {!recordsOnly && (
+        <nav className="page-tabs" aria-label="备考中心页面">
+          {views.map(([id, label]) => (
+            <button
+              type="button"
+              key={id}
+              aria-current={view === id ? "page" : undefined}
+              onClick={() => navigate(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      )}
+      {!recordsOnly && (
+        <Link className="text-sm text-primary underline" href={`/me/records?goal=${goal.id}`}>
+          查看此目标的学习记录 →
+        </Link>
+      )}
       <div aria-live="polite" className="prep-feedback">
         {busy ? (
           <span className="inline-flex items-center gap-2">
@@ -503,16 +513,7 @@ export function PreparationCenter({
               <h2 className="font-semibold mb-4">接下来的安排</h2>
               {upcoming.slice(0, 3).map((event) => (
                 <p className="my-3" key={event.id}>
-                  <Link
-                    className="prep-link"
-                    href={`/me/preparation?goal=${goal.id}&view=calendar`}
-                    onClick={(click) => {
-                      click.preventDefault();
-                      setMonth(event.date.slice(0, 7));
-                      setDay(event.date.slice(0, 10));
-                      navigate("calendar");
-                    }}
-                  >
+                  <Link className="prep-link" href={`/me/schedule?goal=${goal.id}`}>
                     {event.label} · {event.date.slice(0, 10)}
                   </Link>
                 </p>
@@ -524,10 +525,10 @@ export function PreparationCenter({
                     : "目标已暂停或归档，活动提醒已停止。"}
                 </p>
               )}
-              <button className="button-secondary mt-4" onClick={() => navigate("calendar")}>
+              <Link className="button-secondary mt-4" href={`/me/schedule?goal=${goal.id}`}>
                 <CalendarDays size={16} />
-                打开日历
-              </button>
+                查看相关日程
+              </Link>
             </section>
             <section className="surface">
               <div className="prep-panel-title">
@@ -551,124 +552,6 @@ export function PreparationCenter({
               </button>
             </section>
           </div>
-        </>
-      )}
-      {view === "calendar" && (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold">重要日期，一眼看清</h2>
-            <label>
-              查看月份{" "}
-              <input
-                aria-label="查看月份"
-                type="month"
-                value={month}
-                onChange={(event) => {
-                  if (event.target.value) setMonth(event.target.value);
-                }}
-              />
-            </label>
-          </div>
-          <div className="prep-calendar-layout">
-            <section className="surface">
-              <div className="prep-month-grid">
-                {["一", "二", "三", "四", "五", "六", "日"].map((label) => (
-                  <span className="text-center prep-muted" key={label}>
-                    {label}
-                  </span>
-                ))}
-                {Array.from(
-                  { length: (new Date(`${month}-01T00:00:00Z`).getUTCDay() + 6) % 7 },
-                  (_, index) => (
-                    <span key={`blank-${index}`} />
-                  ),
-                )}
-                {Array.from(
-                  {
-                    length: new Date(
-                      Number(month.slice(0, 4)),
-                      Number(month.slice(5)),
-                      0,
-                    ).getDate(),
-                  },
-                  (_, index) => {
-                    const date = `${month}-${String(index + 1).padStart(2, "0")}`,
-                      items = allEvents.filter((event) => event.date.slice(0, 10) === date);
-                    return (
-                      <button
-                        className={items.length ? "has-events" : ""}
-                        aria-pressed={day === date}
-                        aria-label={`${date}，${items.length}项安排`}
-                        key={date}
-                        onClick={() => setDay(date)}
-                      >
-                        {index + 1}
-                        {items.length > 0 && (
-                          <small>
-                            {items[0]!.label}
-                            {items.length > 1 ? ` +${items.length - 1}` : ""}
-                          </small>
-                        )}
-                      </button>
-                    );
-                  },
-                )}
-              </div>
-              <div className="prep-agenda">
-                {allEvents
-                  .filter((event) => event.date.startsWith(month))
-                  .sort((a, b) => a.date.localeCompare(b.date))
-                  .map((event) => (
-                    <button
-                      className="button-secondary"
-                      key={event.id}
-                      onClick={() => setDay(event.date.slice(0, 10))}
-                    >
-                      {event.date.slice(5, 10)} · {event.title} · {event.label}
-                    </button>
-                  ))}
-                {!allEvents.some((event) => event.date.startsWith(month)) && (
-                  <p className="prep-muted">本月暂无安排。</p>
-                )}
-              </div>
-            </section>
-            <section className="surface" aria-live="polite">
-              <h3 className="font-semibold mb-4">{day}的安排</h3>
-              {allEvents
-                .filter((event) => event.date.slice(0, 10) === day)
-                .map((event) => (
-                  <article className="my-4" key={event.id}>
-                    <span className="prep-badge">{event.label}</span>
-                    <h4 className="my-2 font-medium">{event.title}</h4>
-                    <p className="prep-muted">
-                      {event.date.replace("T", " ")}
-                      {event.date.length === 10 ? "（仅日期）" : "（北京时间）"} ·{" "}
-                      {countdownLabel(event.date, now)}
-                    </p>
-                    <Link className="prep-link" href={event.href}>
-                      查看相关安排 →
-                    </Link>
-                  </article>
-                ))}
-              {!allEvents.some((event) => event.date.slice(0, 10) === day) && (
-                <p className="prep-muted">这一天暂无安排。</p>
-              )}
-            </section>
-          </div>
-          {!events.some(
-            (event) => event.href.startsWith("/exams/") && /笔试|考试|口试|面试/.test(event.label),
-          ) &&
-            goal.state === "active" && (
-              <section className="surface">
-                <h3 className="font-semibold">时间待公布</h3>
-                <p className="mt-2">
-                  {CATEGORY_LABELS[goal.category]} · {goal.edition}
-                </p>
-                <Link className="prep-link" href={`/me?noticeId=${goal.noticeId ?? ""}`}>
-                  确认考期或关联公告
-                </Link>
-              </section>
-            )}
         </>
       )}
       {view === "roadmap" && (

@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { notifyScheduleChanged } from "@/components/schedule-refresh";
+import type { ScheduleNode } from "@/lib/schedule";
+import { formatScheduleTime } from "@/lib/schedule";
 import { Plus, Minus, LoaderCircle, Check } from "lucide-react";
 import type { ReactElement } from "react";
 import { useRouter } from "next/navigation";
@@ -12,7 +15,9 @@ export function StudentGoals({
   notices,
   newCategory,
   noticeId,
+  scheduleNodes = [],
 }: {
+  scheduleNodes?: ScheduleNode[];
   goals: StudentGoal[];
   notices: ExamNotice[];
   newCategory?: string;
@@ -63,6 +68,7 @@ export function StudentGoals({
       if (!response.ok) throw new Error(result.error);
       setMessage("考试目标已保存。");
       setEditing(null);
+      notifyScheduleChanged();
       router.refresh();
     } catch (error) {
       setFailed(true);
@@ -76,7 +82,7 @@ export function StudentGoals({
     <section id="goals" className="surface space-y-5">
       <h2 className="text-xl font-semibold">我的考试目标</h2>
       <Link href="/me/preparation" className="button-primary">
-        打开备考中心 →
+        继续准备 →
       </Link>
       <div className="grid gap-3 md:grid-cols-2">
         {!goals.length && (
@@ -98,12 +104,25 @@ export function StudentGoals({
               {goal.minutesPerDay ? `每天学习${goal.minutesPerDay}分钟` : "每日学习时长未设置"}
             </p>
             <p className="text-sm">{goal.progress || "暂无个人进度记录"}</p>
+            <p className="text-sm text-muted-foreground">
+              {goal.state !== "active"
+                ? "当前提醒已停止"
+                : (() => {
+                    const node = scheduleNodes.find(
+                      (node) =>
+                        node.goalIds.includes(goal.id) && /考试|笔试|口试|面试/u.test(node.label),
+                    );
+                    return node?.value
+                      ? `${node.label}：${formatScheduleTime(node.value)}`
+                      : "考试时间待公布";
+                  })()}
+            </p>
             <details>
               <summary className="goal-summary">
                 <Minus size={16} aria-hidden="true" />
-                清除目标
+                归档目标
               </summary>
-              <p>仅清除目标与对应自动计划；历史材料任务、结果和收藏保留。</p>
+              <p>归档后停止当前提醒，学习记录、材料任务与收藏继续保留。</p>
               <button
                 disabled={busy}
                 className="underline"
@@ -113,33 +132,54 @@ export function StudentGoals({
                   setMessage("");
                   try {
                     const response = await fetch("/api/goals", {
-                      method: "DELETE",
+                      method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ id: goal.id }),
+                      body: JSON.stringify({
+                        id: goal.id,
+                        goal: {
+                          category: goal.category,
+                          region: goal.region,
+                          edition: goal.edition,
+                          subject: goal.subject,
+                          state: "archived",
+                          foundation: goal.foundation,
+                          studyStage: goal.studyStage,
+                          minutesPerDay: goal.minutesPerDay,
+                          targetScore: goal.targetScore,
+                          formats: goal.formats,
+                          education: goal.education,
+                          progress: goal.progress,
+                          noticeId: goal.noticeId,
+                        },
+                      }),
                     });
-                    if (!response.ok) throw new Error("清除失败");
+                    if (!response.ok) throw new Error("归档失败");
+                    notifyScheduleChanged();
                     router.refresh();
-                    setMessage("目标已清除，历史任务可从材料预审入口查看。");
+                    setMessage("目标已归档，学习记录与材料任务已保留。");
                   } catch {
                     setFailed(true);
-                    setMessage("清除失败，请重试。");
+                    setMessage("归档失败，请重试。");
                   } finally {
                     setBusy(false);
                   }
                 }}
               >
-                确认清除此目标
+                确认归档此目标
               </button>
             </details>
             <div className="goal-actions">
               <Link className="button-secondary" href={`/me/preparation?goal=${goal.id}`}>
-                我的备考
+                继续准备
+              </Link>
+              <Link className="button-secondary" href={`/me/schedule?goal=${goal.id}`}>
+                查看相关日程
               </Link>
               <Link className="button-secondary" href={`/learn?goal=${goal.id}`}>
                 目标学习资源
               </Link>
               <Link className="button-secondary" href={`/me/goals/${goal.id}`}>
-                材料准备与预审
+                检查报名材料
               </Link>
               <button
                 className="button-secondary"

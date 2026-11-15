@@ -1,11 +1,4 @@
-import {
-  BookOpen,
-  ClipboardCheck,
-  LayoutDashboard,
-  Compass,
-  Files,
-  GraduationCap,
-} from "lucide-react";
+import { BookOpen, ClipboardCheck, LayoutDashboard, Compass, GraduationCap } from "lucide-react";
 import Link from "next/link";
 import {
   AccountMenu,
@@ -13,6 +6,8 @@ import {
   AccountSessionProvider,
 } from "@/components/account-session";
 
+import { PreparationNavigation } from "@/components/preparation-navigation";
+import { ScheduleRefresh } from "@/components/schedule-refresh";
 import { cn } from "@/lib/utils";
 
 import type { ReactElement, ReactNode } from "react";
@@ -25,11 +20,10 @@ interface AppShellProps {
 
 const navigationItems = [
   { page: "home", href: "/", title: "首页", icon: LayoutDashboard },
-  { page: "learn", href: "/learn", title: "学习", icon: BookOpen },
   { page: "exams", href: "/exams", title: "考试中心", icon: Compass },
-  { page: "me", href: "/me", title: "备考中心", icon: ClipboardCheck },
-  { page: "campus", href: "/campus", title: "校园事务", icon: GraduationCap },
-  { page: "tasks", href: "/tasks", title: "材料预审", icon: Files },
+  { page: "campus", href: "/campus", title: "校园通知", icon: GraduationCap },
+  { page: "learn", href: "/learn", title: "学习资源", icon: BookOpen },
+  { page: "me", href: "/me", title: "我的备考", icon: ClipboardCheck },
 ] as const;
 
 export function AppShell({ activePage, children }: AppShellProps): ReactElement {
@@ -67,10 +61,16 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
               <Link
                 key={page}
                 href={href}
-                aria-current={activePage === page ? "page" : undefined}
+                aria-current={
+                  activePage === page ||
+                  (page === "me" && (activePage === "tasks" || activePage === "task-detail"))
+                    ? "page"
+                    : undefined
+                }
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-lg px-2 py-3 text-sm transition-colors sm:flex-row sm:gap-3 sm:px-3",
-                  activePage === page
+                  activePage === page ||
+                    (page === "me" && (activePage === "tasks" || activePage === "task-detail"))
                     ? "bg-primary/8 font-medium text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
@@ -90,15 +90,15 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
               {activePage === "home"
                 ? "首页"
                 : activePage === "learn"
-                  ? "学习"
+                  ? "学习资源"
                   : activePage === "setup"
                     ? "服务维护"
                     : activePage === "exams"
                       ? "考试中心"
                       : activePage === "me"
-                        ? "备考中心"
+                        ? "我的备考"
                         : activePage === "campus"
-                          ? "校园事务"
+                          ? "校园通知"
                           : activePage === "admin"
                             ? "内容管理"
                             : "审查任务"}
@@ -110,6 +110,8 @@ export function AppShell({ activePage, children }: AppShellProps): ReactElement 
             tabIndex={-1}
             className="app-main mx-auto max-w-[1520px] px-4 pt-6 pb-28 outline-none sm:px-7 lg:px-9 lg:pt-8"
           >
+            <ScheduleRefresh />
+            {["me", "tasks", "task-detail"].includes(activePage) && <PreparationNavigation />}
             {children}
           </main>
         </div>

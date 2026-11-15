@@ -1,18 +1,13 @@
-import { CampusHub } from "@/components/campus-hub";
-import { campusState, campusNotices, campusLinkedNotices } from "@/lib/server/campus-store";
+import { personalSchedule } from "@/lib/server/personal-schedule";
 import { savedLearningItems } from "@/lib/server/learning-store";
 import { learningEntries } from "@/lib/server/learning-store";
 import { catalogLifecycle } from "@/lib/catalog-lifecycle";
 import { LearningActions } from "@/components/learning-actions";
 import { ExamStatus, RegistrationDeadline } from "@/components/registration-deadline";
 import { requestTime } from "@/lib/server/request-time";
-import { examReminders } from "@/lib/server/exam-reminders";
-import { ReminderRead } from "@/components/reminder-read";
 import { StudentGoals } from "@/components/student-goals";
 import { studentGoals } from "@/lib/server/student-goals";
 import { listNotices } from "@/lib/server/exam-store";
-import { resolvedGoalNotice } from "@/lib/goal-schedule";
-import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -72,41 +67,33 @@ export default async function Page({
       { notice_id: string; task_id: string; notice_version: number; stage: string; target: string }
     >("SELECT * FROM exam_task_links WHERE user_id=?")
     .all(account.id);
-  const nodes = examReminders(account.id, now);
-  const campus = campusState(account.id);
+
   return (
     <AppShell activePage="me">
       <div className="space-y-7">
         <header className="page-heading">
-          <h1 className="text-3xl font-semibold">我的考试</h1>
-          <p className="mt-3">这里汇总你的考试目标、学习进度、收藏与材料准备。</p>
+          <h1 className="text-3xl font-semibold">我的备考</h1>
+          <p className="mt-3">选定目标，安排学习，把每一次准备落到实处。</p>
         </header>
-        {view === "overview" && (
-          <CampusHub
-            key={account.id}
-            sourceNotices={campusLinkedNotices(account.id)}
-            compact
-            initialNow={now}
-            initialState={campus}
-            initialNotices={campusNotices(campus.preferences.schoolId)}
-          />
-        )}
-        <nav className="page-tabs" aria-label="个人内容导航">
-          {[
-            ["overview", "考试与日程"],
-            ["favorites", `我的收藏 ${items.length + resources.length}`],
-            ["feedback", "我的反馈"],
-            ["reviews", "材料记录"],
-          ].map(([key, label]) => (
-            <Link
-              key={key}
-              href={`/me?view=${key}`}
-              aria-current={view === key ? "page" : undefined}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
+        <details className="content-settings" open={view !== "overview"}>
+          <summary>收藏与个人工具</summary>
+          <nav className="page-tabs mt-3" aria-label="个人工具导航">
+            {[
+              ["overview", "考试目标"],
+              ["favorites", `我的收藏 ${items.length + resources.length}`],
+              ["feedback", "我的反馈"],
+              ["reviews", "材料记录"],
+            ].map(([key, label]) => (
+              <Link
+                key={key}
+                href={`/me?view=${key}`}
+                aria-current={view === key ? "page" : undefined}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </details>
         {view === "overview" && (
           <>
             <StudentGoals
@@ -114,6 +101,7 @@ export default async function Page({
               notices={listNotices()}
               newCategory={filters.newCategory}
               noticeId={filters.noticeId}
+              scheduleNodes={personalSchedule(account.id)}
             />
           </>
         )}
@@ -150,53 +138,6 @@ export default async function Page({
             ) : (
               <p>暂无学习资料收藏，可到学习页选择。</p>
             )}
-          </section>
-        )}
-        {view === "overview" && (
-          <section className="surface space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-xl font-semibold">考试日程</h2>
-              <span className="text-xs text-muted-foreground">未来30天 · 北京时间</span>
-            </div>
-
-            {nodes.length ? (
-              nodes.map((node, index) => (
-                <p key={`${node.id}-${index}`}>
-                  <Link className="text-primary underline" href={`/exams/${node.id}`}>
-                    {node.title}
-                  </Link>{" "}
-                  · {node.label}：{node.value}
-                  {Date.parse(node.value) < now ? "（已到日期，请核对时刻）" : ""}
-                  {node.value.length === 10 ? "（仅日期）" : ""}
-                  {node.read ? " · 提醒已读" : <ReminderRead id={node.id} version={node.version} />}
-                </p>
-              ))
-            ) : (
-              <p>
-                {goals.some((goal) => goal.state === "active")
-                  ? "未来30天暂无已公布的日期，可查看下方目标的全部安排。"
-                  : "添加考试目标或关注考试，在这里查看重要日期。"}
-              </p>
-            )}
-            {goals
-              .filter((goal) => goal.state === "active")
-              .map((goal) => {
-                const source = resolvedGoalNotice(goal, listNotices());
-                const hasDates = source?.content.timeline.some((point) =>
-                  /^\d{4}-\d{2}-\d{2}/.test(point.value),
-                );
-                return (
-                  <p key={goal.id}>
-                    <Link
-                      href={`/me/preparation?goal=${goal.id}&view=calendar`}
-                      className="text-primary"
-                    >
-                      {CATEGORY_LABELS[goal.category]} · {goal.edition}
-                    </Link>{" "}
-                    · {hasDates ? "查看全部考试安排" : "时间待公布"}
-                  </p>
-                );
-              })}
           </section>
         )}
         {view === "favorites" && (

@@ -389,8 +389,12 @@ export function TaskWorkspace({
             >
               ←{" "}
               {searchParams.get("returnTo")?.startsWith("/me/preparation")
-                ? "返回备考中心"
-                : "返回任务列表"}
+                ? "返回目标详情"
+                : searchParams.get("returnTo")?.startsWith("/me/schedule")
+                  ? "返回我的日程"
+                  : searchParams.get("returnTo")?.startsWith("/campus")
+                    ? "返回校园通知"
+                    : "返回任务列表"}
             </Link>
             <QuickGuide />
           </div>

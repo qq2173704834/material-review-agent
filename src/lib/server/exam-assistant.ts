@@ -1,4 +1,6 @@
-import { campusState, campusNotices, campusDisplayEvents } from "./campus-store";
+import { personalSchedule } from "./personal-schedule";
+import { scheduleDate } from "@/lib/schedule";
+import { campusState, campusNotices } from "./campus-store";
 import { campusQuestionEvents } from "@/lib/campus";
 import { CAMPUS_SCHOOLS } from "@/domain/campus-schools";
 import "server-only";
@@ -93,20 +95,52 @@ export function assistantSources(userId: string, input: AssistantInput): Context
       historical: false,
       sourceType: "官方来源",
     }));
-    const personalSources: ContextSource[] = input.useContext
-      ? campusQuestionEvents(campusDisplayEvents(userId), input.question, Date.now())
-          .slice(0, 8)
-          .map((event) => ({
-            id: event.id,
-            version: state.revision || 1,
-            title: event.title,
-            url: "/campus",
-            text: `${event.title}；${event.kind}；课程：${event.course}；开始：${event.start || "时间待定"}；结束/截止：${event.end || "时间待定"}；地点：${event.location}；备注：${event.note}`,
-            checkedAt: "",
-            scope: "本人校园日程",
-            historical: false,
-          }))
-      : [];
+    const nodes = input.useContext ? personalSchedule(userId).filter((node) => !node.done) : [];
+    const events = nodes.map((node) => ({
+      id: node.id,
+      title: node.title,
+      kind:
+        node.event?.kind ||
+        (node.group === "考试安排"
+          ? ("考试" as const)
+          : node.group === "报名与申请"
+            ? ("报名" as const)
+            : ("其他" as const)),
+      course: node.event?.course || "",
+      semester: node.event?.semester || "",
+      start: node.group === "考试安排" ? scheduleDate(node.value) : "",
+      end: node.group === "考试安排" ? "" : scheduleDate(node.value),
+      done: false,
+      location: node.event?.location || "",
+      note: node.event?.note || "",
+      sourceUrl: "",
+      sourceId: "",
+      sourceDigest: "",
+      resourceIds: [],
+      reminderHours: 0 as const,
+    }));
+    const personalSources: ContextSource[] = campusQuestionEvents(
+      events,
+      input.question,
+      Date.now(),
+    )
+      .slice(0, 8)
+      .map((event) => {
+        const node = nodes.find((node) => node.id === event.id)!;
+        return {
+          id: node.id,
+          version: node.revision || state.revision || 1,
+          title: node.title,
+          url:
+            node.origin === "campus"
+              ? node.href
+              : `/me/schedule${node.goalIds[0] ? `?goal=${node.goalIds[0]}` : ""}`,
+          text: `${node.title}；${node.label}；时间：${node.value || "时间待公布"}；课程：${event.course}；地点：${event.location}；备注：${event.note}`,
+          checkedAt: "",
+          scope: "本人日程",
+          historical: false,
+        };
+      });
     return [...personalSources, ...publicSources].slice(0, 8);
   }
   const goal = input.useContext && input.goalId ? studentGoal(userId, input.goalId) : undefined;
@@ -310,12 +344,12 @@ export async function askExamAssistant(
     if (/学校|校园|校内|作业|期中|期末|本周|今天先做/u.test(input.question)) {
       answer = {
         answer: sources.length
-          ? `找到以下${input.useContext ? "本人与本校" : "本校公开"}安排：\n${sources.map((source) => `${source.title}：${source.text.slice(0, 300)}`).join("\n\n")}\n需要添加或调整日程时，请到校园事务核对预览后保存。`
-          : `尚无可用的${input.useContext ? "个人或本校" : "本校公开"}安排。请先在校园事务选择学校或导入收到的通知。${input.useContext ? "" : "查询私人作业和考试时，请启用个人上下文。"}`,
+          ? `找到以下${input.useContext ? "本人与本校" : "本校公开"}安排：\n${sources.map((source) => `${source.title}：${source.text.slice(0, 300)}`).join("\n\n")}\n需要添加或调整日程时，请到我的日程核对预览后保存。`
+          : `尚无可用的${input.useContext ? "个人或本校" : "本校公开"}安排。请先在校园通知选择学校，或到我的日程导入收到的通知。${input.useContext ? "" : "查询私人作业和考试时，请启用个人上下文。"}`,
         ...(/添加|新建|安排|调整|改到/u.test(input.question)
           ? {
               actionLink: {
-                href: `/campus?proposal=${encodeURIComponent(input.question)}${input.useContext && campusState(userId).events.filter((event) => input.question.includes(event.title)).length === 1 ? `&edit=${campusState(userId).events.find((event) => input.question.includes(event.title))!.id}` : ""}`,
+                href: `/me/schedule?proposal=${encodeURIComponent(input.question)}${input.useContext && campusState(userId).events.filter((event) => input.question.includes(event.title)).length === 1 ? `&edit=${campusState(userId).events.find((event) => input.question.includes(event.title))!.id}` : ""}`,
                 label: "核对日程建议",
               },
             }

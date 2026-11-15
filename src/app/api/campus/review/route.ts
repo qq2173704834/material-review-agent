@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sessionAccount } from "@/lib/server/account-auth";
 import { readSmallJson } from "@/lib/server/request-json";
-import { campusDb, campusState, campusNotices } from "@/lib/server/campus-store";
+import {
+  campusDb,
+  campusState,
+  campusNotices,
+  campusLinkedNotices,
+} from "@/lib/server/campus-store";
 import { getReviewStore } from "@/lib/server/review-store";
 export const runtime = "nodejs";
 export async function POST(request: Request): Promise<Response> {
@@ -14,7 +19,9 @@ export async function POST(request: Request): Promise<Response> {
       .strict()
       .parse(await readSmallJson(request));
     const state = campusState(user.id),
-      notice = campusNotices(state.preferences.schoolId).find((notice) => notice.id === input.id);
+      notice = [...campusNotices(state.preferences.schoolId), ...campusLinkedNotices(user.id)].find(
+        (notice) => notice.id === input.id,
+      );
     if (!notice || notice.withdrawn || notice.digest !== input.digest)
       throw new Error("通知已更新或不属于当前学校，请刷新核对。");
     if (!/(?:提交|上传|报送|提供)[^。\n]{0,60}(?:申请表|证明|报告|附件|材料)/u.test(notice.text))

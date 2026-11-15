@@ -35,7 +35,7 @@ test("PORT 北京日界与日期精度，过去节点不当即将截止", () => 
   assert.equal(isUpcoming("", now), false);
 });
 test("首页展示范围与数量有界且无效输入回退", () => {
-  assert.deepEqual(homepageOptions({}), { days: 30, size: 12 });
+  assert.deepEqual(homepageOptions({}), { days: 30, size: 6 });
   assert.deepEqual(homepageOptions({ days: "90", size: "24" }), { days: 90, size: 24 });
-  assert.deepEqual(homepageOptions({ days: "999999", size: "-1" }), { days: 30, size: 12 });
+  assert.deepEqual(homepageOptions({ days: "999999", size: "-1" }), { days: 30, size: 6 });
 });

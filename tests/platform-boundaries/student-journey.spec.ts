@@ -82,9 +82,9 @@ for (const viewport of [
     await expect(trigger).toBeFocused();
     await page
       .getByRole("navigation", { name: "主导航" })
-      .getByRole("link", { name: "备考中心", exact: true })
+      .getByRole("link", { name: "我的备考", exact: true })
       .click();
-    await page.getByRole("link", { name: "材料准备与预审", exact: true }).click();
+    await page.getByRole("link", { name: "检查报名材料", exact: true }).click();
     await page.getByRole("button", { name: "建立目标材料任务", exact: true }).click();
     await page
       .getByRole("link", { name: "进入材料任务：核对规则、上传材料、查看证据与复检", exact: true })

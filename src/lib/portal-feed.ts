@@ -9,7 +9,7 @@ export function homepageOptions(filters: Record<string, string | undefined>): {
     size = Number(filters.size);
   return {
     days: [7, 30, 60, 90].includes(days) ? days : 30,
-    size: [6, 12, 24].includes(size) ? size : 12,
+    size: [6, 12, 24].includes(size) ? size : 6,
   };
 }
 export function nodeTimestamp(value: string): number {

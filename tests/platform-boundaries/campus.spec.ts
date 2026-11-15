@@ -142,10 +142,11 @@ test("校园页面添加日程并保存桌面手机截图", async ({ playwright,
   await expect(page.getByRole("heading", { name: "上海第二工业大学", exact: true })).toBeVisible();
   await mkdir("outputs/campus", { recursive: true });
   await page.screenshot({ path: "outputs/campus/notices-desktop.png", fullPage: false });
+  await page.goto("/me/schedule");
   await page.getByRole("button", { name: "添加日程", exact: true }).click();
   await page.getByLabel("事项名称", { exact: true }).fill("合成课程报告");
   await page.getByRole("button", { name: "保存日程", exact: true }).click();
-  await page.getByRole("button", { name: "我的日程", exact: true }).click();
+  await page.goto("/me/schedule?pending=1");
   await expect(page.getByRole("heading", { name: "合成课程报告", exact: true })).toBeVisible();
   await mkdir("outputs/campus", { recursive: true });
   await page.screenshot({ path: "outputs/campus/desktop.png", fullPage: true });
@@ -153,12 +154,12 @@ test("校园页面添加日程并保存桌面手机截图", async ({ playwright,
   await page.screenshot({ path: "outputs/campus/mobile.png", fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(
-    page.getByRole("heading", { name: "全国计算机等级考试", exact: true }),
+    page.getByRole("heading", { name: "全国计算机等级考试 · 待确认考期", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("日程类型", { exact: true }).selectOption("作业");
-  await expect(page.getByRole("heading", { name: "全国计算机等级考试", exact: true })).toHaveCount(
-    0,
-  );
+  await page.getByRole("button", { name: "作业与报告", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "全国计算机等级考试 · 待确认考期", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "合成课程报告", exact: true })).toBeVisible();
   await actor.api.dispose();
 });
@@ -234,7 +235,7 @@ test("校园材料任务幂等、通知撤回门禁与旧日程停止倒计时",
     expect(stale.status()).toBe(400);
     await page.context().addCookies((await actors.student.api.storageState()).cookies);
     await page.goto("/campus");
-    await page.getByRole("button", { name: "我的日程", exact: true }).click();
+    await page.goto("/me/schedule?pending=1");
     const card = page
       .getByRole("article")
       .filter({ has: page.getByRole("heading", { name: linkedEvent.title, exact: true }) });

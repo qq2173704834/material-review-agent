@@ -61,10 +61,13 @@ test("已知场次自动关联且六级目标识别合并公告；未知目标�
   });
   const page = await context.newPage();
   await page.goto(`/me/preparation?goal=${known.id}&view=calendar`);
-  await page.getByLabel("查看月份").fill("2027-03");
+  await expect(page).toHaveURL(new RegExp(`/me/schedule\\?goal=${known.id}`));
+  await page.getByRole("button", { name: "切换日历", exact: true }).click();
+  await page.getByLabel("月份", { exact: true }).fill("2027-03");
   await page.getByRole("button", { name: "2027-03-20，1项安排" }).click();
   await expect(page.getByText("2027-03-20的安排")).toBeVisible();
   await page.goto(`/me/preparation?goal=${unknown.id}&view=calendar`);
+  await page.locator("#pending > summary").click();
   await expect(page.getByText("时间待公布", { exact: false }).first()).toBeVisible();
   await page.goto("/me");
   await expect(page.getByText("计算机等级考试", { exact: false }).first()).toBeVisible();

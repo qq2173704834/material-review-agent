@@ -1,4 +1,16 @@
 "use client";
+import { ScheduleExamCard } from "@/components/schedule-exam-card";
+import { BrowsePosition } from "@/components/browse-back";
+import { notifyScheduleChanged } from "@/components/schedule-refresh";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
+import {
+  campusScheduleNodes,
+  sortSchedule,
+  scheduleDate,
+  scheduleOverdue,
+  SCHEDULE_GROUPS,
+  type ScheduleNode,
+} from "@/lib/schedule";
 import { CampusSchoolRequest } from "@/components/campus-school-request";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -38,13 +50,6 @@ function countdownLabel(value: string, now: number): string {
       );
 }
 
-export interface CampusExamNode {
-  href?: string;
-  id: string;
-  title: string;
-  label: string;
-  value: string;
-}
 const fieldClass =
   "min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm";
 const buttonClass =
@@ -78,7 +83,12 @@ export function CampusHub({
   initialEditor,
   resources = [],
   examNodes = [],
-  compact = false,
+  mode = "notices",
+  initialNoticeId,
+  initialGoal = "",
+  initialGroup = "",
+  initialPending = false,
+  initialEditMissing = false,
 }: {
   sourceNotices?: CampusNotice[];
   resources?: Array<{ id: string; title: string; subject: string }>;
@@ -87,8 +97,13 @@ export function CampusHub({
   initialNow: number;
   initialState: CampusState;
   initialNotices: CampusNotice[];
-  examNodes?: CampusExamNode[];
-  compact?: boolean;
+  examNodes?: ScheduleNode[];
+  mode?: "notices" | "schedule";
+  initialNoticeId?: string;
+  initialGoal?: string;
+  initialGroup?: string;
+  initialPending?: boolean;
+  initialEditMissing?: boolean;
 }): ReactElement {
   const router = useRouter();
   const [now, setNow] = useState(initialNow);
@@ -106,9 +121,11 @@ export function CampusHub({
       setNotices(initialNotices);
     }
   }
-  const [tab, setTab] = useState<"notices" | "schedule">(compact ? "schedule" : "notices");
+  const tab = mode;
   const [preferences, setPreferences] = useState(state.preferences),
-    [isSettingsOpen, setIsSettingsOpen] = useState(!state.preferences.schoolId && !compact);
+    [isSettingsOpen, setIsSettingsOpen] = useState(
+      !state.preferences.schoolId && mode === "notices",
+    );
   const [editor, setEditor] = useState<CampusEvent | null>(initialEditor || null),
     [isImportOpen, setIsImportOpen] = useState(!!initialProposal && !initialEditor);
   const [text, setText] = useState(initialProposal),
@@ -129,12 +146,40 @@ export function CampusHub({
     [unread, setUnread] = useState(false),
     [favoritesOnly, setFavoritesOnly] = useState(false),
     [course, setCourse] = useState("");
-  const [opened, setOpened] = useState<string | null>(null),
+  const [group, setGroup] = useState(
+      SCHEDULE_GROUPS.some((item) => item === initialGroup) ? initialGroup : "",
+    ),
+    [showCompleted, setShowCompleted] = useState(false),
+    [pendingOpen, setPendingOpen] = useState(initialPending);
+  const [previousGroup, setPreviousGroup] = useState(initialGroup);
+  if (previousGroup !== initialGroup) {
+    setPreviousGroup(initialGroup);
+    setGroup(SCHEDULE_GROUPS.some((item) => item === initialGroup) ? initialGroup : "");
+  }
+  const [day, setDay] = useState(new Date(initialNow + 8 * 3600000).toISOString().slice(0, 10));
+  const [opened, setOpened] = useState<string | null>(initialNoticeId || null),
     [month, setMonth] = useState(
       new Date(initialNow).toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }).slice(0, 7),
     );
   const [view, setView] = useState<"list" | "month">("list");
-  async function mutate(command: Record<string, unknown>): Promise<boolean> {
+  const clearDirty = useUnsavedChanges(
+    !!editor || (isImportOpen && (!!text || drafts.length > 0)),
+    true,
+  );
+  const contextKey = JSON.stringify([initialEditor?.id, initialProposal, initialNoticeId]);
+  const [previousContext, setPreviousContext] = useState(contextKey);
+  if (previousContext !== contextKey) {
+    setPreviousContext(contextKey);
+    setEditor(initialEditor || null);
+    setText(initialProposal);
+    setIsImportOpen(!!initialProposal && !initialEditor);
+    setDrafts([]);
+    if (initialNoticeId) setOpened(initialNoticeId);
+  }
+  async function mutate(
+    command: Record<string, unknown>,
+    expectedRevision = state.revision,
+  ): Promise<boolean> {
     if (busy) return false;
     setBusy(true);
     setMessage("");
@@ -142,13 +187,14 @@ export function CampusHub({
       const response = await fetch("/api/campus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...command, expectedRevision: state.revision }),
+        body: JSON.stringify({ ...command, expectedRevision }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "保存失败。");
       setState(result.state);
       setNotices(result.notices);
       setMessage("已保存");
+      notifyScheduleChanged();
       router.refresh();
       return true;
     } catch (error) {
@@ -160,7 +206,7 @@ export function CampusHub({
   }
   function preview(items: CampusDraft[], source?: CampusNotice): void {
     setDrafts(
-      items.map((draft) => ({
+      items.map((draft, index) => ({
         event: {
           ...blankEvent(),
           title: draft.title,
@@ -173,6 +219,7 @@ export function CampusHub({
           sourceId: source?.id || "",
           sourceUrl: source?.url || url,
           sourceDigest: source?.digest || "",
+          sourceNodeKey: source ? `${draft.kind}:${index}` : undefined,
         },
         selected: true,
         warning: draft.warning,
@@ -219,7 +266,9 @@ export function CampusHub({
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
-      router.push(`/tasks/${result.taskId}`);
+      router.push(
+        `/tasks/${result.taskId}?returnTo=${encodeURIComponent(mode === "notices" ? `/campus?notice=${notice.id}` : "/me/schedule")}`,
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "暂时无法建立自查任务。");
     } finally {
@@ -228,37 +277,31 @@ export function CampusHub({
   }
   const safeEvents = state.events.map((event) => {
     const source = [...sourceNotices, ...notices].find((notice) => notice.id === event.sourceId);
-    return source && (source.withdrawn || source.digest !== event.sourceDigest)
+    return event.sourceId && (!source || source.withdrawn || source.digest !== event.sourceDigest)
       ? { ...event, start: "", end: "" }
       : event;
   });
-  const events = safeEvents
-    .filter((event) => !course || event.course === course)
-    .filter((event) => !category || event.kind === category)
-    .filter((event) => !compact || !event.done);
   const conflicts = campusConflicts(safeEvents),
     reminders = campusReminders(safeEvents, now).filter(
       (event) => !state.reminderReads.includes(campusReminderKey(event)),
     );
   const school = CAMPUS_SCHOOLS.find((item) => item.id === state.preferences.schoolId);
-  const nodes = [
-    ...events.map((event) => ({
-      href: "/campus",
-      id: event.id,
-      title: event.title,
-      value: event.kind === "考试" ? event.start : event.end || event.start,
-      label: event.kind,
-      event,
-    })),
-    ...examNodes
-      .filter(
-        (node) =>
-          !course && (!category || category === (/报名/u.test(node.label) ? "报名" : "考试")),
-      )
-      .map((node) => ({ ...node, event: null })),
-  ].sort((a, b) => (a.value || "9999").localeCompare(b.value || "9999"));
+  const nodes = sortSchedule([...campusScheduleNodes(safeEvents), ...examNodes])
+    .filter((node) => !initialGoal || node.goalIds.includes(initialGoal))
+    .filter((node) => !course || node.event?.course === course)
+    .filter((node) => !group || node.group === group)
+    .filter((node) => showCompleted || !node.done);
+  const dated = nodes.filter((node) => scheduleDate(node.value));
+  const pendingNodes = nodes.filter((node) => !scheduleDate(node.value));
+  const renderNode = (node: ScheduleNode): ReactElement =>
+    node.event ? renderEvent(node.event) : <ScheduleExamCard key={node.id} node={node} now={now} />;
   const renderEvent = (event: CampusEvent): ReactElement => (
-    <article key={event.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <article
+      id={`event-${event.id}`}
+      key={event.id}
+      aria-label={event.title}
+      className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-primary">
@@ -275,7 +318,9 @@ export function CampusHub({
         <span className="rounded-full bg-muted px-3 py-1 text-xs">
           {event.done
             ? "已完成"
-            : countdownLabel(event.kind === "考试" ? event.start : event.end || event.start, now)}
+            : scheduleOverdue(event.kind === "考试" ? event.start : event.end || event.start, now)
+              ? "已到期 · 待完成"
+              : countdownLabel(event.kind === "考试" ? event.start : event.end || event.start, now)}
         </span>
       </div>
       {event.sourceId &&
@@ -288,13 +333,15 @@ export function CampusHub({
             来源通知有变化，请重新核对安排；原填写内容仍保留在编辑中。
           </p>
         )}
-      <p className="mt-3 text-sm text-muted-foreground">
-        {event.start.replace("T", " ") || (event.end ? "" : "时间待定")}
-        {event.end
-          ? `${event.kind === "考试" ? " — " : "截止："}${event.end.replace("T", " ")}`
-          : ""}
-        {event.location ? ` · ${event.location}` : ""}
-      </p>
+      {(event.start || event.end || event.location) && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          {event.start.replace("T", " ") || (event.end ? "" : "时间待定")}
+          {event.end
+            ? `${event.kind === "考试" ? " — " : "截止："}${event.end.replace("T", " ")}`
+            : ""}
+          {event.location ? ` · ${event.location}` : ""}
+        </p>
+      )}
       {conflicts.some((pair) => pair.includes(event.id)) && (
         <p className="mt-2 text-sm text-amber-700">与另一场考试时间重叠</p>
       )}
@@ -319,10 +366,34 @@ export function CampusHub({
         </details>
       )}
       {event.resourceIds?.map((id) => (
-        <Link key={id} href={`/learn/${id}`} className="mt-2 block text-sm text-primary underline">
+        <Link
+          key={id}
+          href={`/learn/${id}?returnTo=${encodeURIComponent(`/me/schedule?edit=${event.id}`)}`}
+          className="mt-2 block text-sm text-primary underline"
+        >
           学习资料：{resources.find((resource) => resource.id === id)?.title || "查看关联资料"}
         </Link>
       ))}
+      {event.sourceId &&
+        [...sourceNotices, ...notices]
+          .filter(
+            (notice) =>
+              notice.id === event.sourceId &&
+              !notice.withdrawn &&
+              /(?:提交|上传|报送|提供)[^。\n]{0,60}(?:申请表|证明|报告|附件|材料)/u.test(
+                notice.text,
+              ),
+          )
+          .map((notice) => (
+            <button
+              key={notice.id}
+              className={`${buttonClass} mt-3`}
+              disabled={busy}
+              onClick={() => void startMaterialReview(notice)}
+            >
+              检查申请材料
+            </button>
+          ))}
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           disabled={busy}
@@ -364,39 +435,58 @@ export function CampusHub({
     </article>
   );
   return (
-    <section className="space-y-6" aria-label="校园通知与日程">
+    <section className="space-y-6" aria-label={mode === "notices" ? "校园通知" : "我的日程"}>
+      <BrowsePosition identity={`campus-${mode}`} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm text-primary">CAMPUS & DEADLINES</p>
           <h1 className="mt-2 flex items-center gap-2 text-2xl font-semibold">
             <GraduationCap className="size-7" />
-            {compact ? "近期校园日程" : school?.name || "校园事务"}
+            {mode === "schedule" ? "我的日程" : school?.name || "校园通知"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            学校新通知、课程考试与作业，一处安排。
+            {mode === "schedule"
+              ? "考试、报名与作业，按时间安排好每一件事。"
+              : "关注本校发布的消息，把重要安排加入自己的日程。"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button className={buttonClass} onClick={() => setEditor(blankEvent())}>
-            <Plus className="size-4" />
-            添加日程
-          </button>
-          <button className={buttonClass} onClick={() => setIsImportOpen(!isImportOpen)}>
-            <Upload className="size-4" />
-            导入通知
-          </button>
-          {!compact && (
-            <button className={buttonClass} onClick={() => setIsSettingsOpen(!isSettingsOpen)}>
-              我的学校
-            </button>
-          )}
-          {compact && (
-            <Link href="/campus" className={buttonClass}>
-              全部校园事务
-            </Link>
+          {mode === "schedule" ? (
+            <>
+              <button className={buttonClass} onClick={() => setEditor(blankEvent())}>
+                <Plus className="size-4" />
+                添加日程
+              </button>
+              <button className={buttonClass} onClick={() => setIsImportOpen(!isImportOpen)}>
+                <Upload className="size-4" />
+                导入通知
+              </button>
+            </>
+          ) : (
+            <>
+              <button className={buttonClass} onClick={() => setIsSettingsOpen(!isSettingsOpen)}>
+                我的学校
+              </button>
+              <Link href="/me/schedule" className={buttonClass}>
+                查看我的日程 →
+              </Link>
+            </>
           )}
         </div>
       </div>
+      {initialEditMissing && (
+        <p role="status" className="rounded-xl bg-muted p-4 text-sm">
+          这条安排已删除或不属于当前账号，可在下方查看自己的日程。
+        </p>
+      )}
+      {initialGoal && (
+        <p className="text-sm text-muted-foreground">
+          正在查看此目标的相关安排。
+          <Link className="ml-2 text-primary underline" href="/me/schedule">
+            全部安排
+          </Link>
+        </p>
+      )}
       <p role="status" className="text-sm text-primary">
         {busy && <LoaderCircle className="mr-2 inline size-4 animate-spin" />}
         {message}
@@ -490,7 +580,7 @@ export function CampusHub({
           </p>
         </form>
       )}
-      {!compact && <CampusSchoolRequest />}
+      {mode === "notices" && <CampusSchoolRequest />}
       {isImportOpen && (
         <section className="space-y-4 rounded-2xl border bg-card p-5">
           <h2 className="font-semibold">我收到的通知</h2>
@@ -628,7 +718,9 @@ export function CampusHub({
                   if (ok) {
                     setDrafts([]);
                     setIsImportOpen(false);
-                    setTab("schedule");
+                    setText("");
+                    clearDirty();
+                    if (mode === "notices") router.push("/me/schedule");
                   }
                 })
               }
@@ -643,14 +735,22 @@ export function CampusHub({
           key={editor.id}
           resources={resources}
           event={editor}
+          revision={state.revision}
+          latestEvent={state.events.find((event) => event.id === editor.id)}
+          currentSource={[...sourceNotices, ...notices].find(
+            (notice) => notice.id === editor.sourceId,
+          )}
           busy={busy}
           onCancel={() => setEditor(null)}
-          onSave={async (event) => {
-            if (await mutate({ action: "save", events: [event] })) setEditor(null);
+          onSave={async (event, baseRevision) => {
+            if (await mutate({ action: "save", events: [event] }, baseRevision)) {
+              clearDirty();
+              setEditor(null);
+            }
           }}
         />
       )}
-      {reminders.length > 0 && (
+      {mode === "schedule" && !initialGoal && reminders.length > 0 && (
         <aside className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
           <h2 className="flex items-center gap-2 font-medium">
             <Bell className="size-4" />
@@ -676,28 +776,6 @@ export function CampusHub({
             </div>
           ))}
         </aside>
-      )}
-      {!compact && (
-        <nav className="page-tabs" aria-label="校园栏目">
-          <button
-            aria-current={tab === "notices" ? "page" : undefined}
-            onClick={() => {
-              setTab("notices");
-              setCategory("");
-            }}
-          >
-            学校通知
-          </button>
-          <button
-            aria-current={tab === "schedule" ? "page" : undefined}
-            onClick={() => {
-              setTab("schedule");
-              setCategory("");
-            }}
-          >
-            我的日程
-          </button>
-        </nav>
       )}
       {tab === "notices" ? (
         <>
@@ -733,7 +811,7 @@ export function CampusHub({
           {!notices.length && (
             <p className="rounded-2xl bg-muted p-6">
               {school
-                ? "暂无新通知，你可以先导入收到的通知。"
+                ? "暂时没有新通知，可以查看学校原文或到我的日程导入收到的消息。"
                 : "选择学校后查看本校通知，也可以先添加个人日程。"}
             </p>
           )}
@@ -760,7 +838,11 @@ export function CampusHub({
                 );
               })
               .map((notice) => (
-                <article key={notice.id} className="rounded-2xl border bg-card p-5">
+                <article
+                  id={`notice-${notice.id}`}
+                  key={notice.id}
+                  className="rounded-2xl border bg-card p-5"
+                >
                   <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                     <span>
                       {notice.department} · {notice.publishedAt}
@@ -841,9 +923,16 @@ export function CampusHub({
                         preview(dated.length ? dated : items, notice);
                       }}
                     >
-                      ＋ 加入日程
+                      {state.events.some((event) => event.sourceId === notice.id)
+                        ? "已加入 · 再选节点"
+                        : "＋ 加入日程"}
                     </button>
                   </div>
+                  {state.events.some((event) => event.sourceId === notice.id) && (
+                    <Link href="/me/schedule" className="mt-3 block text-sm text-primary underline">
+                      查看已加入的安排 →
+                    </Link>
+                  )}
                   {opened === notice.id && (
                     <p className="mt-4 max-h-96 overflow-auto text-sm leading-7 whitespace-pre-wrap">
                       {notice.text}
@@ -855,51 +944,74 @@ export function CampusHub({
         </>
       ) : (
         <section className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            <select
-              aria-label="日程类型"
-              className={`${fieldClass} max-w-36`}
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-            >
-              <option value="">全部类型</option>
-              {CAMPUS_KINDS.map((kind) => (
-                <option key={kind}>{kind}</option>
-              ))}
-            </select>
-            <select
-              aria-label="课程筛选"
-              className={`${fieldClass} max-w-40`}
-              value={course}
-              onChange={(event) => setCourse(event.target.value)}
-            >
-              <option value="">全部课程</option>
-              {[...new Set(state.events.map((event) => event.course).filter(Boolean))].map(
-                (item) => (
-                  <option key={item}>{item}</option>
-                ),
-              )}
-            </select>
+          <nav className="flex flex-wrap gap-2" aria-label="日程分类">
+            {["", ...SCHEDULE_GROUPS].map((item) => (
+              <button
+                key={item}
+                className={`rounded-full px-4 py-2 text-sm ${group === item ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-primary/10"}`}
+                aria-pressed={group === item}
+                onClick={() => {
+                  setGroup(item);
+                  const query = new URLSearchParams(location.search);
+                  if (item) query.set("group", item);
+                  else query.delete("group");
+                  window.history.replaceState(null, "", `${location.pathname}?${query}`);
+                }}
+              >
+                {item || "全部"}
+              </button>
+            ))}
+          </nav>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-sm">
+              课程
+              <select
+                aria-label="课程筛选"
+                className={`${fieldClass} max-w-44`}
+                value={course}
+                onChange={(event) => setCourse(event.target.value)}
+              >
+                <option value="">全部课程</option>
+                {[...new Set(state.events.map((event) => event.course).filter(Boolean))].map(
+                  (item) => (
+                    <option key={item}>{item}</option>
+                  ),
+                )}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={showCompleted}
+                onChange={(event) => setShowCompleted(event.target.checked)}
+              />
+              显示已完成
+            </label>
             <button
-              className={`${buttonClass} hidden md:inline-flex`}
+              className={buttonClass}
               onClick={() => setView(view === "list" ? "month" : "list")}
             >
               <CalendarDays className="size-4" />
-              {view === "list" ? "月历" : "近期列表"}
+              {view === "list" ? "切换日历" : "近期待办"}
             </button>
           </div>
           {view === "month" && (
-            <div className="hidden rounded-2xl border bg-card p-5 md:block">
+            <div className="rounded-2xl border bg-card p-3 sm:p-5">
               <label className="text-sm">
                 月份
                 <input
                   type="month"
                   value={month}
-                  onChange={(event) => setMonth(event.target.value)}
+                  onChange={(event) => {
+                    if (event.target.value) {
+                      setMonth(event.target.value);
+                      setDay(`${event.target.value}-01`);
+                    }
+                  }}
                   className={`${fieldClass} mb-4 max-w-52`}
                 />
               </label>
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {["一", "二", "三", "四", "五", "六", "日"].map((day) => (
                   <span key={day} className="text-center text-xs text-muted-foreground">
                     {day}
@@ -907,8 +1019,8 @@ export function CampusHub({
                 ))}
                 {Array.from(
                   { length: (new Date(`${month}-01T00:00:00Z`).getUTCDay() + 6) % 7 },
-                  (_, index) => (
-                    <span key={`empty-${index}`} />
+                  (_, i) => (
+                    <span key={`empty-${i}`} />
                   ),
                 )}
                 {Array.from(
@@ -921,52 +1033,62 @@ export function CampusHub({
                   },
                   (_, i) => {
                     const date = `${month}-${String(i + 1).padStart(2, "0")}`;
+                    const items = dated.filter((node) => scheduleDate(node.value) === date);
                     return (
-                      <div key={date} className="min-h-24 rounded-lg border p-2 text-xs">
-                        <span>{i + 1}日</span>
-                        {nodes
-                          .filter((node) => node.value.slice(0, 10) === date)
-                          .map((node) => (
-                            <p
-                              key={`${node.id}-${node.label}`}
-                              className="mt-1 rounded bg-primary/10 p-1 break-words text-primary"
-                            >
-                              {node.label} · {node.title}
-                            </p>
-                          ))}
-                      </div>
+                      <button
+                        key={date}
+                        aria-label={`${date}，${items.length}项安排`}
+                        aria-pressed={day === date}
+                        onClick={() => setDay(date)}
+                        className={`min-w-0 min-h-16 rounded-lg border p-1 text-center text-xs sm:min-h-24 ${day === date ? "border-primary bg-primary/10" : ""}`}
+                      >
+                        <span>{i + 1}</span>
+                        {items.length > 0 && (
+                          <span className="mt-2 block text-primary">
+                            {items.length}项
+                            <span className="hidden truncate sm:block">{items[0]!.title}</span>
+                          </span>
+                        )}
+                      </button>
                     );
                   },
                 )}
               </div>
             </div>
           )}
+          <h2 className="font-semibold">{view === "month" ? `${day}的安排` : "近期待办"}</h2>
           <div className="grid gap-4 lg:grid-cols-2">
-            {(compact ? nodes.slice(0, 4) : nodes).map((node) =>
-              node.event ? (
-                renderEvent(node.event)
-              ) : (
-                <article
-                  key={`${node.id}-${node.label}`}
-                  className="rounded-2xl border bg-card p-4"
-                >
-                  <p className="text-xs text-primary">考试目标 · {node.label}</p>
-                  <h3 className="mt-2 font-semibold">{node.title}</h3>
-                  <p className="mt-3 text-sm">{node.value || "时间待公布"}</p>
-                  <Link
-                    href={node.href || `/exams/${node.id}`}
-                    className="mt-3 inline-block text-sm text-primary underline"
-                  >
-                    查看考试安排
-                  </Link>
-                </article>
-              ),
-            )}
+            {(view === "month"
+              ? dated.filter((node) => scheduleDate(node.value) === day)
+              : dated
+            ).map(renderNode)}
           </div>
-          {!nodes.length && (
+          {!(view === "month" ? dated.filter((node) => scheduleDate(node.value) === day) : dated)
+            .length && (
             <p className="rounded-2xl bg-muted p-6 text-sm">
-              还没有日程，添加考试或作业，或者导入收到的通知。
+              {view === "month"
+                ? "这一天暂无安排。"
+                : "暂无有明确日期的待办，可添加日程或查看下方待公布安排。"}
             </p>
+          )}
+          <details
+            id="pending"
+            className="rounded-2xl border bg-card p-5"
+            open={pendingOpen}
+            onToggle={(event) => setPendingOpen(event.currentTarget.open)}
+          >
+            <summary className="cursor-pointer font-medium">
+              待公布安排 · {pendingNodes.length}
+            </summary>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">{pendingNodes.map(renderNode)}</div>
+            {!pendingNodes.length && (
+              <p className="mt-3 text-sm text-muted-foreground">暂无时间待定的安排。</p>
+            )}
+          </details>
+          {!nodes.length && (
+            <Link className="text-sm text-primary underline" href="/me">
+              选择考试目标，或添加自己的课程与作业 →
+            </Link>
           )}
         </section>
       )}
@@ -974,6 +1096,9 @@ export function CampusHub({
   );
 }
 function EventEditor({
+  revision,
+  latestEvent,
+  currentSource,
   resources,
   event,
   busy,
@@ -983,10 +1108,14 @@ function EventEditor({
   resources: Array<{ id: string; title: string; subject: string }>;
   event: CampusEvent;
   busy: boolean;
-  onSave: (event: CampusEvent) => Promise<void>;
+  onSave: (event: CampusEvent, revision: number) => Promise<void>;
+  revision: number;
+  latestEvent?: CampusEvent;
   onCancel: () => void;
+  currentSource?: CampusNotice;
 }): ReactElement {
   const [draft, setDraft] = useState(event);
+  const [baseRevision, setBaseRevision] = useState(revision);
   const [precision, setPrecision] = useState(
     draft.start.length > 10 || draft.end.length > 10 ? "time" : "date",
   );
@@ -1009,14 +1138,75 @@ function EventEditor({
   }
   function submit(event: FormEvent): void {
     event.preventDefault();
-    void onSave(draft);
+    void onSave(draft, baseRevision);
   }
   return (
     <form
       onSubmit={submit}
       className="grid gap-4 rounded-2xl border border-primary/30 bg-card p-5 sm:grid-cols-2"
     >
-      <h2 className="font-semibold sm:col-span-2">安排校园事项</h2>
+      <h2 className="font-semibold sm:col-span-2">安排个人事项</h2>
+      {baseRevision !== revision && (
+        <div className="space-y-3 rounded-xl bg-muted p-4 text-sm sm:col-span-2">
+          <p>日程已有更新，你的输入仍保留。请核对最新内容后继续。</p>
+          <details>
+            <summary>最新保存内容</summary>
+            <p className="mt-2 whitespace-pre-wrap">
+              {latestEvent
+                ? `${latestEvent.title}；${latestEvent.start || "开始待定"}；${latestEvent.end || "截止待定"}；${latestEvent.note}`
+                : "当前没有这条已保存事项；若已删除，请取消编辑。"}
+            </p>
+          </details>
+          <button type="button" className="underline" onClick={() => setBaseRevision(revision)}>
+            已核对，继续保存当前编辑
+          </button>
+        </div>
+      )}
+      {event.sourceId &&
+        (!currentSource ||
+          currentSource.withdrawn ||
+          currentSource.digest !== event.sourceDigest) && (
+          <div className="space-y-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-950 sm:col-span-2">
+            <p>来源通知有变化，原填写内容保留。请核对原文与时间后再确认。</p>
+            {currentSource && !currentSource.withdrawn ? (
+              <label className="flex gap-2 items-center">
+                <input
+                  type="checkbox"
+                  checked={draft.sourceDigest === currentSource.digest}
+                  onChange={(change) =>
+                    setDraft({
+                      ...draft,
+                      sourceDigest: change.target.checked
+                        ? currentSource.digest
+                        : event.sourceDigest,
+                    })
+                  }
+                />
+                我已核对最新通知中的安排
+              </label>
+            ) : (
+              <label className="flex gap-2 items-center">
+                <input
+                  type="checkbox"
+                  checked={!draft.sourceId}
+                  onChange={(change) =>
+                    setDraft({
+                      ...draft,
+                      sourceId: change.target.checked ? "" : event.sourceId,
+                      sourceDigest: change.target.checked ? "" : event.sourceDigest,
+                    })
+                  }
+                />
+                保留为我自行维护的安排
+              </label>
+            )}
+            {event.sourceUrl && (
+              <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="underline">
+                查看原通知
+              </a>
+            )}
+          </div>
+        )}
       {field("title", "事项名称")}
       <label className="text-sm">
         类型

@@ -48,9 +48,14 @@ test("UXR个人内容按标签展示且收藏反馈仍按账号隔离", async ({
   ).toBeTruthy();
   await page.context().addCookies((await actors.student.api.storageState()).cookies);
   await page.goto("/me");
-  await expect(page.getByRole("heading", { name: "考试日程", exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "我的备考导航" })
+      .getByRole("link", { name: "考试目标", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("heading", { name: "我的内容反馈", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "材料预审执行提示" })).toHaveCount(0);
+  await page.getByText("收藏与个人工具", { exact: true }).click();
   await page.getByRole("link", { name: /我的收藏/ }).click();
   await expect(page.getByRole("link", { name: content.title, exact: true })).toBeVisible();
   await page.getByRole("link", { name: "我的反馈", exact: true }).click();

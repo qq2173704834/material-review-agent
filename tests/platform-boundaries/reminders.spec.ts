@@ -39,12 +39,15 @@ test("目标无需收藏即显示节点，已读按账号和版本隔离，归�
     (await actors.peer.api.post("/api/reminders", { data: { id: item.id, version: 1 } })).status(),
   ).toBe(400);
   await page.context().addCookies((await actors.student.api.storageState()).cookies);
-  await page.goto("/me");
-  const nodes = page.getByRole("heading", { name: "考试日程" }).locator("../..");
+  await page.goto("/me/schedule");
+  const nodes = page.getByRole("article", { name: content.title });
   await expect(nodes.getByText(content.title, { exact: true })).toBeVisible();
-  await nodes.getByRole("button", { name: "标记提醒已读" }).click();
+  // Reading remains a legacy API state; the unified schedule tracks completion separately.
+  expect(
+    (await actors.student.api.post("/api/reminders", { data: { id: item.id, version: 1 } })).ok(),
+  ).toBeTruthy();
   await expect.poll(async () => (await get(actors.student.api))[0]?.read).toBe(true);
-  await expect(nodes.getByRole("button", { name: "标记提醒已读" })).toHaveCount(0);
+  await expect(nodes.getByRole("button", { name: "完成", exact: true })).toBeVisible();
   await actors.peer.api.post("/api/goals", { data: { goal: goalInput } });
   expect((await get(actors.peer.api))[0]?.read).toBe(false);
   const db = database();

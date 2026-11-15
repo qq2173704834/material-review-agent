@@ -70,21 +70,39 @@ export function mutateCampus(userId: string, raw: unknown): CampusState {
           )
         )
           throw new Error("关联资料不可用，请重新选择。");
-        if (event.sourceId && !prior) {
-          const notice = campusNotices(state.preferences.schoolId).find(
-            (item) => item.id === event.sourceId,
-          );
+        if (
+          event.sourceId &&
+          (!prior || prior.sourceId !== event.sourceId || prior.sourceDigest !== event.sourceDigest)
+        ) {
+          const linked =
+            prior?.sourceId === event.sourceId
+              ? db
+                  .prepare<[string], { payload: string }>(
+                    "SELECT payload FROM campus_notices WHERE id=?",
+                  )
+                  .get(event.sourceId)
+              : undefined;
+          const notice = linked
+            ? (JSON.parse(linked.payload) as CampusNotice)
+            : campusNotices(state.preferences.schoolId).find((item) => item.id === event.sourceId);
           if (!notice || notice.withdrawn || notice.digest !== event.sourceDigest)
             throw new Error("通知已更新，请重新预览后加入日程。");
         }
         const same = state.events.find(
           (item) =>
             item.id !== event.id &&
-            item.title === event.title &&
-            item.course === event.course &&
-            item.semester === event.semester &&
-            item.start === event.start &&
-            item.end === event.end,
+            ((!!event.sourceId &&
+              !!event.sourceNodeKey &&
+              item.sourceId === event.sourceId &&
+              item.sourceNodeKey === event.sourceNodeKey) ||
+              ((!item.sourceNodeKey || !event.sourceNodeKey) &&
+                item.kind === event.kind &&
+                item.sourceId === event.sourceId &&
+                item.title === event.title &&
+                item.course === event.course &&
+                item.semester === event.semester &&
+                ((!!event.sourceId && item.sourceId === event.sourceId) ||
+                  (item.start === event.start && item.end === event.end)))),
         );
         if (same) continue;
         if (prior) state.events[state.events.indexOf(prior)] = event;
