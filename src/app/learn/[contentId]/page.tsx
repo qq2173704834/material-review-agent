@@ -40,7 +40,9 @@ export default async function Detail({
         </p>
         {content.sourceType === "非官方参考" && (
           <p role="note" className="rounded border border-amber-600 p-3">
-            非官方参考 · 查看原始来源了解适用范围。
+            {content.url.startsWith("/")
+              ? "本站原创学习材料 · AI辅助编写"
+              : "非官方参考 · 查看原始来源了解适用范围。"}
           </p>
         )}
         <p>{content.scope}</p>
@@ -54,15 +56,22 @@ export default async function Detail({
         <p>
           形式：{content.format} · {content.language} · {content.fee}
         </p>
-        <p className="whitespace-pre-wrap rounded border p-5">{content.text}</p>
-        <a
-          className="inline-block rounded bg-primary px-4 py-2 text-primary-foreground"
-          href={content.url}
-          target="_blank"
-          rel="noreferrer"
+        <section
+          id="learning-content"
+          className="rounded-2xl border bg-card p-5 text-sm leading-8 whitespace-pre-wrap"
         >
-          访问原站 ↗
-        </a>
+          {content.text}
+        </section>
+        {!content.url.startsWith("/") && (
+          <a
+            className="inline-block rounded bg-primary px-4 py-2 text-primary-foreground"
+            href={content.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            访问原站 ↗
+          </a>
+        )}
         <ContentFeedback id={entry.id} />
         {content.kind === "school" && entry.status !== "withdrawn" && (
           <Link

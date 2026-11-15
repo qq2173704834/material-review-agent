@@ -1,6 +1,18 @@
 import { EXAM_CATEGORIES, type ExamCategoryId } from "../domain/exam-catalog.ts";
 
 const aliases: Partial<Record<ExamCategoryId, string>> = {
+  toeic: "TOEIC 托业 职场英语",
+  pte: "PTE Academic 培生 学术英语",
+  det: "DET 多邻国 英语测试",
+  siele: "SIELE 西班牙语",
+  "cambridge-advanced": "C1 Advanced CAE 剑桥高级英语",
+  acca: "ACCA 特许公认会计师",
+  cfa: "CFA 特许金融分析师",
+  frm: "FRM 金融风险管理师",
+  "aliyun-cert": "ACA ACP 阿里云认证",
+  "aws-cert": "AWS Cloud Practitioner 亚马逊云认证",
+  "microsoft-fundamentals": "AZ-900 Azure Fundamentals 微软基础认证",
+
   cet4: "CET4 CET-4 英语四级",
   cet6: "CET6 CET-6 英语六级",
   tem4: "TEM4 TEM-4 英语专四",
@@ -89,7 +101,11 @@ export function examProfile(id: ExamCategoryId): {
         ? "招生/招录"
         : id === "education-local"
           ? "综合公告"
-          : "考试/测试";
+          : group === "技术认证"
+            ? "机构认证"
+            : group === "国际财经"
+              ? "专业认证"
+              : "考试/测试";
   let audience =
     "报考条件与成绩/证书有效期请以当期官方公告为准；是否评奖加分以本校当学年细则为准。";
   if (

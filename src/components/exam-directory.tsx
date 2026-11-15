@@ -120,6 +120,9 @@ export function ExamDirectory({
                         </ul>
                       </details>
                     )}
+                    <Link className="block prep-link" href={`/learn?category=${id}`}>
+                      查看相关学习资料 →
+                    </Link>
                     {portals.map((portal) => (
                       <p key={portal.url}>
                         <a className="prep-link" href={portal.url} target="_blank" rel="noreferrer">

@@ -13,9 +13,11 @@ export const learningContentSchema = z
     sourceType: z.enum(["官方来源", "非官方参考", "未分类"]).optional(),
     author: z.string().trim().min(1).max(200),
     url: z
-      .url()
+      .string()
       .max(2048)
       .refine((value) => {
+        if (/^\/learn\/[a-f0-9]{32}$/u.test(value)) return true;
+        if (!URL.canParse(value)) return false;
         const url = new URL(value);
         return url.protocol === "https:" && !url.username && !url.password && !url.port;
       }, "来源必须为不含凭据的HTTPS地址。"),
@@ -37,6 +39,11 @@ export const learningContentSchema = z
       .optional(),
   })
   .strict()
+  .refine(
+    (value) =>
+      !value.url.startsWith("/") || (value.kind === "resource" && value.permission === "自有原创"),
+    "站内学习地址仅限原创资源。",
+  )
   .refine(
     (value) => !value.catalogStatus || value.kind === "knowledge",
     "目录状态须登记为带官方依据的知识条目。",

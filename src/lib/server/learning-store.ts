@@ -1,6 +1,8 @@
+import certificateKnowledge from "@/domain/certificate-knowledge.json";
 import { EXAM_PORTALS } from "@/domain/exam-portals";
 import officialKnowledge from "@/domain/official-knowledge.json";
 import supplementalKnowledge from "@/domain/supplemental-knowledge.json";
+import studyCollection from "@/domain/study-collection.json";
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { platformDb, securityEvent } from "./platform-db";
@@ -63,7 +65,7 @@ export function saveLearningContent(
       throw new Error("内容达到2000条上限，请整理。");
     if (!id) {
       const canonical = (value: string): string => {
-        const url = new URL(value);
+        const url = new URL(value, "https://local.invalid");
         url.hash = "";
         return url.toString();
       };
@@ -77,8 +79,10 @@ export function saveLearningContent(
       if (duplicate)
         throw new Error(`已有相同来源、考试及版本的条目，请修订原条目：${duplicate.id}`);
     }
-    const key = id ?? randomUUID(),
+    const key =
+        id ?? (content.url.startsWith("/") ? randomUUID().replaceAll("-", "") : randomUUID()),
       version = (previous?.version ?? 0) + 1;
+    if (content.url.startsWith("/")) content.url = `/learn/${key}`;
     db.prepare(
       "INSERT INTO portal_content(id,kind,status,version,updated_at) VALUES (?,?,'draft',?,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version,updated_at=excluded.updated_at",
     ).run(key, content.kind, version, now);
@@ -104,7 +108,14 @@ export async function publishLearningContent(
     if (entry.content.checkedAt > new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10))
       throw new Error("核查日期不能在未来。");
     // Checks actual public reachability and every redirect; no private host or credential bypass.
-    await fetchPublicWebpage(entry.content.url);
+    if (entry.content.url.startsWith("/")) {
+      if (
+        entry.content.permission !== "自有原创" ||
+        entry.content.text.length < 150 ||
+        entry.content.url !== `/learn/${id}`
+      )
+        throw new Error("站内资料需要完整原创学习内容。");
+    } else await fetchPublicWebpage(entry.content.url);
   }
   const changed = platformDb()
     .prepare(
@@ -193,6 +204,16 @@ export function seedPortalReferences(): void {
   // Reviewed public navigation resources; no fabricated course or imported private data.
   const seedDb = platformDb();
   for (const { record, prefix, actor } of [
+    ...certificateKnowledge.entries.map((record) => ({
+      record,
+      prefix: "certificate-knowledge:",
+      actor: "curated-certificate-reference",
+    })),
+    ...studyCollection.entries.map((record) => ({
+      record,
+      prefix: "study-collection:",
+      actor: "curated-original-study",
+    })),
     ...officialKnowledge.entries.map((record) => ({
       record,
       prefix: "official-knowledge:",

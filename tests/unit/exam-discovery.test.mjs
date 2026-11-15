@@ -19,9 +19,9 @@ for (const [title, expected] of [
 ])
   test(`EXP 分类：${title}`, () =>
     assert.equal(classifyExamTitle(title, "education-local"), expected));
-test("EXP 目录保持68类唯一候选，别名可检索且专业资格提示年限", () => {
-  assert.equal(EXAM_CATEGORIES.length, 68);
-  assert.equal(new Set(EXAM_CATEGORIES.map((item) => item[0])).size, 68);
+test("EXP 目录保持79类唯一目录，别名可检索且专业资格提示年限", () => {
+  assert.equal(EXAM_CATEGORIES.length, 79);
+  assert.equal(new Set(EXAM_CATEGORIES.map((item) => item[0])).size, 79);
   assert.ok(matchesExamSearch("tem4", "TEM-4"));
   assert.ok(matchesExamSearch("ncre", "计算机二级"));
   assert.equal(matchesExamSearch("cet4", "计算机四级"), false);

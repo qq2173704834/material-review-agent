@@ -67,6 +67,17 @@ export const EXAM_CATEGORIES = [
   ["fire", "注册消防工程师资格考试", "工程资格"],
   ["planner", "注册城乡规划师职业资格考试", "工程资格"],
   ["surveyor", "注册测绘师资格考试", "工程资格"],
+  ["toeic", "TOEIC托业", "语言"],
+  ["pte", "PTE Academic", "留学语言"],
+  ["det", "Duolingo English Test", "留学语言"],
+  ["siele", "SIELE西班牙语评估", "留学语言"],
+  ["cambridge-advanced", "剑桥C1 Advanced", "语言"],
+  ["acca", "ACCA特许公认会计师", "国际财经"],
+  ["cfa", "CFA特许金融分析师", "国际财经"],
+  ["frm", "FRM金融风险管理师", "国际财经"],
+  ["aliyun-cert", "阿里云ACA与ACP认证", "技术认证"],
+  ["aws-cert", "AWS云认证", "技术认证"],
+  ["microsoft-fundamentals", "Microsoft基础认证", "技术认证"],
 ] as const;
 export const EXAM_REGIONS = [
   "全国",

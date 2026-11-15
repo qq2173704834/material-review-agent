@@ -47,6 +47,7 @@ export default async function Learn({
             (item.content.title + item.content.text)
               .toLowerCase()
               .includes(filters.q.slice(0, 100).toLowerCase())) &&
+          (!filters.category || item.content.category === filters.category) &&
           (!filters.format || item.content.format === filters.format) &&
           (!filters.stage || item.content.studyStage === filters.stage) &&
           (!filters.subject || item.content.subject.includes(filters.subject.slice(0, 120))) &&
@@ -71,6 +72,23 @@ export default async function Learn({
           <h1 className="my-2 text-3xl font-semibold">学习资源与备考资讯</h1>
           <p>找到适合你的资料，让今天的学习更有方向。</p>
         </header>
+        <nav aria-label="学习方向" className="flex flex-wrap gap-2">
+          <Link className="button-secondary" href="/learn">
+            全部资料
+          </Link>
+          <Link className="button-secondary" href="/learn?category=education-local">
+            大学公共基础
+          </Link>
+          <Link
+            className="button-secondary"
+            href="/learn?category=education-local&subject=竞赛备赛"
+          >
+            竞赛备赛
+          </Link>
+          <Link className="button-secondary" href="/learn?format=练习">
+            原创练习
+          </Link>
+        </nav>
         <BrowsePosition identity={account.id} />
         <SearchFilters
           path="/learn"
@@ -85,6 +103,14 @@ export default async function Learn({
               })),
             },
             { name: "q", label: "资料关键词" },
+            {
+              name: "category",
+              label: "考试 / 方向",
+              options: [...new Set(available.map((item) => item.content.category))].map((id) => ({
+                value: id,
+                label: CATEGORY_LABELS[id] || id,
+              })),
+            },
             {
               name: "format",
               label: "资料形式",
