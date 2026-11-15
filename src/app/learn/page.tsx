@@ -9,6 +9,7 @@ import { learningRecommendations } from "@/lib/server/learning-store";
 import { studentGoals, portalPreferences } from "@/lib/server/student-goals";
 import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import type { ReactElement } from "react";
+import { ResourceCover } from "@/components/resource-cover";
 export const dynamic = "force-dynamic";
 export default async function Learn({
   searchParams,
@@ -108,6 +109,11 @@ export default async function Learn({
         <div className="grid gap-4 md:grid-cols-2">
           {resources.slice((page - 1) * 12, page * 12).map((item) => (
             <article key={item.id} className="resource-card surface space-y-3">
+              <ResourceCover
+                category={item.content.category}
+                format={item.content.format}
+                label={CATEGORY_LABELS[item.content.category] ?? item.content.category}
+              />
               <p className="text-xs text-primary">
                 {CATEGORY_LABELS[item.content.category]} · {item.content.format} ·{" "}
                 {item.content.studyStage}

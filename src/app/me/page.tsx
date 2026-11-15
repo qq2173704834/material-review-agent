@@ -77,15 +77,6 @@ export default async function Page({
         <header className="page-heading">
           <h1 className="text-3xl font-semibold">我的考试</h1>
           <p className="mt-3">这里汇总你的考试目标、学习进度、收藏与材料准备。</p>
-          <div className="identity-bar" aria-label="当前登录身份">
-            <span>
-              当前登录用户名：<strong>{account.username}</strong>
-            </span>
-            <span className="text-muted-foreground">昵称：{account.nickname}</span>
-            <Link href="/account" className="text-primary">
-              账号设置与退出登录
-            </Link>
-          </div>
         </header>
         <nav className="page-tabs" aria-label="个人内容导航">
           {[
@@ -136,14 +127,10 @@ export default async function Page({
                   <Link href={`/learn/${item.id}`} className="underline">
                     {item.content.title}
                   </Link>
-                  <p>
-                    v{item.version} ·{" "}
-                    {item.status === "withdrawn"
-                      ? "已撤回，请核对来源"
-                      : item.seen
-                        ? "当前版本已看（不代表学习完成）"
-                        : "当前版本未读 / 有更新"}
-                  </p>
+                  {item.status === "withdrawn" && (
+                    <p className="text-sm text-muted-foreground">已撤回，请核对来源</p>
+                  )}
+
                   <LearningActions id={item.id} saved seen={item.seen} />
                 </article>
               ))

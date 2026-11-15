@@ -23,7 +23,7 @@ import type { StudentGoal } from "@/domain/student-goal";
 import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import { beijingDay } from "@/lib/portal-feed";
 import { BrowsePosition } from "@/components/browse-back";
-import { countdownLabel } from "@/lib/goal-schedule";
+import { countdownLabel, formatExamTime } from "@/lib/goal-schedule";
 import { learningDays, learningSummary, prepProgress, comparableScores } from "@/lib/preparation";
 
 export interface PrepResource {
@@ -188,7 +188,9 @@ export function PreparationCenter({
     progress = prepProgress(state.tasks),
     activeStage = state.stages.find((stage) => stage.id === stageId) ?? state.stages[0];
   const upcoming = events
-    .filter((event) => event.date.slice(0, 10) >= today)
+    .filter((event) =>
+      event.date.includes("T") ? Date.parse(event.date) >= now : event.date.slice(0, 10) >= today,
+    )
     .sort((a, b) => a.date.localeCompare(b.date));
   const taskEvents: PrepEvent[] =
     goal.state === "active"
@@ -456,10 +458,34 @@ export function PreparationCenter({
                 <ArrowRight size={16} />
               </button>
             </div>
+            <div
+              className="prep-progress-visual"
+              aria-label={`计划任务已完成${progress.completed}项，共${progress.total}项`}
+            >
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="49" fill="none" stroke="#e8e2fa" strokeWidth="8" />
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="49"
+                  fill="none"
+                  stroke="#6c55ce"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  pathLength="100"
+                  strokeDasharray={`${progress.percent} 100`}
+                  transform="rotate(-90 60 60)"
+                />
+              </svg>
+              <span>
+                <strong>{progress.total ? `${progress.percent}%` : "待开始"}</strong>
+                <small>计划任务进度</small>
+              </span>
+            </div>
             <div className="prep-countdown">
               <p>{upcoming[0]?.label ?? "考试时间"}</p>
               <strong>{upcoming[0] ? countdownLabel(upcoming[0].date, now) : "待公布"}</strong>
-              {upcoming[0] && <p>{upcoming[0].date.replace("T", " ")}</p>}
+              {upcoming[0] && <p>{formatExamTime(upcoming[0].date)}</p>}
             </div>
           </section>
           <div className="prep-columns">

@@ -40,8 +40,7 @@ export function MaterialUpload({
         上传待审查材料
       </h3>
       <p className="mt-2 text-xs leading-6 text-muted-foreground">
-        支持 PDF、DOCX、TXT、XLSX、CSV、图片、Markdown、配置、ZIP及视频。单文件最多20
-        MiB，每次最多10个、合计50 MiB；解包后最多50份/50 MiB。
+        支持：PDF、DOCX、TXT、XLSX、CSV、JPG/JPEG、PNG、MD、JSON、YAML/YML、ZIP、MP4、WEBM、MOV
       </p>
       <div
         onDragOver={(event) => event.preventDefault()}

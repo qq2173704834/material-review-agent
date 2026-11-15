@@ -19,10 +19,25 @@ export function BrowsePosition({ identity }: { identity: string }): null {
     parameters.sort();
     const key = `browse:${identity}:${pathname}?${parameters.toString()}`;
     const saved = sessionStorage.getItem(key);
-    if (saved) requestAnimationFrame(() => window.scrollTo(0, Number(saved) || 0));
-    const save = (): void => sessionStorage.setItem(key, String(scrollY));
+    const frame = saved
+      ? requestAnimationFrame(() =>
+          window.scrollTo({ top: Number(saved) || 0, behavior: "instant" }),
+        )
+      : undefined;
+    const save = (): void => {
+      // Next.js may scroll the destination before this page's effect is cleaned up.
+      // Only write while the browser still displays this list and its filters.
+      if (
+        window.location.pathname === pathname &&
+        new URLSearchParams(window.location.search).toString() === query
+      )
+        sessionStorage.setItem(key, String(scrollY));
+    };
     window.addEventListener("scroll", save, { passive: true });
-    return () => window.removeEventListener("scroll", save);
+    return () => {
+      if (frame !== undefined) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", save);
+    };
   }, [identity, pathname, query]);
   return null;
 }

@@ -41,3 +41,18 @@ export function countdownLabel(value: string, now: number): string {
     ? `还有${Math.ceil(remaining / 86400000)}天`
     : `还有${Math.ceil(remaining / 3600000)}小时`;
 }
+
+export function formatExamTime(value: string): string {
+  if (!value.includes("T") || !Number.isFinite(Date.parse(value))) return value;
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(new Date(value))
+    .replaceAll("/", "-");
+}

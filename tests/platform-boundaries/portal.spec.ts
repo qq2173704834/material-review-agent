@@ -470,7 +470,7 @@ test("桌面手机主流程与助手键盘关闭返回焦点", async ({ actors, 
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "下一场考试，从这里出发" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /下一场考试，\s*从这里出发/ })).toBeVisible();
     const button = page.getByRole("button", { name: "打开考试学习AI助手" });
     await button.click();
     const dialog = page.getByRole("dialog", { name: "考试学习AI助手" });

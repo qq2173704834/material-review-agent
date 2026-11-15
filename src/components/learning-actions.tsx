@@ -61,7 +61,7 @@ export function LearningActions({
           onClick={() => void act("seen", !seen)}
         >
           <Check size={16} aria-hidden="true" />
-          {seen ? "已看" : "标记已看"}
+          {seen ? "已看" : "未看"}
         </button>
         <button
           disabled={busy}

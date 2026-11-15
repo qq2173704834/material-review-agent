@@ -37,7 +37,7 @@ for (const viewport of [
     await page.getByLabel("密码", { exact: true }).fill(password);
     await page.getByRole("button", { name: "登录", exact: true }).focus();
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("heading", { name: "下一场考试，从这里出发" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /下一场考试，\s*从这里出发/ })).toBeVisible();
     await page
       .getByRole("navigation", { name: "主导航" })
       .getByRole("link", { name: "考试中心", exact: true })

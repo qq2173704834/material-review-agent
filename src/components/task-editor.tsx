@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ExamSourcePicker } from "@/components/exam-source-picker";
+import type { ExamImportPreview } from "@/domain/exam-import";
 import { useTaskActivity, useTaskWorkflow } from "@/components/task-workspace";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 
@@ -24,7 +26,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
     task?.background.collaborationScope ?? "unknown",
   );
   const [noticeText, setNoticeText] = useState(task?.noticeSource.originalText ?? "");
-  const [sourceMode, setSourceMode] = useState<"text" | "webpage" | "file">(
+  const [sourceMode, setSourceMode] = useState<"text" | "webpage" | "file" | "exam">(
     initialSource ? "webpage" : "text",
   );
   const [sourceUrl, setSourceUrl] = useState(initialSource?.url ?? "");
@@ -32,6 +34,9 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [imported, setImported] = useState<ExamImportPreview | null>(null);
+  const saving = useRef(false);
   const clearUnsaved = useUnsavedChanges(isDirty);
 
   useTaskActivity("task-save", isSaving ? "正在保存审查依据" : null);
@@ -49,6 +54,8 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
   }
 
   async function saveTask(forReview = false): Promise<boolean> {
+    if (saving.current) return false;
+    saving.current = true;
     setError("");
     setIsSaving(true);
     try {
@@ -66,28 +73,40 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
         formData.set("description", description);
         formData.set("background", JSON.stringify(background));
       }
-      const response = await fetch(task ? `/api/tasks/${task.id}` : "/api/tasks", {
-        method: task ? "PATCH" : "POST",
-        headers: isFileSource ? undefined : { "Content-Type": "application/json" },
-        body: isFileSource
-          ? formData
-          : JSON.stringify(
-              !task && sourceMode === "webpage"
-                ? {
-                    sourceType: "webpage",
-                    sourceUrl,
-                    name,
-                    description,
-                    background,
-                  }
-                : {
-                    name,
-                    description,
-                    background,
-                    noticeText,
-                  },
-            ),
-      });
+      const response = await fetch(
+        task ? `/api/tasks/${task.id}` : sourceMode === "exam" ? "/api/exam-import" : "/api/tasks",
+        {
+          method: task ? "PATCH" : "POST",
+          headers: isFileSource ? undefined : { "Content-Type": "application/json" },
+          body: isFileSource
+            ? formData
+            : JSON.stringify(
+                !task && sourceMode === "exam" && imported
+                  ? {
+                      selection: imported.selection,
+                      noticeId: imported.id,
+                      version: imported.version,
+                      name,
+                      description,
+                      background,
+                    }
+                  : !task && sourceMode === "webpage"
+                    ? {
+                        sourceType: "webpage",
+                        sourceUrl,
+                        name,
+                        description,
+                        background,
+                      }
+                    : {
+                        name,
+                        description,
+                        background,
+                        noticeText,
+                      },
+              ),
+        },
+      );
       const result: unknown = await response.json();
       if (!response.ok || typeof result !== "object" || result === null || !("task" in result)) {
         const message =
@@ -110,6 +129,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
       setError("暂时无法连接本地服务，请确认服务仍在运行后重试。");
       return false;
     } finally {
+      saving.current = false;
       setIsSaving(false);
     }
   }
@@ -210,7 +230,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
           ) : null}
         </div>
         {!task ? (
-          <div className="inline-flex border border-border" role="group" aria-label="要求来源方式">
+          <div className="source-tabs flex flex-wrap gap-1" role="group" aria-label="要求来源方式">
             <button
               type="button"
               aria-pressed={sourceMode === "text"}
@@ -235,9 +255,40 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
             >
               上传文件
             </button>
+            <button
+              type="button"
+              disabled={isSaving}
+              aria-pressed={sourceMode === "exam"}
+              onClick={() => setShowImport(!showImport)}
+              className={`h-9 border-l border-border px-3 text-xs ${sourceMode === "exam" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+            >
+              从我的考试导入
+            </button>
           </div>
         ) : null}
-        {sourceMode === "webpage" && !task ? (
+        {showImport && !task && (
+          <ExamSourcePicker
+            hasInput={!!(noticeText.trim() || sourceUrl || sourceFile || imported)}
+            onCancel={() => setShowImport(false)}
+            onSelect={(preview) => {
+              setImported(preview);
+              setSourceMode("exam");
+              setShowImport(false);
+              setIsDirty(true);
+              if (!name.trim()) setName(preview.title.slice(0, 120));
+            }}
+          />
+        )}
+        {sourceMode === "exam" && imported && !task ? (
+          <div className="source-preview">
+            <p className="font-semibold">{imported.title}</p>
+            <p className="text-sm text-muted-foreground">
+              {imported.region} · {imported.edition} · 公告版本{imported.version} · {imported.scope}
+            </p>
+            <pre>{imported.text}</pre>
+            {imported.warning && <p>{imported.warning}</p>}
+          </div>
+        ) : sourceMode === "webpage" && !task ? (
           <div>
             <label className="block text-sm font-medium" htmlFor="source-url">
               网页 URL
@@ -269,9 +320,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
               onChange={(event) => setSourceFile(event.target.files?.[0] ?? null)}
               className={fieldClassName}
             />
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              支持 PDF、DOCX、TXT，最大 20 MiB。扫描 PDF 暂不做 OCR；无法提取时可返回粘贴文本。
-            </p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">支持：PDF、DOCX、TXT</p>
           </div>
         ) : (
           <textarea
@@ -285,10 +334,6 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
             placeholder="粘贴本次通知、指南或项目要求。原文会按段落保存，并可查看字符位置与历史版本。"
           />
         )}
-        <p className="text-xs leading-5 text-muted-foreground">
-          支持文档、表格、图片及更多材料格式；扫描 PDF 和图片可进行中英文
-          OCR，读取范围和失败会单独说明。
-        </p>
       </section>
       {error ? (
         <p role="alert" className="text-sm text-red-700">
@@ -304,7 +349,9 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
               ? noticeText.trim().length === 0
               : sourceMode === "webpage"
                 ? sourceUrl.trim().length === 0
-                : !sourceFile)
+                : sourceMode === "exam"
+                  ? !imported?.usable
+                  : !sourceFile)
           }
           className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
         >

@@ -12,6 +12,9 @@ import { CATEGORY_LABELS } from "@/domain/exam-catalog";
 import { isUpcoming, homepageOptions } from "@/lib/portal-feed";
 import { learningEntries } from "@/lib/server/learning-store";
 import { catalogLifecycle } from "@/lib/catalog-lifecycle";
+import { StudyIllustration } from "@/components/study-illustration";
+import { Sparkles, ArrowUpRight, CalendarDays } from "lucide-react";
+import { formatExamTime } from "@/lib/goal-schedule";
 export const dynamic = "force-dynamic";
 async function homepageTime(): Promise<number> {
   await connection();
@@ -106,27 +109,60 @@ export default async function Home({
     : (sections.find((section) => section.id === "exam" && section.items.length) ??
       sections.find((section) => section.id === "latest")!);
   const selected = sections.find((section) => section.id === filters.tab) ?? defaultSection;
+  const nextEvent = recent
+    .flatMap((item) =>
+      item.content.timeline
+        .filter(
+          (node) =>
+            isUpcoming(node.value, now, 90) &&
+            (!node.value.includes("T") || Date.parse(node.value) >= now),
+        )
+        .map((node) => ({ item, node })),
+    )
+    .sort((a, b) => a.node.value.localeCompare(b.node.value))[0];
   return (
     <AppShell activePage="home">
       <div className="space-y-8">
         <header className="home-hero">
-          <p className="text-sm text-primary">为下一场考试做好准备</p>
-          <h1 className="my-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-            下一场考试，从这里出发
-          </h1>
-          <p className="text-muted-foreground">关注考试动态，让每一步备考都有方向。</p>
-          <div className="mt-5 flex flex-wrap gap-4">
-            <Link href="/exams" className="rounded bg-primary px-4 py-2 text-primary-foreground">
-              找考试
-            </Link>
-            <Link href="/me#goals" className="rounded border px-4 py-2">
-              我的考试目标
-            </Link>
-            <Link href="/learn" className="rounded border px-4 py-2">
-              开始学习
-            </Link>
+          <div className="home-hero-copy">
+            <p className="hero-eyebrow">
+              <Sparkles size={15} /> 为下一场考试做好准备
+            </p>
+            <h1 className="my-4 font-semibold tracking-tight">
+              下一场考试，
+              <br />
+              <span>从这里出发</span>
+            </h1>
+            <p className="text-muted-foreground">关注考试动态，让每一步备考都有方向。</p>
+            <div className="mt-5 flex flex-wrap gap-4">
+              <Link href="/exams" className="button-primary">
+                找考试 <ArrowUpRight size={17} />
+              </Link>
+              <Link href="/me#goals" className="button-secondary">
+                我的考试目标
+              </Link>
+              <Link href="/learn" className="hero-learning-link">
+                开始学习
+              </Link>
+            </div>
+          </div>
+          <div className="home-hero-art">
+            <StudyIllustration />
           </div>
         </header>
+        {nextEvent && (
+          <Link href={`/exams/${nextEvent.item.id}`} className="next-event-strip">
+            <span className="next-event-icon">
+              <CalendarDays size={22} />
+            </span>
+            <span>
+              <small>下一项考试安排 · {nextEvent.node.label}</small>
+              <strong>{nextEvent.item.content.title}</strong>
+            </span>
+            <time>{formatExamTime(nextEvent.node.value)}</time>
+            <ArrowUpRight size={19} />
+          </Link>
+        )}
         <section className="space-y-5" aria-label="近期考试">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">近期考试</h2>
