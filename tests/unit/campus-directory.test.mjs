@@ -25,7 +25,7 @@ test("教育部2026名单覆盖3196所、31地区及三种办学层次，原学�
     assert.equal(searchCampusSchools(name).schools[0].id, id);
     assert.equal(hasCampusNoticeSource(id), true);
   }
-  for (const name of ["北京大学", "西藏大学", "新疆大学", "深圳职业技术大学", "国家开放大学"]) {
+  for (const name of ["西藏大学", "新疆大学", "深圳职业技术大学", "国家开放大学"]) {
     const school = searchCampusSchools(name).schools[0];
     assert.equal(school.name, name);
     assert.equal(hasCampusNoticeSource(school.id), false);

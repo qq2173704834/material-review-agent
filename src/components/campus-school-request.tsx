@@ -80,7 +80,7 @@ export function CampusSchoolRequest({
                         (await onSelectSchool(school.id))
                           ? hasCampusNoticeSource(school.id)
                             ? `已选择${school.name}，可查看本校通知。`
-                            : `已选择${school.name}，通知正在整理，可先使用个人日程。`
+                            : `已选择${school.name}，可查看学校信息或管理个人日程。`
                           : "选择失败，请重试。",
                       );
                     } catch {

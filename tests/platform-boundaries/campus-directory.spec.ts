@@ -15,12 +15,8 @@ test("全国目录按名称简称与省份选择、刷新保留，未接通知�
   await selector.selectOption("moe-4111010001");
   await page.getByRole("button", { name: "保存学校", exact: true }).click();
   await expect(page.getByRole("heading", { name: "北京大学", exact: true })).toBeVisible();
-  await mkdir("outputs/eng-098", { recursive: true });
-  await page.screenshot({ path: "outputs/eng-098/beijing-university-desktop.png", fullPage: true });
   await expect(
-    page.getByText("已选择你的学校，通知正在整理。可先到我的日程导入通知、添加考试或作业安排。", {
-      exact: true,
-    }),
+    page.getByRole("heading", { name: "2027届本科预毕业生学历学位照片拍摄通知", exact: true }),
   ).toBeVisible();
   let state = (await (await actor.api.get("/api/campus")).json()).state;
   expect(state.preferences.schoolId).toBe("moe-4111010001");
@@ -37,6 +33,10 @@ test("全国目录按名称简称与省份选择、刷新保留，未接通知�
   await selector.selectOption("moe-4154010694");
   await page.getByRole("button", { name: "保存学校", exact: true }).click();
   await expect(page.getByRole("heading", { name: "西藏大学", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "查找学校通知 ↗", exact: true })).toHaveAttribute(
+    "href",
+    /bing\.com\/search\?q=/u,
+  );
   state = (await (await actor.api.get("/api/campus")).json()).state;
   expect(
     (
@@ -51,7 +51,7 @@ test("全国目录按名称简称与省份选择、刷新保留，未接通知�
   ).toBe(400);
   await page.goto("/");
   await expect(page.getByRole("region", { name: "本校重要通知", exact: true })).toContainText(
-    "本校通知正在整理，可先管理个人日程。",
+    "暂未收录本校通知，可查看学校信息或管理个人日程。",
   );
   await actor.api.dispose();
 });

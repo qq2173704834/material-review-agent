@@ -36,6 +36,7 @@ import {
 import {
   CAMPUS_SCHOOLS,
   CAMPUS_PROVINCES,
+  CAMPUS_SOURCES,
   searchCampusSchools,
   hasCampusNoticeSource,
 } from "@/domain/campus-schools";
@@ -297,6 +298,13 @@ export function CampusHub({
       (event) => !state.reminderReads.includes(campusReminderKey(event)),
     );
   const school = CAMPUS_SCHOOLS.find((item) => item.id === state.preferences.schoolId);
+  const schoolSources = CAMPUS_SOURCES.filter((source) => source.schoolId === school?.id);
+  const visibleNotices = notices.filter(
+    (notice) =>
+      (!category || notice.category === category) &&
+      (!favoritesOnly || state.favorites.includes(notice.id)) &&
+      (!unread || state.reads[notice.id] !== notice.digest),
+  );
   const nodes = sortSchedule([...campusScheduleNodes(safeEvents), ...examNodes])
     .filter((node) => !initialGoal || node.goalIds.includes(initialGoal))
     .filter((node) => !course || node.event?.course === course)
@@ -485,6 +493,41 @@ export function CampusHub({
           )}
         </div>
       </div>
+      {mode === "notices" && school && (
+        <section aria-label="学校信息与通知入口" className="rounded-2xl border bg-card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {[school.province, school.city !== school.province ? school.city : "", school.level]
+                .filter(Boolean)
+                .join(" · ")}
+              <span className="ml-3">已收录 {notices.length} 条通知</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {schoolSources.map((source) => (
+                <a
+                  key={source.id}
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonClass}
+                >
+                  {source.department}通知 ↗
+                </a>
+              ))}
+              {!schoolSources.length && (
+                <a
+                  href={`https://www.bing.com/search?q=${encodeURIComponent(`${school.name} 教务处 通知`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonClass}
+                >
+                  查找学校通知 ↗
+                </a>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
       {initialEditMissing && (
         <p role="status" className="rounded-xl bg-muted p-4 text-sm">
           这条安排已删除或不属于当前账号，可在下方查看自己的日程。
@@ -601,10 +644,12 @@ export function CampusHub({
           <p className="text-sm text-muted-foreground sm:col-span-2">
             {selectedSchool
               ? !hasCampusNoticeSource(selectedSchool.id)
-                ? "学校已收录，通知正在整理。你可以先导入收到的通知或管理个人日程。"
-                : selectedSchool.id === "sspu"
-                  ? "当前提供官网、教务处和学生工作处的公开通知。"
-                  : "当前提供教务处的公开通知。"
+                ? "学校已收录，暂未收录本校通知。你可以先查找学校通知或管理个人日程。"
+                : `当前提供${CAMPUS_SOURCES.filter(
+                    (source) => source.schoolId === selectedSchool.id,
+                  )
+                    .map((source) => source.department)
+                    .join("、")}的公开通知。`
               : "没有你的学校？可先导入收到的通知或添加个人日程。"}
           </p>
         </form>
@@ -849,23 +894,39 @@ export function CampusHub({
               我的收藏
             </label>
           </div>
-          {!notices.length && (
-            <p className="rounded-2xl bg-muted p-6">
-              {school
-                ? hasCampusNoticeSource(school.id)
-                  ? "暂时没有新通知，可以查看学校原文或到我的日程导入收到的消息。"
-                  : "已选择你的学校，通知正在整理。可先到我的日程导入通知、添加考试或作业安排。"
-                : "选择学校后查看本校通知，也可以先添加个人日程。"}
-            </p>
+          {!visibleNotices.length && (
+            <div className="space-y-3 rounded-2xl bg-muted p-6" role="status">
+              <p>
+                {notices.length
+                  ? "没有符合筛选条件的通知。"
+                  : school
+                    ? hasCampusNoticeSource(school.id)
+                      ? "暂未收录本校通知，可先查看上方学校通知原文，或导入收到的通知。"
+                      : "暂未收录本校通知。可先查找学校通知，或到我的日程导入收到的消息。"
+                    : "选择学校后查看本校通知，也可以先添加个人日程。"}
+              </p>
+              {notices.length > 0 ? (
+                <button
+                  className={buttonClass}
+                  onClick={() => {
+                    setCategory("");
+                    setUnread(false);
+                    setFavoritesOnly(false);
+                  }}
+                >
+                  查看全部通知
+                </button>
+              ) : (
+                school && (
+                  <Link href="/me/schedule" className={buttonClass}>
+                    导入通知 / 添加日程 →
+                  </Link>
+                )
+              )}
+            </div>
           )}
           <div className="grid gap-4 lg:grid-cols-2">
-            {notices
-              .filter(
-                (notice) =>
-                  (!category || notice.category === category) &&
-                  (!favoritesOnly || state.favorites.includes(notice.id)) &&
-                  (!unread || state.reads[notice.id] !== notice.digest),
-              )
+            {visibleNotices
               .toSorted((left, right) => {
                 const rank = (notice: CampusNotice): number =>
                   Number(state.preferences.interests.includes(notice.category)) +

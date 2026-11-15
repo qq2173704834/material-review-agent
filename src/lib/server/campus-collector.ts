@@ -2,6 +2,7 @@ import "server-only";
 import { CAMPUS_SOURCES } from "@/domain/campus-schools";
 import { campusArticle, campusPublicationDate, campusArticleTitle } from "@/lib/campus-article";
 import { decodeHtml } from "@/lib/html-decoding";
+import { campusSourceLinks } from "@/lib/campus-source-links";
 import { fetchPublicResource, fetchPublicWebpage } from "./webpage-fetcher";
 import { campusDb, campusDigest, saveCampusNotice } from "./campus-store";
 
@@ -23,28 +24,20 @@ export async function collectCampusSource(id: string): Promise<number> {
   if (!locked.changes) return 0;
   try {
     const page = await fetchPublicWebpage(source.url);
-    const links = [
-      ...new Set(
-        page.links
-          .filter(
-            (link) =>
-              new URL(link.url).hostname === new URL(source.url).hostname &&
-              new RegExp(source.pattern, "u").test(new URL(link.url).pathname),
-          )
-          .map((link) => link.url),
-      ),
-    ].slice(0, 10);
+    if (new URL(page.url).origin !== new URL(source.url).origin)
+      throw new Error("通知列表跳转至其他站点。");
+    const links = campusSourceLinks(page.links, source);
     if (!links.length) throw new Error("未识别到通知链接，等待维护核对。");
     let count = 0;
     for (const url of links) {
       try {
         const resource = await fetchPublicResource(url);
-        if (new URL(resource.url).hostname !== new URL(source.url).hostname)
+        if (new URL(resource.url).origin !== new URL(source.url).origin)
           throw new Error("详情跳转至其他站点。");
         const html = decodeHtml(resource.bytes, resource.contentType),
-          text = campusArticle(html);
-        const title = campusArticleTitle(html);
-        const publishedAt = campusPublicationDate(html, url);
+          text = campusArticle(html, source.profile);
+        const title = campusArticleTitle(html, source.profile);
+        const publishedAt = campusPublicationDate(html, url, source.profile);
         if (!title) throw new Error("通知标题或日期缺失。");
         saveCampusNotice({
           id: campusDigest(url).slice(0, 32),
@@ -56,9 +49,11 @@ export async function collectCampusSource(id: string): Promise<number> {
           publishedAt,
           category: /奖学金|评优|资助/u.test(title)
             ? "奖助评优"
-            : source.department === "教务处"
-              ? "教务考试"
-              : "校园活动",
+            : /竞赛|大赛/u.test(title)
+              ? "竞赛"
+              : /教务|本科生院/u.test(source.department)
+                ? "教务考试"
+                : "校园活动",
           digest: campusDigest(title + text),
           updatedAt: new Date().toISOString(),
         });

@@ -66,7 +66,7 @@ export async function CampusSummary({ now }: { now: number }): Promise<ReactElem
             {state.preferences.schoolId
               ? hasCampusNoticeSource(state.preferences.schoolId)
                 ? "本校暂时没有新通知。"
-                : "本校通知正在整理，可先管理个人日程。"
+                : "暂未收录本校通知，可查看学校信息或管理个人日程。"
               : "选择学校，关注与你有关的新消息。"}
             <Link href="/campus" className="ml-2 text-primary underline">
               {state.preferences.schoolId ? "查看学校" : "选择我的学校"}

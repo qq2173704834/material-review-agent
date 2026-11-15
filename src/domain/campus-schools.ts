@@ -1,4 +1,5 @@
 import directory from "./campus-directory.json" with { type: "json" };
+import type { CampusArticleProfile } from "../lib/campus-article";
 
 const connectedSchools = [
   {
@@ -18,6 +19,42 @@ const connectedSchools = [
     name: "上海工程技术大学",
     url: "https://www.sues.edu.cn/",
     status: "已接入教务公开通知",
+  },
+  {
+    id: "moe-4111010001",
+    name: "北京大学",
+    url: "https://dean.pku.edu.cn/web/notice.php",
+    status: "已收录教务公开通知",
+  },
+  {
+    id: "moe-4132010284",
+    name: "南京大学",
+    url: "https://jw.nju.edu.cn/ggtz/list.htm",
+    status: "已收录教务公开通知",
+  },
+  {
+    id: "moe-4134010358",
+    name: "中国科学技术大学",
+    url: "https://www.teach.ustc.edu.cn/category/notice",
+    status: "已收录教务公开通知",
+  },
+  {
+    id: "moe-4142010486",
+    name: "武汉大学",
+    url: "https://uc.whu.edu.cn/tzgg.htm",
+    status: "已收录教务公开通知",
+  },
+  {
+    id: "moe-4144010558",
+    name: "中山大学",
+    url: "https://jwb.sysu.edu.cn/newscenter/notice",
+    status: "已收录教务公开通知",
+  },
+  {
+    id: "moe-4151010610",
+    name: "四川大学",
+    url: "https://jwc.scu.edu.cn/tzgg.htm",
+    status: "已收录教务公开通知",
   },
 ] as const;
 
@@ -79,7 +116,7 @@ export const CAMPUS_SCHOOLS: readonly CampusSchool[] = directory.schools.map((sc
     ...school,
     id: connected?.id ?? `moe-${school.code}`,
     url: connected?.url ?? "",
-    status: connected?.status ?? "通知整理中",
+    status: connected?.status ?? "暂未收录通知",
     aliases: schoolAliases[school.name] || [],
   };
 });
@@ -127,7 +164,17 @@ export function searchCampusSchools(
   });
   return { schools: matches.slice(0, Math.max(1, Math.min(60, limit))), total: matches.length };
 }
-export const CAMPUS_SOURCES = [
+export interface CampusSource {
+  id: string;
+  schoolId: string;
+  department: string;
+  url: string;
+  pattern: string;
+  profile?: CampusArticleProfile;
+  linkTextPattern?: string;
+}
+
+export const CAMPUS_SOURCES: readonly CampusSource[] = [
   {
     id: "sspu-main",
     schoolId: "sspu",
@@ -162,6 +209,54 @@ export const CAMPUS_SOURCES = [
     department: "教务处",
     url: "https://jwc.sues.edu.cn/",
     pattern: "/[a-f0-9]{2}/[a-f0-9]{2}/c2406[34]a\\d+/page.htm",
+  },
+  {
+    id: "pku-dean",
+    schoolId: "moe-4111010001",
+    department: "教务部",
+    url: "https://dean.pku.edu.cn/web/notice.php",
+    pattern: "^/web/notice_details\\.php\\?id=\\d+$",
+    profile: "pku",
+  },
+  {
+    id: "nju-jw",
+    schoolId: "moe-4132010284",
+    department: "本科生院",
+    url: "https://jw.nju.edu.cn/ggtz/list.htm",
+    pattern: "^/[a-f0-9]{2}/[a-f0-9]{2}/c26263a\\d+/page\\.htm$",
+    linkTextPattern: "通知|考试|报名|项目|公示|安排|汇总",
+  },
+  {
+    id: "ustc-teach",
+    schoolId: "moe-4134010358",
+    department: "教务处",
+    url: "https://www.teach.ustc.edu.cn/category/notice",
+    pattern: "^/notice/notice-(info|teaching)/\\d+\\.html$",
+    profile: "ustc",
+  },
+  {
+    id: "whu-uc",
+    schoolId: "moe-4142010486",
+    department: "本科生院",
+    url: "https://uc.whu.edu.cn/tzgg.htm",
+    pattern: "^/info/(1517|1520)/\\d+\\.htm$",
+    profile: "vsb",
+  },
+  {
+    id: "sysu-jwb",
+    schoolId: "moe-4144010558",
+    department: "教务部",
+    url: "https://jwb.sysu.edu.cn/newscenter/notice",
+    pattern: "^/article/\\d+$",
+    profile: "sysu",
+  },
+  {
+    id: "scu-jwc",
+    schoolId: "moe-4151010610",
+    department: "教务处",
+    url: "https://jwc.scu.edu.cn/tzgg.htm",
+    pattern: "^/info/1069/\\d+\\.htm$",
+    profile: "vsb",
   },
 ] as const;
 
