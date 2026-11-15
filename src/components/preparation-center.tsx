@@ -521,7 +521,9 @@ export function PreparationCenter({
               {!upcoming.length && (
                 <p className="prep-muted">
                   {goal.state === "active"
-                    ? "时间待公布，目标已为你保留。"
+                    ? goal.edition === "待确认考期"
+                      ? "尚未选择考期，请在我的日程中选择要参加的场次。"
+                      : "暂无待办日期，可在我的日程中核对考期和公告。"
                     : "目标已暂停或归档，活动提醒已停止。"}
                 </p>
               )}

@@ -1,4 +1,5 @@
 import { personalSchedule } from "@/lib/server/personal-schedule";
+import { safeBrowseReturn } from "@/lib/browse-return";
 import { savedLearningItems } from "@/lib/server/learning-store";
 import { learningEntries } from "@/lib/server/learning-store";
 import { catalogLifecycle } from "@/lib/catalog-lifecycle";
@@ -97,6 +98,9 @@ export default async function Page({
         {view === "overview" && (
           <>
             <StudentGoals
+              key={`${account.id}-${filters.editGoal || "default"}`}
+              editingGoalId={filters.editGoal}
+              returnTo={filters.returnTo ? safeBrowseReturn(filters.returnTo, "/me") : undefined}
               goals={goals}
               notices={listNotices()}
               newCategory={filters.newCategory}

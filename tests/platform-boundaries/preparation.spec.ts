@@ -68,7 +68,7 @@ test("已知场次自动关联且六级目标识别合并公告；未知目标�
   await expect(page.getByText("2027-03-20的安排")).toBeVisible();
   await page.goto(`/me/preparation?goal=${unknown.id}&view=calendar`);
   await page.locator("#pending > summary").click();
-  await expect(page.getByText("时间待公布", { exact: false }).first()).toBeVisible();
+  await expect(page.getByText("尚未选择考期", { exact: true })).toBeVisible();
   await page.goto("/me");
   await expect(page.getByText("计算机等级考试", { exact: false }).first()).toBeVisible();
   await context.close();

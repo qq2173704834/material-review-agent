@@ -9,8 +9,21 @@ import {
   scheduleCountdown,
   formatScheduleTime,
   sortSchedule,
+  missingScheduleDateLabel,
 } from "../../src/lib/schedule.ts";
 import { safeBrowseReturn } from "../../src/lib/browse-return.ts";
+
+test("未选考期、未关联公告与来源未给日期分别表达，不把本人待选择说成未公布", () => {
+  assert.equal(
+    missingScheduleDateLabel({ missingDateReason: "edition-unselected" }),
+    "尚未选择考期",
+  );
+  assert.equal(
+    missingScheduleDateLabel({ missingDateReason: "source-unlinked" }),
+    "尚未关联考试公告",
+  );
+  assert.equal(missingScheduleDateLabel({}), "时间待公布");
+});
 
 test("日程分类区分考试、申请、报告和其他，不把未知标签推断为考试", () => {
   assert.equal(scheduleGroup("报名截止"), "报名与申请");

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { notifyScheduleChanged } from "@/components/schedule-refresh";
 import type { ScheduleNode } from "@/lib/schedule";
-import { formatScheduleTime } from "@/lib/schedule";
+import { formatScheduleTime, missingScheduleDateLabel } from "@/lib/schedule";
 import { Plus, Minus, LoaderCircle, Check } from "lucide-react";
 import type { ReactElement } from "react";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,11 @@ export function StudentGoals({
   newCategory,
   noticeId,
   scheduleNodes = [],
+  editingGoalId,
+  returnTo,
 }: {
+  editingGoalId?: string;
+  returnTo?: string;
   scheduleNodes?: ScheduleNode[];
   goals: StudentGoal[];
   notices: ExamNotice[];
@@ -24,7 +28,9 @@ export function StudentGoals({
   noticeId?: string;
 }): ReactElement {
   const router = useRouter(),
-    [editing, setEditing] = useState<StudentGoal | null>(null),
+    [editing, setEditing] = useState<StudentGoal | null>(
+      goals.find((goal) => goal.id === editingGoalId) ?? null,
+    ),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [failed, setFailed] = useState(false);
@@ -42,7 +48,9 @@ export function StudentGoals({
     }
   }, [editing]);
   const selected = notices.find((item) => item.id === noticeId);
-  const [category, setCategory] = useState(newCategory ?? selected?.content.category ?? "cet4");
+  const [category, setCategory] = useState(
+    editing?.category ?? newCategory ?? selected?.content.category ?? "cet4",
+  );
   async function save(form: HTMLFormElement): Promise<void> {
     if (saving.current) return;
     saving.current = true;
@@ -69,6 +77,7 @@ export function StudentGoals({
       setMessage("考试目标已保存。");
       setEditing(null);
       notifyScheduleChanged();
+      if (editingGoalId && returnTo) router.replace(returnTo);
       router.refresh();
     } catch (error) {
       setFailed(true);
@@ -114,7 +123,11 @@ export function StudentGoals({
                     );
                     return node?.value
                       ? `${node.label}：${formatScheduleTime(node.value)}`
-                      : "考试时间待公布";
+                      : node
+                        ? missingScheduleDateLabel(node)
+                        : goal.edition === "待确认考期"
+                          ? "尚未选择考期"
+                          : "考试时间待公布";
                   })()}
             </p>
             <details>
@@ -196,6 +209,7 @@ export function StudentGoals({
         ))}
       </div>
       <details
+        id="goal-editor"
         ref={editor}
         open={!!(newCategory || noticeId || editing)}
         className="rounded-xl border bg-card p-5"

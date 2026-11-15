@@ -68,9 +68,17 @@ export function examScheduleNodes(userId: string): ScheduleNode[] {
       unknown.push({
         id: `goal:${goal.id}:exam`,
         title: `${CATEGORY_LABELS[goal.category]} · ${goal.edition}`,
-        label: "考试时间待公布",
+        label: "考试安排",
         value: "",
-        href: `/me/preparation?goal=${goal.id}`,
+        href: source
+          ? `/exams/${source.id}?returnTo=${encodeURIComponent(`/me/schedule?goal=${goal.id}`)}`
+          : `/me?editGoal=${goal.id}&returnTo=${encodeURIComponent(`/me/schedule?goal=${goal.id}&pending=1`)}#goal-editor`,
+        missingDateReason:
+          goal.edition === "待确认考期"
+            ? "edition-unselected"
+            : !source
+              ? "source-unlinked"
+              : undefined,
         group: "考试安排",
         goalIds: [goal.id],
         done: false,

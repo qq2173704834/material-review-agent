@@ -4,7 +4,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import type { ScheduleNode } from "@/lib/schedule";
-import { scheduleOverdue, scheduleCountdown, formatScheduleTime } from "@/lib/schedule";
+import {
+  scheduleOverdue,
+  scheduleCountdown,
+  formatScheduleTime,
+  missingScheduleDateLabel,
+} from "@/lib/schedule";
 import { notifyScheduleChanged } from "@/components/schedule-refresh";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 
@@ -60,7 +65,7 @@ export function ScheduleExamCard({ node, now }: { node: ScheduleNode; now: numbe
           {node.done
             ? "已完成"
             : !node.value
-              ? "时间待公布"
+              ? missingScheduleDateLabel(node)
               : scheduleOverdue(node.value, now)
                 ? "已到期 · 待完成"
                 : scheduleCountdown(node.value, now)}
@@ -85,7 +90,11 @@ export function ScheduleExamCard({ node, now }: { node: ScheduleNode; now: numbe
       )}
       <div className="flex flex-wrap gap-2">
         <Link href={node.href} className="button-secondary">
-          查看来源
+          {node.missingDateReason === "edition-unselected"
+            ? "选择考期"
+            : node.missingDateReason === "source-unlinked"
+              ? "关联考试公告"
+              : "查看来源"}
         </Link>
         <button
           disabled={busy}

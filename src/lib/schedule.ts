@@ -17,7 +17,16 @@ export interface ScheduleNode {
   revision: number;
   manual: boolean;
   manualValue?: string;
+  missingDateReason?: "edition-unselected" | "source-unlinked";
   event?: CampusEvent;
+}
+
+export function missingScheduleDateLabel(node: Pick<ScheduleNode, "missingDateReason">): string {
+  return node.missingDateReason === "edition-unselected"
+    ? "尚未选择考期"
+    : node.missingDateReason === "source-unlinked"
+      ? "尚未关联考试公告"
+      : "时间待公布";
 }
 
 export function scheduleGroup(label: string): ScheduleGroup {
