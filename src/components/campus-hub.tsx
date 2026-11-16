@@ -12,7 +12,7 @@ import {
   type ScheduleNode,
 } from "@/lib/schedule";
 import { CampusSchoolRequest } from "@/components/campus-school-request";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -25,6 +25,8 @@ import {
   Trash2,
   Upload,
   LoaderCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { ReactElement, FormEvent } from "react";
 import {
@@ -134,6 +136,11 @@ export function CampusHub({
     );
   const [editor, setEditor] = useState<CampusEvent | null>(initialEditor || null),
     [isImportOpen, setIsImportOpen] = useState(!!initialProposal && !initialEditor);
+  const [editorSession, setEditorSession] = useState(0);
+  function openEditor(event: CampusEvent): void {
+    setEditorSession((value) => value + 1);
+    setEditor(event);
+  }
   const [text, setText] = useState(initialProposal),
     [url, setUrl] = useState(""),
     [referenceDate, setReferenceDate] = useState("");
@@ -142,6 +149,7 @@ export function CampusHub({
   >([]);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
+  const lastFailure = useRef("");
   useEffect(() => {
     if (message !== "已保存") return;
     const timer = setTimeout(() => setMessage(""), 2500);
@@ -174,10 +182,7 @@ export function CampusHub({
       new Date(initialNow).toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }).slice(0, 7),
     );
   const [view, setView] = useState<"list" | "month">("list");
-  const clearDirty = useUnsavedChanges(
-    !!editor || (isImportOpen && (!!text || drafts.length > 0)),
-    true,
-  );
+  const clearDirty = useUnsavedChanges(isImportOpen && (!!text || drafts.length > 0), true);
   const contextKey = JSON.stringify([initialEditor?.id, initialProposal, initialNoticeId]);
   const [previousContext, setPreviousContext] = useState(contextKey);
   if (previousContext !== contextKey) {
@@ -195,6 +200,7 @@ export function CampusHub({
     if (busy) return false;
     setBusy(true);
     setMessage("");
+    lastFailure.current = "";
     try {
       const response = await fetch("/api/campus", {
         method: "POST",
@@ -210,7 +216,8 @@ export function CampusHub({
       router.refresh();
       return true;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "保存失败，请重试。");
+      lastFailure.current = error instanceof Error ? error.message : "保存失败，请重试。";
+      setMessage(lastFailure.current);
       return false;
     } finally {
       setBusy(false);
@@ -432,7 +439,7 @@ export function CampusHub({
         </button>
         <button
           className={buttonClass}
-          onClick={() => setEditor(state.events.find((item) => item.id === event.id) || event)}
+          onClick={() => openEditor(state.events.find((item) => item.id === event.id) || event)}
         >
           <Pencil className="size-4" />
           编辑
@@ -467,7 +474,7 @@ export function CampusHub({
         <div className="flex flex-wrap gap-2">
           {mode === "schedule" ? (
             <>
-              <button className={buttonClass} onClick={() => setEditor(blankEvent())}>
+              <button className={buttonClass} onClick={() => openEditor(blankEvent())}>
                 <Plus className="size-4" />
                 添加日程
               </button>
@@ -478,8 +485,12 @@ export function CampusHub({
             </>
           ) : (
             <>
-              <button className={buttonClass} onClick={() => setIsSettingsOpen(!isSettingsOpen)}>
-                我的学校
+              <button
+                className={buttonClass}
+                aria-expanded={isSettingsOpen}
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              >
+                {school ? "切换学校 / 修改关注" : "选择我的学校"}
               </button>
               <Link href="/me/schedule" className={buttonClass}>
                 查看我的日程 →
@@ -813,7 +824,7 @@ export function CampusHub({
       )}
       {editor && (
         <EventEditor
-          key={editor.id}
+          key={`${editor.id}-${editorSession}`}
           resources={resources}
           event={editor}
           revision={state.revision}
@@ -827,7 +838,7 @@ export function CampusHub({
             if (await mutate({ action: "save", events: [event] }, baseRevision)) {
               clearDirty();
               setEditor(null);
-            }
+            } else throw new Error(lastFailure.current || "保存失败，请重试。");
           }}
         />
       )}
@@ -1121,21 +1132,62 @@ export function CampusHub({
             </button>
           </div>
           {view === "month" && (
-            <div className="rounded-2xl border bg-card p-3 sm:p-5">
-              <label className="text-sm">
-                月份
-                <input
-                  type="month"
-                  value={month}
-                  onChange={(event) => {
-                    if (event.target.value) {
-                      setMonth(event.target.value);
-                      setDay(`${event.target.value}-01`);
-                    }
+            <div className="schedule-calendar mx-auto w-full max-w-3xl rounded-2xl border bg-card p-3 sm:p-5">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  className={buttonClass}
+                  aria-label="上个月"
+                  onClick={() => {
+                    const date = new Date(`${month}-01T00:00:00Z`);
+                    date.setUTCMonth(date.getUTCMonth() - 1);
+                    const value = date.toISOString().slice(0, 7);
+                    setMonth(value);
+                    setDay(`${value}-01`);
                   }}
-                  className={`${fieldClass} mb-4 max-w-52`}
-                />
-              </label>
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <label className="text-sm">
+                  <span className="sr-only">月份</span>
+                  <input
+                    type="month"
+                    value={month}
+                    onChange={(event) => {
+                      if (event.target.value) {
+                        setMonth(event.target.value);
+                        setDay(`${event.target.value}-01`);
+                      }
+                    }}
+                    className={`${fieldClass} max-w-44 text-center`}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className={buttonClass}
+                  aria-label="下个月"
+                  onClick={() => {
+                    const date = new Date(`${month}-01T00:00:00Z`);
+                    date.setUTCMonth(date.getUTCMonth() + 1);
+                    const value = date.toISOString().slice(0, 7);
+                    setMonth(value);
+                    setDay(`${value}-01`);
+                  }}
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  className="hidden text-sm text-primary sm:block"
+                  onClick={() => {
+                    const today = new Date(now + 8 * 3600000).toISOString().slice(0, 10);
+                    setMonth(today.slice(0, 7));
+                    setDay(today);
+                  }}
+                >
+                  今天
+                </button>
+              </div>
               <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {["一", "二", "三", "四", "五", "六", "日"].map((day) => (
                   <span key={day} className="text-center text-xs text-muted-foreground">
@@ -1165,13 +1217,26 @@ export function CampusHub({
                         aria-label={`${date}，${items.length}项安排`}
                         aria-pressed={day === date}
                         onClick={() => setDay(date)}
-                        className={`min-w-0 min-h-16 rounded-lg border p-1 text-center text-xs sm:min-h-24 ${day === date ? "border-primary bg-primary/10" : ""}`}
+                        aria-current={
+                          date === new Date(now + 8 * 3600000).toISOString().slice(0, 10)
+                            ? "date"
+                            : undefined
+                        }
+                        className={`calendar-day min-w-0 h-12 rounded-xl p-1 text-center text-sm sm:h-16 ${day === date ? "bg-primary text-white shadow-sm" : items.length ? "bg-primary/7 text-primary hover:bg-primary/15" : "hover:bg-muted"}`}
                       >
-                        <span>{i + 1}</span>
+                        <span
+                          className={
+                            date === new Date(now + 8 * 3600000).toISOString().slice(0, 10)
+                              ? "font-bold underline decoration-2 underline-offset-4"
+                              : ""
+                          }
+                        >
+                          {i + 1}
+                        </span>
                         {items.length > 0 && (
-                          <span className="mt-2 block text-primary">
+                          <span className="mt-1 flex items-center justify-center gap-1 text-[10px]">
+                            <span className="size-1 rounded-full bg-current" />
                             {items.length}项
-                            <span className="hidden truncate sm:block">{items[0]!.title}</span>
                           </span>
                         )}
                       </button>
@@ -1179,6 +1244,7 @@ export function CampusHub({
                   },
                 )}
               </div>
+              <p className="mt-3 text-center text-xs text-muted-foreground">点击日期查看当天安排</p>
             </div>
           )}
           <h2 className="font-semibold">{view === "month" ? `${day}的安排` : "近期待办"}</h2>
@@ -1245,6 +1311,24 @@ function EventEditor({
 }): ReactElement {
   const [draft, setDraft] = useState(event);
   const [baseRevision, setBaseRevision] = useState(revision);
+  const [failure, setFailure] = useState("");
+  const dialog = useRef<HTMLDialogElement>(null);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(event);
+  const clearDirty = useUnsavedChanges(dirty, true);
+  useEffect(() => {
+    const element = dialog.current;
+    const trigger = document.activeElement;
+    element?.showModal();
+    return () => {
+      element?.close();
+      if (trigger instanceof HTMLElement) trigger.focus();
+    };
+  }, []);
+  function cancel(): void {
+    if (busy || (dirty && !window.confirm("放弃尚未保存的修改？"))) return;
+    clearDirty();
+    onCancel();
+  }
   const [precision, setPrecision] = useState(
     draft.start.length > 10 || draft.end.length > 10 ? "time" : "date",
   );
@@ -1265,172 +1349,196 @@ function EventEditor({
       </label>
     );
   }
-  function submit(event: FormEvent): void {
+  async function submit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    void onSave(draft, baseRevision);
+    setFailure("");
+    try {
+      await onSave(draft, baseRevision);
+    } catch (error) {
+      setFailure(error instanceof Error ? error.message : "保存失败，请重试。");
+    }
   }
   return (
-    <form
-      onSubmit={submit}
-      className="grid gap-4 rounded-2xl border border-primary/30 bg-card p-5 sm:grid-cols-2"
+    <dialog
+      ref={dialog}
+      aria-labelledby="schedule-editor-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        cancel();
+      }}
+      className="schedule-editor-dialog m-auto max-h-[88dvh] w-[min(44rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-slate-950/40"
     >
-      <h2 className="font-semibold sm:col-span-2">安排个人事项</h2>
-      {baseRevision !== revision && (
-        <div className="space-y-3 rounded-xl bg-muted p-4 text-sm sm:col-span-2">
-          <p>日程已有更新，你的输入仍保留。请核对最新内容后继续。</p>
-          <details>
-            <summary>最新保存内容</summary>
-            <p className="mt-2 whitespace-pre-wrap">
-              {latestEvent
-                ? `${latestEvent.title}；${latestEvent.start || "开始待定"}；${latestEvent.end || "截止待定"}；${latestEvent.note}`
-                : "当前没有这条已保存事项；若已删除，请取消编辑。"}
-            </p>
-          </details>
-          <button type="button" className="underline" onClick={() => setBaseRevision(revision)}>
-            已核对，继续保存当前编辑
-          </button>
-        </div>
-      )}
-      {event.sourceId &&
-        (!currentSource ||
-          currentSource.withdrawn ||
-          currentSource.digest !== event.sourceDigest) && (
-          <div className="space-y-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-950 sm:col-span-2">
-            <p>来源通知有变化，原填写内容保留。请核对原文与时间后再确认。</p>
-            {currentSource && !currentSource.withdrawn ? (
-              <label className="flex gap-2 items-center">
-                <input
-                  type="checkbox"
-                  checked={draft.sourceDigest === currentSource.digest}
-                  onChange={(change) =>
-                    setDraft({
-                      ...draft,
-                      sourceDigest: change.target.checked
-                        ? currentSource.digest
-                        : event.sourceDigest,
-                    })
-                  }
-                />
-                我已核对最新通知中的安排
-              </label>
-            ) : (
-              <label className="flex gap-2 items-center">
-                <input
-                  type="checkbox"
-                  checked={!draft.sourceId}
-                  onChange={(change) =>
-                    setDraft({
-                      ...draft,
-                      sourceId: change.target.checked ? "" : event.sourceId,
-                      sourceDigest: change.target.checked ? "" : event.sourceDigest,
-                    })
-                  }
-                />
-                保留为我自行维护的安排
-              </label>
-            )}
-            {event.sourceUrl && (
-              <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="underline">
-                查看原通知
-              </a>
-            )}
+      <form
+        onSubmit={(event) => void submit(event)}
+        className="grid gap-4 rounded-2xl border border-primary/30 bg-card p-5 sm:grid-cols-2"
+      >
+        <h2 id="schedule-editor-title" className="font-semibold sm:col-span-2">
+          安排个人事项
+        </h2>
+        {failure && (
+          <p role="alert" className="text-sm text-red-700 sm:col-span-2">
+            {failure}
+          </p>
+        )}
+        {baseRevision !== revision && (
+          <div className="space-y-3 rounded-xl bg-muted p-4 text-sm sm:col-span-2">
+            <p>日程已有更新，你的输入仍保留。请核对最新内容后继续。</p>
+            <details>
+              <summary>最新保存内容</summary>
+              <p className="mt-2 whitespace-pre-wrap">
+                {latestEvent
+                  ? `${latestEvent.title}；${latestEvent.start || "开始待定"}；${latestEvent.end || "截止待定"}；${latestEvent.note}`
+                  : "当前没有这条已保存事项；若已删除，请取消编辑。"}
+              </p>
+            </details>
+            <button type="button" className="underline" onClick={() => setBaseRevision(revision)}>
+              已核对，继续保存当前编辑
+            </button>
           </div>
         )}
-      {field("title", "事项名称")}
-      <label className="text-sm">
-        类型
-        <select
-          className={fieldClass}
-          value={draft.kind}
-          onChange={(event) =>
-            setDraft({ ...draft, kind: event.target.value as CampusEvent["kind"] })
-          }
-        >
-          {CAMPUS_KINDS.map((kind) => (
-            <option key={kind}>{kind}</option>
-          ))}
-        </select>
-      </label>
-      {field("course", "课程（可选）")}
-      {field("semester", "学期（可选）")}
-      <label className="text-sm">
-        时间精度
-        <select
-          className={fieldClass}
-          value={precision}
-          onChange={(event) => {
-            setPrecision(event.target.value);
-            setDraft({ ...draft, start: draft.start.slice(0, 10), end: draft.end.slice(0, 10) });
-          }}
-        >
-          <option value="date">仅日期</option>
-          <option value="time">具体时刻（北京时间）</option>
-        </select>
-      </label>
-      <label className="text-sm">
-        提前提醒
-        <select
-          className={fieldClass}
-          value={draft.reminderHours}
-          onChange={(event) =>
-            setDraft({
-              ...draft,
-              reminderHours: Number(event.target.value) as CampusEvent["reminderHours"],
-            })
-          }
-        >
-          <option value={0}>不提醒</option>
-          <option value={72}>3天</option>
-          <option value={24}>1天</option>
-          {precision === "time" && <option value={2}>2小时</option>}
-        </select>
-      </label>
-      <label className="text-sm">
-        {draft.kind === "考试" ? "开始" : "开始（可选）"}
-        <input
-          type={precision === "time" ? "datetime-local" : "date"}
-          className={fieldClass}
-          value={draft.start}
-          onChange={(event) => setDraft({ ...draft, start: event.target.value })}
-        />
-      </label>
-      <label className="text-sm">
-        {draft.kind === "考试" ? "结束（可选）" : "截止"}
-        <input
-          type={precision === "time" ? "datetime-local" : "date"}
-          className={fieldClass}
-          value={draft.end}
-          onChange={(event) => setDraft({ ...draft, end: event.target.value })}
-        />
-      </label>
-      <label className="text-sm">
-        关联学习资料
-        <select
-          className={fieldClass}
-          value={draft.resourceIds?.[0] || ""}
-          onChange={(event) =>
-            setDraft({ ...draft, resourceIds: event.target.value ? [event.target.value] : [] })
-          }
-        >
-          <option value="">暂不关联</option>
-          {resources.map((resource) => (
-            <option key={resource.id} value={resource.id}>
-              {resource.subject} · {resource.title}
-            </option>
-          ))}
-        </select>
-      </label>
-      {field("location", "地点（可选）")}
-      {field("note", "备注（可选）")}
-      <p className="text-xs text-muted-foreground sm:col-span-2">日期可以留空，保存为时间待定。</p>
-      <div className="flex gap-3 sm:col-span-2">
-        <button disabled={busy} className={buttonClass}>
-          保存日程
-        </button>
-        <button type="button" disabled={busy} className={buttonClass} onClick={onCancel}>
-          取消
-        </button>
-      </div>
-    </form>
+        {event.sourceId &&
+          (!currentSource ||
+            currentSource.withdrawn ||
+            currentSource.digest !== event.sourceDigest) && (
+            <div className="space-y-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-950 sm:col-span-2">
+              <p>来源通知有变化，原填写内容保留。请核对原文与时间后再确认。</p>
+              {currentSource && !currentSource.withdrawn ? (
+                <label className="flex gap-2 items-center">
+                  <input
+                    type="checkbox"
+                    checked={draft.sourceDigest === currentSource.digest}
+                    onChange={(change) =>
+                      setDraft({
+                        ...draft,
+                        sourceDigest: change.target.checked
+                          ? currentSource.digest
+                          : event.sourceDigest,
+                      })
+                    }
+                  />
+                  我已核对最新通知中的安排
+                </label>
+              ) : (
+                <label className="flex gap-2 items-center">
+                  <input
+                    type="checkbox"
+                    checked={!draft.sourceId}
+                    onChange={(change) =>
+                      setDraft({
+                        ...draft,
+                        sourceId: change.target.checked ? "" : event.sourceId,
+                        sourceDigest: change.target.checked ? "" : event.sourceDigest,
+                      })
+                    }
+                  />
+                  保留为我自行维护的安排
+                </label>
+              )}
+              {event.sourceUrl && (
+                <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="underline">
+                  查看原通知
+                </a>
+              )}
+            </div>
+          )}
+        {field("title", "事项名称")}
+        <label className="text-sm">
+          类型
+          <select
+            className={fieldClass}
+            value={draft.kind}
+            onChange={(event) =>
+              setDraft({ ...draft, kind: event.target.value as CampusEvent["kind"] })
+            }
+          >
+            {CAMPUS_KINDS.map((kind) => (
+              <option key={kind}>{kind}</option>
+            ))}
+          </select>
+        </label>
+        {field("course", "课程（可选）")}
+        {field("semester", "学期（可选）")}
+        <label className="text-sm">
+          时间精度
+          <select
+            className={fieldClass}
+            value={precision}
+            onChange={(event) => {
+              setPrecision(event.target.value);
+              setDraft({ ...draft, start: draft.start.slice(0, 10), end: draft.end.slice(0, 10) });
+            }}
+          >
+            <option value="date">仅日期</option>
+            <option value="time">具体时刻（北京时间）</option>
+          </select>
+        </label>
+        <label className="text-sm">
+          提前提醒
+          <select
+            className={fieldClass}
+            value={draft.reminderHours}
+            onChange={(event) =>
+              setDraft({
+                ...draft,
+                reminderHours: Number(event.target.value) as CampusEvent["reminderHours"],
+              })
+            }
+          >
+            <option value={0}>不提醒</option>
+            <option value={72}>3天</option>
+            <option value={24}>1天</option>
+            {precision === "time" && <option value={2}>2小时</option>}
+          </select>
+        </label>
+        <label className="text-sm">
+          {draft.kind === "考试" ? "开始" : "开始（可选）"}
+          <input
+            type={precision === "time" ? "datetime-local" : "date"}
+            className={fieldClass}
+            value={draft.start}
+            onChange={(event) => setDraft({ ...draft, start: event.target.value })}
+          />
+        </label>
+        <label className="text-sm">
+          {draft.kind === "考试" ? "结束（可选）" : "截止"}
+          <input
+            type={precision === "time" ? "datetime-local" : "date"}
+            className={fieldClass}
+            value={draft.end}
+            onChange={(event) => setDraft({ ...draft, end: event.target.value })}
+          />
+        </label>
+        <label className="text-sm">
+          关联学习资料
+          <select
+            className={fieldClass}
+            value={draft.resourceIds?.[0] || ""}
+            onChange={(event) =>
+              setDraft({ ...draft, resourceIds: event.target.value ? [event.target.value] : [] })
+            }
+          >
+            <option value="">暂不关联</option>
+            {resources.map((resource) => (
+              <option key={resource.id} value={resource.id}>
+                {resource.subject} · {resource.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        {field("location", "地点（可选）")}
+        {field("note", "备注（可选）")}
+        <p className="text-xs text-muted-foreground sm:col-span-2">
+          日期可以留空，保存为时间待定。
+        </p>
+        <div className="flex gap-3 sm:col-span-2">
+          <button disabled={busy} className={buttonClass}>
+            保存日程
+          </button>
+          <button type="button" disabled={busy} className={buttonClass} onClick={cancel}>
+            取消
+          </button>
+        </div>
+      </form>
+    </dialog>
   );
 }

@@ -9,6 +9,20 @@ export function assistantPolicy(environment: Record<string, string | undefined>)
   };
 }
 
+/** Learning requests work without a hidden checkbox; mixed policy queries stay factual. */
+export function isLearningQuestion(question: string): boolean {
+  if (isExamPolicyQuestion(question)) return false;
+  return /学习|复习|备考|入门|讲解|练习|错题|知识点|背单词|听力|阅读|写作|刷题|每天.*分钟|一周.*安排/u.test(
+    question,
+  );
+}
+
+export function isExamPolicyQuestion(question: string): boolean {
+  return /报名(?:条件|资格|截止|时间|日期)|报考(?:条件|资格)|(?:考试|笔试|口试|面试)(?:时间|日期)|准考证|缴费|成绩查询|能否报名|能不能报|可以报考|报名.*(?:几号|哪天|什么时候|何时)/u.test(
+    question,
+  );
+}
+
 export function lacksDatedExamNotice(
   question: string,
   learning: boolean,

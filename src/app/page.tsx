@@ -159,7 +159,7 @@ export default async function Home({
               <CalendarDays size={22} />
             </span>
             <span>
-              <small>下一项考试安排 · {nextEvent.node.label}</small>
+              <small>近期考试推荐 · {nextEvent.node.label}</small>
               <strong>{nextEvent.item.content.title}</strong>
             </span>
             <time>{formatExamTime(nextEvent.node.value)}</time>

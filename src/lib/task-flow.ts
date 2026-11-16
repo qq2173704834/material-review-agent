@@ -5,7 +5,7 @@ export type TaskTool = "sources" | "materials" | "requirements" | "clarification
 
 export function needsAttention(result: ReviewExecution["results"][number]): boolean {
   return (
-    (result.verdict === "failed" && result.strength === "required") ||
+    (result.verdict === "failed" && ["required", "unknown"].includes(result.strength)) ||
     result.verdict === "needs_confirmation" ||
     result.verdict === "unable_to_check"
   );
@@ -22,12 +22,12 @@ export function nextTaskAction(
   )
     return { label: "添加审查要求", view: "prepare", kind: "prepare" };
   if (execution?.validity === "needs_recheck")
-    return { label: "复查受影响项", view: "review", kind: "start" };
+    return { label: "重新检查", view: "review", kind: "start" };
   if (execution && ["failed", "cancelled"].includes(execution.status))
     return { label: "重试审查", view: "review", kind: "start" };
   if (!execution)
     return {
-      label: task.materials.length ? "开始审查" : "检查缺交项",
+      label: task.materials.length ? "开始检查" : "检查缺交项",
       view: "prepare",
       kind: "start",
     };
@@ -35,7 +35,7 @@ export function nextTaskAction(
     label:
       execution.results.some(needsAttention) || execution.unexecutedCount
         ? "查看待处理问题"
-        : "查看报告",
+        : "查看自查结果",
     view: "results",
     kind: "results",
   };

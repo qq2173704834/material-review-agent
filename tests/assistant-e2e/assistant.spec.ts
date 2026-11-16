@@ -139,3 +139,40 @@ test("受控模型：偏好门禁、原文引用、成功失败耗用和未知To
     await api.dispose();
   }
 });
+
+test("BUG070 未勾学习模式的一周计划直接走受控模型，混合日期问题不猜测", async ({ playwright }) => {
+  const api = await playwright.request.newContext({ baseURL: "http://127.0.0.1:3145" });
+  const username = `plan_${Date.now()}`,
+    password = "Assistant-regression-2026!";
+  try {
+    expect((await api.post("/api/auth/register", { data: { username, password } })).status()).toBe(
+      201,
+    );
+    expect((await api.post("/api/auth/login", { data: { username, password } })).ok()).toBe(true);
+    const result = await api.post("/api/assistant", {
+      data: {
+        requestId: randomUUID(),
+        question: "我是在校大学生，准备大学英语四级，每天学习30分钟，请给我一周入门安排。",
+      },
+    });
+    expect(result.status(), await result.text()).toBe(200);
+    const answer = await result.json();
+    expect(answer.mode).toBe("live");
+    expect(answer.kind).toBe("学习建议");
+    for (let day = 1; day <= 7; day++) expect(answer.answer).toContain(`第${day}天`);
+    expect(answer.answer).toContain("每天共30分钟");
+    expect(answer.answer).not.toContain("补充地区");
+    const before = (await (await api.get("/api/assistant")).json()).usage.modelRequests;
+    const dates = await api.post("/api/assistant", {
+      data: {
+        requestId: randomUUID(),
+        learning: true,
+        question: "2099年四级报名截止日期和复习计划",
+      },
+    });
+    expect((await dates.json()).kind).toBe("需补充信息");
+    expect((await (await api.get("/api/assistant")).json()).usage.modelRequests).toBe(before);
+  } finally {
+    await api.dispose();
+  }
+});

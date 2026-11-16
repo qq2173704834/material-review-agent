@@ -60,7 +60,10 @@ test("UXR个人内容按标签展示且收藏反馈仍按账号隔离", async ({
   await expect(page.getByRole("link", { name: content.title, exact: true })).toBeVisible();
   await page.getByRole("link", { name: "我的反馈", exact: true }).click();
   await expect(page.getByText(/资料问题 · 待处理/)).toBeVisible();
-  await page.getByRole("link", { name: "材料记录", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "个人工具导航" })
+    .getByRole("link", { name: "材料自查记录", exact: true })
+    .click();
   await expect(page.getByRole("link", { name: "查看全部材料预审任务" })).toBeVisible();
   expect((await (await actors.peer.api.get("/api/feedback")).json()).items).toHaveLength(0);
 });

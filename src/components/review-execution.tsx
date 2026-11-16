@@ -9,6 +9,7 @@ import type { ReviewRuleSet, ReviewRule, RuleExtractionWarning } from "@/domain/
 import { hasCurrentRuleSources, reviewRuleSetSchema } from "@/domain/review-rule";
 import { applicableRule } from "@/lib/review-checks";
 import { needsAttention } from "@/lib/task-flow";
+import { reviewSummary } from "@/lib/review-summary";
 import { compareExecutions } from "@/lib/review-history";
 import { ExecutionPackage, ReportDownload } from "@/components/result-export";
 import { EvidencePreview } from "@/components/evidence-preview";
@@ -185,10 +186,6 @@ export function ReviewExecutionPanel({
   const comparison = currentExecution
     ? compareExecutions(currentExecution, executions[selectedIndex + 1])
     : null;
-  const counts = new Map<ReviewVerdict, number>();
-  currentExecution?.results.forEach((result) => {
-    counts.set(result.verdict, (counts.get(result.verdict) ?? 0) + 1);
-  });
   const visibleResults = (currentExecution?.results ?? [])
     .filter((result) => {
       if (verdictFilter === "attention" && !needsAttention(result)) return false;
@@ -576,13 +573,8 @@ export function ReviewExecutionPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 id="execution-heading" className="text-sm font-semibold">
-            {workflow?.view === "results" ? "审查结果与待处理问题" : "执行审查"}
+            {workflow?.view === "results" ? "自查结果" : "检查进度"}
           </h2>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {mode === "live"
-              ? "规格由程序核验，内容由真实模型结合材料证据审查；片段将发送到你配置的模型服务。"
-              : "本地规格工具；模拟模式不进行真实模型语义审查，未核验的规则不会自动判为通过。"}
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {isRunning ? (
@@ -608,14 +600,19 @@ export function ReviewExecutionPanel({
                 : "运行检查"}
           </button>
           {executions.length ? (
-            <button
-              type="button"
-              onClick={() => void runChecks(true)}
-              disabled={!hasCurrentRuleSet || isRunning}
-              className="min-h-11 rounded border border-border px-3 text-xs disabled:opacity-40"
-            >
-              全量复检
-            </button>
+            <details>
+              <summary className="min-h-11 cursor-pointer py-3 text-xs text-primary">
+                更多检查选项
+              </summary>
+              <button
+                type="button"
+                onClick={() => void runChecks(true)}
+                disabled={!hasCurrentRuleSet || isRunning}
+                className="min-h-11 rounded border border-border px-3 text-xs disabled:opacity-40"
+              >
+                全量复检
+              </button>
+            </details>
           ) : null}
         </div>
       </div>
@@ -657,7 +654,9 @@ export function ReviewExecutionPanel({
                 ? `已取消，${currentExecution.unexecutedCount} 项未执行`
                 : currentExecution.status === "failed"
                   ? `检查中断，${currentExecution.unexecutedCount} 项未执行`
-                  : "本次审查已完成，结果已保存。"}
+                  : currentExecution.validity === "needs_recheck"
+                    ? "材料已更新，请点击上方“重新检查”。下方为上次检查记录。"
+                    : "上次检查已完成；点击上方“重新检查”可再次检查当前材料。"}
           </p>
           <p className="text-xs leading-6 text-muted-foreground">
             已完成结果实时保存；取消后未执行项单独保留，不会当作通过。
@@ -717,57 +716,25 @@ export function ReviewExecutionPanel({
             checks={currentExecution.metadata?.materialConsistency || []}
             task={taskForConfirmation}
           />
+          <div className="mb-5 rounded-2xl bg-primary/5 p-5" aria-label="自查结论">
+            <h3 className="text-lg font-semibold">{reviewSummary(currentExecution).title}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {reviewSummary(currentExecution).description}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3 text-sm">
+              <span className="text-red-800">需修改 {reviewSummary(currentExecution).failed}</span>
+              <span className="text-amber-900">
+                待确认 / 未完成 {reviewSummary(currentExecution).pending}
+              </span>
+              <span className="text-emerald-800">
+                已通过 {reviewSummary(currentExecution).passed}
+              </span>
+            </div>
+            {currentExecution.metadata?.mode === "mock" && (
+              <p className="mt-2 text-xs">模拟演示，不代表真实内容核验。</p>
+            )}
+          </div>
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
-            <span className="font-semibold text-primary">
-              {currentExecution.metadata?.mode === "live"
-                ? "此记录：真实模型审查"
-                : "此记录：模拟演示，不代表真实模型语义核验"}
-            </span>
-            <span>
-              {
-                {
-                  running: "正在执行",
-                  completed: "已完成",
-                  cancelled: "已取消",
-                  failed: "执行中断",
-                }[currentExecution.status]
-              }
-            </span>
-            <span>{currentExecution.results.length} 项已记录结果</span>
-            <span>
-              必须项未通过{" "}
-              {
-                currentExecution.results.filter(
-                  (result) => result.verdict === "failed" && result.strength === "required",
-                ).length
-              }
-            </span>
-            <span>未执行 {currentExecution.unexecutedCount} 项</span>
-            {currentExecution.status === "running" && progress ? (
-              <span aria-live="polite">
-                已完成 {progress.completed} / {progress.total} 项
-                {activeRuleCode ? ` · 正在核查 ${activeRuleCode}` : ""}
-              </span>
-            ) : null}
-            {currentExecution.status === "cancelled" ? (
-              <span>已取消，{currentExecution.unexecutedCount} 项未执行</span>
-            ) : null}
-            {currentExecution.status === "failed" ? (
-              <span className="text-red-700">
-                检查中断，{currentExecution.unexecutedCount} 项未执行
-              </span>
-            ) : null}
-            {verdictOrder.map((verdict) => (
-              <span key={verdict} className={verdictStyles[verdict]}>
-                {verdictLabels[verdict]} {counts.get(verdict) ?? 0}
-              </span>
-            ))}
-            <span>通知 v{currentExecution.sourceVersion}</span>
-            <time dateTime={currentExecution.completedAt || currentExecution.createdAt}>
-              {new Date(currentExecution.completedAt || currentExecution.createdAt).toLocaleString(
-                "zh-CN",
-              )}
-            </time>
             {currentExecution.status !== "running" ? (
               <div id="stage-report" className="flex flex-wrap gap-x-4 gap-y-2">
                 <ReportDownload
@@ -798,7 +765,7 @@ export function ReviewExecutionPanel({
               {comparison.unconfirmed.length}。只有未通过变为通过才计为已解决。
             </p>
           ) : null}
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <label className="text-xs font-medium text-muted-foreground">
               按判定筛选
               <select
@@ -816,37 +783,44 @@ export function ReviewExecutionPanel({
                 ))}
               </select>
             </label>
-            <label className="text-xs font-medium text-muted-foreground">
-              按要求强度筛选
-              <select
-                aria-label="按要求强度筛选"
-                value={strengthFilter}
-                onChange={(event) => setStrengthFilter(event.target.value)}
-                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
-              >
-                <option value="all">全部强度</option>
-                <option value="required">必须</option>
-                <option value="recommended">建议</option>
-                <option value="optional">可选</option>
-                <option value="unknown">待确认强度</option>
-              </select>
-            </label>
-            <label className="text-xs font-medium text-muted-foreground">
-              按材料筛选
-              <select
-                aria-label="按材料筛选"
-                value={materialFilter}
-                onChange={(event) => setMaterialFilter(event.target.value)}
-                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
-              >
-                <option value="all">全部材料</option>
-                {materials.map((material) => (
-                  <option key={material.id} value={material.id}>
-                    {material.originalFileName} · v{material.version}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <details>
+              <summary className="min-h-11 cursor-pointer py-3 text-sm text-primary">
+                更多筛选
+              </summary>
+              <div className="grid gap-3">
+                <label className="text-xs font-medium text-muted-foreground">
+                  按要求强度筛选
+                  <select
+                    aria-label="按要求强度筛选"
+                    value={strengthFilter}
+                    onChange={(event) => setStrengthFilter(event.target.value)}
+                    className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                  >
+                    <option value="all">全部强度</option>
+                    <option value="required">必须</option>
+                    <option value="recommended">建议</option>
+                    <option value="optional">可选</option>
+                    <option value="unknown">待确认强度</option>
+                  </select>
+                </label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  按材料筛选
+                  <select
+                    aria-label="按材料筛选"
+                    value={materialFilter}
+                    onChange={(event) => setMaterialFilter(event.target.value)}
+                    className="mt-1 h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                  >
+                    <option value="all">全部材料</option>
+                    {materials.map((material) => (
+                      <option key={material.id} value={material.id}>
+                        {material.originalFileName} · v{material.version}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </details>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <p aria-live="polite">
@@ -869,7 +843,11 @@ export function ReviewExecutionPanel({
               {viewStateNotice}
             </p>
           ) : null}
-          <div className="py-3">
+          <details
+            className="py-3"
+            open={Boolean(selectedRuleId) || searchParams.get("workspace") === "1"}
+          >
+            <summary className="cursor-pointer text-xs text-primary">高级查看</summary>
             <button
               className="min-h-11 rounded border border-border px-3 text-xs"
               onClick={() =>
@@ -888,9 +866,9 @@ export function ReviewExecutionPanel({
                 onSelect={setSelectedRuleId}
               />
             )}
-          </div>
+          </details>
           <ol className="mt-4 divide-y divide-border border-y border-border">
-            {visibleResults.map((result) => {
+            {visibleResults.map((result, index) => {
               const source = sources.find(
                 (candidate) =>
                   candidate.id === result.source.sourceId &&
@@ -912,6 +890,17 @@ export function ReviewExecutionPanel({
                   key={result.ruleId}
                   className={`scroll-mt-6 py-4 ${selectedRuleId === result.ruleId ? "bg-muted/30" : ""}`}
                 >
+                  {(index === 0 || visibleResults[index - 1]?.verdict !== result.verdict) && (
+                    <p className="mb-3 text-xs font-semibold text-muted-foreground">
+                      {result.verdict === "failed"
+                        ? "需要修改 / 可改进项"
+                        : result.verdict === "passed"
+                          ? "已通过"
+                          : result.verdict === "not_applicable"
+                            ? "不适用"
+                            : "需要确认"}
+                    </p>
+                  )}
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="text-sm font-medium">
                       <button
@@ -922,7 +911,7 @@ export function ReviewExecutionPanel({
                         }}
                         className="text-left underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
                       >
-                        {result.ruleCode} · {result.requirement}
+                        {result.requirement}
                       </button>
                     </h3>
                     <span className={`text-xs font-semibold ${verdictStyles[result.verdict]}`}>
@@ -934,21 +923,8 @@ export function ReviewExecutionPanel({
                           : ""}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    检查方法：{result.method ? methodLabels[result.method] : "未记录"}
-                  </p>
-                  {result.reusedFrom ? (
-                    <p className="mt-1 text-xs text-primary">
-                      复用结果 · 原检查时间 {result.reusedFrom.checkedAt} · 原执行{" "}
-                      {result.reusedFrom.executionId.slice(0, 8)}；本轮未重复调用工具或模型。
-                    </p>
-                  ) : result.checkedAt ? (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      本轮检查 · {result.checkedAt}
-                    </p>
-                  ) : null}
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.reason}</p>
-                  {workflow && (
+                  {workflow && needsAttention(result) && (
                     <div
                       className="mt-3 flex flex-wrap gap-2"
                       aria-label={`${result.ruleCode} 问题处理`}
@@ -964,28 +940,37 @@ export function ReviewExecutionPanel({
                           )
                         }
                       >
-                        上传修订 / 处理读取问题
+                        修改材料
                       </button>
-                      <button
-                        className="min-h-11 rounded-lg border px-3 text-xs text-primary"
-                        onClick={() => workflow.openTool("clarification")}
-                      >
-                        补充条件背景
-                      </button>
-                      <button
-                        className="min-h-11 rounded-lg border px-3 text-xs text-primary"
-                        onClick={() => workflow.openTool("requirements", `rule-${result.ruleId}`)}
-                      >
-                        更换材料 / 选择依据
-                      </button>
-                      {currentExecution.validity === "needs_recheck" && (
-                        <button
-                          className="min-h-11 rounded-lg border px-3 text-xs text-primary"
-                          onClick={() => void runChecks()}
-                        >
-                          复查受影响项
-                        </button>
-                      )}
+                      <details>
+                        <summary className="min-h-11 cursor-pointer py-3 text-xs text-primary">
+                          更多操作
+                        </summary>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            className="min-h-11 rounded-lg border px-3 text-xs text-primary"
+                            onClick={() => workflow.openTool("clarification")}
+                          >
+                            补充条件背景
+                          </button>
+                          <button
+                            className="min-h-11 rounded-lg border px-3 text-xs text-primary"
+                            onClick={() =>
+                              workflow.openTool("requirements", `rule-${result.ruleId}`)
+                            }
+                          >
+                            更换材料 / 选择依据
+                          </button>
+                          {currentExecution.validity === "needs_recheck" && (
+                            <button
+                              className="min-h-11 rounded-lg border px-3 text-xs text-primary"
+                              onClick={() => void runChecks()}
+                            >
+                              复查受影响项
+                            </button>
+                          )}
+                        </div>
+                      </details>
                     </div>
                   )}
                   {result.recommendation ? (
@@ -993,60 +978,93 @@ export function ReviewExecutionPanel({
                       建议：{result.recommendation}
                     </p>
                   ) : null}
-                  <blockquote className="mt-3 border-l-2 border-primary/40 pl-3 text-xs leading-5 text-muted-foreground">
-                    {sourceSegmentId ? (
-                      <a
-                        href={`#${sourceSegmentId}`}
-                        onClick={() => {
-                          const target = document.getElementById(sourceSegmentId);
-                          const details = target?.closest("details");
-                          if (details) details.open = true;
-                        }}
-                        className="text-primary underline underline-offset-4"
-                      >
-                        {sourceLabel}
-                      </a>
-                    ) : (
-                      <span>{sourceLabel} · 原文当前不可定位</span>
-                    )}
-                    ：{result.source.quotedText}
-                    <SourceEvidencePreview
-                      taskId={taskId}
-                      executionId={currentExecution.id}
-                      source={result.source}
-                      sourceVersion={currentExecution.sourceVersion}
-                    />
-                  </blockquote>
-                  {result.coverage ? (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      核查片段 {result.coverage.examinedSegments}/{result.coverage.totalSegments} ·{" "}
-                      {result.coverage.isComplete
-                        ? "已解析文本完整纳入本项上下文"
-                        : "片段覆盖或解析存在限制，请人工复核"}
+                  {result.evidence[0] && (
+                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                      材料依据：{result.evidence[0].quotedText}
                     </p>
-                  ) : null}
-                  {result.evidence.length ? (
-                    <EvidencePreview taskId={taskId} evidence={result.evidence} />
-                  ) : null}
-                  {result.evidence.length ? (
-                    <ul className="mt-3 space-y-2 text-xs leading-5">
-                      {result.evidence.map((evidence, index) => (
-                        <li
-                          key={`${evidence.materialId}-${index}`}
-                          className="break-words text-muted-foreground"
+                  )}
+                  {result.coverage && !result.coverage.isComplete && (
+                    <p className="mt-2 text-xs text-amber-900">部分内容未能完整检查，请核对。</p>
+                  )}
+                  <details className="mt-3">
+                    <summary className="min-h-11 cursor-pointer py-3 text-sm text-primary">
+                      查看依据
+                    </summary>
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-xs text-muted-foreground">
+                        检查详情
+                      </summary>
+                      <p className="mt-1 text-xs text-muted-foreground">编号：{result.ruleCode}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        检查方法：{result.method ? methodLabels[result.method] : "未记录"}
+                      </p>
+                      {result.reusedFrom ? (
+                        <p className="mt-1 text-xs text-primary">
+                          复用结果 · 原检查时间 {result.reusedFrom.checkedAt} · 原执行{" "}
+                          {result.reusedFrom.executionId.slice(0, 8)}；本轮未重复调用工具或模型。
+                        </p>
+                      ) : result.checkedAt ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          本轮检查 · {result.checkedAt}
+                        </p>
+                      ) : null}
+                    </details>
+                    <blockquote className="mt-3 border-l-2 border-primary/40 pl-3 text-xs leading-5 text-muted-foreground">
+                      {sourceSegmentId ? (
+                        <a
+                          href={`#${sourceSegmentId}`}
+                          onClick={() => {
+                            const target = document.getElementById(sourceSegmentId);
+                            const details = target?.closest("details");
+                            if (details) details.open = true;
+                          }}
+                          className="text-primary underline underline-offset-4"
                         >
-                          <EvidencePreview
-                            taskId={taskId}
-                            evidence={[evidence]}
-                            triggerLabel="定位证据"
-                            compact
-                          />
-                          ：{evidence.quotedText} · {evidence.location} · 材料 v
-                          {evidence.materialVersion}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
+                          {sourceLabel}
+                        </a>
+                      ) : (
+                        <span>{sourceLabel} · 原文当前不可定位</span>
+                      )}
+                      ：{result.source.quotedText}
+                      <SourceEvidencePreview
+                        taskId={taskId}
+                        executionId={currentExecution.id}
+                        source={result.source}
+                        sourceVersion={currentExecution.sourceVersion}
+                      />
+                    </blockquote>
+                    {result.coverage ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        核查片段 {result.coverage.examinedSegments}/{result.coverage.totalSegments}{" "}
+                        ·{" "}
+                        {result.coverage.isComplete
+                          ? "已解析文本完整纳入本项上下文"
+                          : "片段覆盖或解析存在限制，请人工复核"}
+                      </p>
+                    ) : null}
+                    {result.evidence.length ? (
+                      <EvidencePreview taskId={taskId} evidence={result.evidence} />
+                    ) : null}
+                    {result.evidence.length ? (
+                      <ul className="mt-3 space-y-2 text-xs leading-5">
+                        {result.evidence.map((evidence, index) => (
+                          <li
+                            key={`${evidence.materialId}-${index}`}
+                            className="break-words text-muted-foreground"
+                          >
+                            <EvidencePreview
+                              taskId={taskId}
+                              evidence={[evidence]}
+                              triggerLabel="定位证据"
+                              compact
+                            />
+                            ：{evidence.quotedText} · {evidence.location} · 材料 v
+                            {evidence.materialVersion}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </details>
                   {currentExecution.status === "completed" &&
                   result.strength === "required" &&
                   result.verdict === "failed" ? (
@@ -1061,135 +1079,129 @@ export function ReviewExecutionPanel({
                         }
                         className="mt-3 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted"
                       >
-                        创建整改待办
+                        加入我的待办
                       </button>
                     )
                   ) : null}
                   {!isRunning &&
                   ["failed", "needs_confirmation", "unable_to_check"].includes(result.verdict) ? (
-                    <form
-                      onSubmit={(event) => void saveHumanResolution(event, result.ruleId)}
-                      className="mt-4 border-l-2 border-border pl-3"
-                    >
-                      <p className="text-xs font-medium">
-                        人工复核意见（独立记录，不改变系统判定）
-                      </p>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr_auto]">
-                        <select
-                          aria-label={`${result.ruleCode} 人工复核意见`}
-                          value={
-                            resolutionDrafts[result.ruleId]?.decision ??
-                            currentExecution.humanResolutions?.find(
-                              (item) => item.ruleId === result.ruleId,
-                            )?.decision ??
-                            "deferred"
-                          }
-                          onChange={(event) =>
-                            setResolutionDrafts((drafts) => ({
-                              ...drafts,
-                              [result.ruleId]: {
-                                ...(drafts[result.ruleId] ?? { note: "" }),
-                                decision: event.target.value,
-                              },
-                            }))
-                          }
-                          className="h-9 rounded-md border border-border bg-background px-2 text-xs"
-                        >
-                          <option value="confirmed">人工认为符合</option>
-                          <option value="rejected">人工认为不符合</option>
-                          <option value="deferred">暂不确认</option>
-                        </select>
-                        <input
-                          aria-label={`${result.ruleCode} 复核依据`}
-                          maxLength={2_000}
-                          placeholder="填写复核依据"
-                          value={
-                            resolutionDrafts[result.ruleId]?.note ??
-                            currentExecution.humanResolutions?.find(
-                              (item) => item.ruleId === result.ruleId,
-                            )?.note ??
-                            ""
-                          }
-                          onChange={(event) =>
-                            setResolutionDrafts((drafts) => ({
-                              ...drafts,
-                              [result.ruleId]: {
-                                ...(drafts[result.ruleId] ?? { decision: "deferred" }),
-                                note: event.target.value,
-                              },
-                            }))
-                          }
-                          className="h-9 min-w-0 rounded-md border border-border bg-background px-2 text-xs"
-                        />
-                        <button
-                          type="submit"
-                          className="h-9 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
-                        >
-                          保存意见
-                        </button>
-                      </div>
-                      {currentExecution.humanResolutions?.find(
-                        (item) => item.ruleId === result.ruleId,
-                      ) ? (
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          已保存人工意见：
-                          {
-                            (
-                              {
-                                confirmed: "认为符合",
-                                rejected: "认为不符合",
-                                deferred: "暂不确认",
-                              } as const
-                            )[
-                              currentExecution.humanResolutions.find(
+                    <details className="mt-3">
+                      <summary className="min-h-11 cursor-pointer py-3 text-xs text-primary">
+                        人工备注
+                        {currentExecution.humanResolutions?.some(
+                          (item) => item.ruleId === result.ruleId,
+                        )
+                          ? " · 已保存"
+                          : ""}
+                      </summary>
+                      <form
+                        onSubmit={(event) => void saveHumanResolution(event, result.ruleId)}
+                        className="mt-4 border-l-2 border-border pl-3"
+                      >
+                        <p className="text-xs font-medium">人工备注（不改变检查结论）</p>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr_auto]">
+                          <select
+                            aria-label={`${result.ruleCode} 人工复核意见`}
+                            value={
+                              resolutionDrafts[result.ruleId]?.decision ??
+                              currentExecution.humanResolutions?.find(
                                 (item) => item.ruleId === result.ruleId,
-                              )!.decision
-                            ]
-                          }{" "}
-                          ·{" "}
-                          {currentExecution.humanResolutions.find(
-                            (item) => item.ruleId === result.ruleId,
-                          )!.note || "未填写依据"}
-                        </p>
-                      ) : null}
-                    </form>
+                              )?.decision ??
+                              "deferred"
+                            }
+                            onChange={(event) =>
+                              setResolutionDrafts((drafts) => ({
+                                ...drafts,
+                                [result.ruleId]: {
+                                  ...(drafts[result.ruleId] ?? { note: "" }),
+                                  decision: event.target.value,
+                                },
+                              }))
+                            }
+                            className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+                          >
+                            <option value="confirmed">人工认为符合</option>
+                            <option value="rejected">人工认为不符合</option>
+                            <option value="deferred">暂不确认</option>
+                          </select>
+                          <input
+                            aria-label={`${result.ruleCode} 复核依据`}
+                            maxLength={2_000}
+                            placeholder="填写复核依据"
+                            value={
+                              resolutionDrafts[result.ruleId]?.note ??
+                              currentExecution.humanResolutions?.find(
+                                (item) => item.ruleId === result.ruleId,
+                              )?.note ??
+                              ""
+                            }
+                            onChange={(event) =>
+                              setResolutionDrafts((drafts) => ({
+                                ...drafts,
+                                [result.ruleId]: {
+                                  ...(drafts[result.ruleId] ?? { decision: "deferred" }),
+                                  note: event.target.value,
+                                },
+                              }))
+                            }
+                            className="h-9 min-w-0 rounded-md border border-border bg-background px-2 text-xs"
+                          />
+                          <button
+                            type="submit"
+                            className="h-9 rounded-md border border-border px-3 text-xs font-medium hover:bg-muted"
+                          >
+                            保存意见
+                          </button>
+                        </div>
+                        {currentExecution.humanResolutions?.find(
+                          (item) => item.ruleId === result.ruleId,
+                        ) ? (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            已保存人工意见：
+                            {
+                              (
+                                {
+                                  confirmed: "认为符合",
+                                  rejected: "认为不符合",
+                                  deferred: "暂不确认",
+                                } as const
+                              )[
+                                currentExecution.humanResolutions.find(
+                                  (item) => item.ruleId === result.ruleId,
+                                )!.decision
+                              ]
+                            }{" "}
+                            ·{" "}
+                            {currentExecution.humanResolutions.find(
+                              (item) => item.ruleId === result.ruleId,
+                            )!.note || "未填写依据"}
+                          </p>
+                        ) : null}
+                      </form>
+                    </details>
                   ) : null}
                 </li>
               );
             })}
           </ol>
           {currentExecution.status !== "running" && (
-            <ExecutionPackage
-              key={currentExecution.id}
-              taskId={taskId}
-              execution={currentExecution}
-              materials={materials}
-            />
-          )}
-          {currentExecution.metadata ? (
-            <details className="mt-3">
-              <summary className="min-h-11 cursor-pointer text-xs text-primary">
-                模型与用量详细信息
+            <details className="mt-4">
+              <summary className="min-h-11 cursor-pointer py-3 text-sm text-primary">
+                更多导出选项
               </summary>
-              <p className="mt-3 text-xs leading-6 text-muted-foreground">
-                {currentExecution.metadata.mode === "live"
-                  ? `真实模型 · ${currentExecution.metadata.provider} / ${currentExecution.metadata.model}`
-                  : "本地模拟模式"}{" "}
-                · 模型步骤 {currentExecution.metadata.modelCalls.length} · 输入{" "}
-                {currentExecution.metadata.modelCalls.reduce(
-                  (total, call) => total + (call.inputTokens ?? 0),
-                  0,
-                )}{" "}
-                / 输出{" "}
-                {currentExecution.metadata.modelCalls.reduce(
-                  (total, call) => total + (call.outputTokens ?? 0),
-                  0,
-                )}{" "}
-                token（仅已报告用量）
-              </p>
+              <ReportDownload
+                href={`/api/tasks/${taskId}/report?executionId=${currentExecution.id}&detail=full`}
+                label="导出完整检查记录"
+                fileName="完整检查记录.md"
+              />
+              <ExecutionPackage
+                key={currentExecution.id}
+                taskId={taskId}
+                execution={currentExecution}
+                materials={materials}
+              />
             </details>
-          ) : null}
-
+          )}
           {visibleResults.length === 0 ? (
             <p className="py-5 text-sm text-muted-foreground">
               <span>
@@ -1213,76 +1225,81 @@ export function ReviewExecutionPanel({
               已保留 {executions.length} 次检查快照。
             </p>
           ) : null}
-          <section
-            id="stage-remediation"
-            aria-labelledby="remediation-heading"
-            className="mt-8 border-t border-border pt-5"
-          >
-            <h3 id="remediation-heading" className="text-sm font-semibold">
-              整改待办 · {remediationTasks.length}
-            </h3>
-            {remediationTasks.length === 0 ? (
-              <p className="mt-3 text-xs text-muted-foreground">当前没有已创建的整改待办。</p>
-            ) : null}
-            {remediationTasks.length > 0 ? (
-              <>
-                <ol className="mt-3 divide-y divide-border border-y border-border">
-                  {remediationTasks.map((todo) => (
-                    <li
-                      key={todo.id}
-                      className="flex flex-wrap items-start justify-between gap-3 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">
-                          {todo.ruleCode} · {todo.requirement}
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                          {todo.reason}
-                        </p>
-                        <RemediationAssignment
-                          taskId={taskId}
-                          todo={todo}
-                          onUpdated={(updated) =>
-                            setRemediationTasks((items) =>
-                              items.map((item) => (item.id === updated.id ? updated : item)),
+          <details className="mt-4">
+            <summary className="min-h-11 cursor-pointer py-3 text-sm text-primary">
+              我的修改待办 · {remediationTasks.length}
+            </summary>
+            <section
+              id="stage-remediation"
+              aria-labelledby="remediation-heading"
+              className="mt-8 border-t border-border pt-5"
+            >
+              <h3 id="remediation-heading" className="text-sm font-semibold">
+                整改待办 · {remediationTasks.length}
+              </h3>
+              {remediationTasks.length === 0 ? (
+                <p className="mt-3 text-xs text-muted-foreground">当前没有已创建的整改待办。</p>
+              ) : null}
+              {remediationTasks.length > 0 ? (
+                <>
+                  <ol className="mt-3 divide-y divide-border border-y border-border">
+                    {remediationTasks.map((todo) => (
+                      <li
+                        key={todo.id}
+                        className="flex flex-wrap items-start justify-between gap-3 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">
+                            {todo.ruleCode} · {todo.requirement}
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                            {todo.reason}
+                          </p>
+                          <RemediationAssignment
+                            taskId={taskId}
+                            todo={todo}
+                            onUpdated={(updated) =>
+                              setRemediationTasks((items) =>
+                                items.map((item) => (item.id === updated.id ? updated : item)),
+                              )
+                            }
+                          />
+                          {todo.recommendation ? (
+                            <p className="mt-1 text-xs text-primary">建议：{todo.recommendation}</p>
+                          ) : null}
+                          <a
+                            className="mt-1 inline-block text-xs text-primary underline"
+                            href={`/tasks/${taskId}#execution-${todo.executionId}-result-${todo.ruleId}`}
+                          >
+                            来源执行 {todo.executionId.slice(0, 8)} · {todo.materialIds.length}{" "}
+                            份关联材料
+                          </a>
+                        </div>
+                        <select
+                          aria-label={`${todo.ruleCode} 整改待办状态`}
+                          value={todo.status}
+                          onChange={(event) =>
+                            void updateRemediationTask(
+                              todo.id,
+                              event.target.value as RemediationTask["status"],
                             )
                           }
-                        />
-                        {todo.recommendation ? (
-                          <p className="mt-1 text-xs text-primary">建议：{todo.recommendation}</p>
-                        ) : null}
-                        <a
-                          className="mt-1 inline-block text-xs text-primary underline"
-                          href={`/tasks/${taskId}#execution-${todo.executionId}-result-${todo.ruleId}`}
+                          className="h-9 rounded-md border border-border bg-background px-2 text-xs"
                         >
-                          来源执行 {todo.executionId.slice(0, 8)} · {todo.materialIds.length}{" "}
-                          份关联材料
-                        </a>
-                      </div>
-                      <select
-                        aria-label={`${todo.ruleCode} 整改待办状态`}
-                        value={todo.status}
-                        onChange={(event) =>
-                          void updateRemediationTask(
-                            todo.id,
-                            event.target.value as RemediationTask["status"],
-                          )
-                        }
-                        className="h-9 rounded-md border border-border bg-background px-2 text-xs"
-                      >
-                        <option value="open">待处理</option>
-                        <option value="in_progress">处理中</option>
-                        <option value="done">已处理</option>
-                      </select>
-                    </li>
-                  ))}
-                </ol>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  待办状态只记录人工处理进度，不改变检查结论；完成后需重新检查确认。
-                </p>
-              </>
-            ) : null}
-          </section>
+                          <option value="open">待处理</option>
+                          <option value="in_progress">处理中</option>
+                          <option value="done">已处理</option>
+                        </select>
+                      </li>
+                    ))}
+                  </ol>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    待办状态只记录人工处理进度，不改变检查结论；完成后需重新检查确认。
+                  </p>
+                </>
+              ) : null}
+            </section>
+          </details>
         </div>
       )}
     </section>

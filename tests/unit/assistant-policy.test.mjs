@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { assistantPolicy, lacksDatedExamNotice } from "../../src/lib/assistant-policy.ts";
+import {
+  assistantPolicy,
+  lacksDatedExamNotice,
+  isLearningQuestion,
+  isExamPolicyQuestion,
+} from "../../src/lib/assistant-policy.ts";
 test("助手限额可配置并有边界，停用与模型模式分离", () => {
   assert.deepEqual(assistantPolicy({}), { enabled: true, hourlyLimit: 20 });
   assert.deepEqual(assistantPolicy({ ASSISTANT_ENABLED: "off", ASSISTANT_HOURLY_LIMIT: "5" }), {
@@ -35,4 +40,20 @@ test("当期日期问题无当期公告时拒绝模型补猜，介绍和旧考�
   assert.equal(lacksDatedExamNotice("2027年请制定学习时间计划", true, []), false);
   assert.equal(lacksDatedExamNotice("2026年基金考试成绩有效期是多少？", false, []), false);
   assert.equal(lacksDatedExamNotice("北京教资学历和报名条件是什么？", false, []), false);
+});
+
+test("BUG070 学习计划自动识别，混合政策问题仍需核验", () => {
+  for (const question of [
+    "我是在校大学生，准备四级，每天30分钟，请给一周入门安排",
+    "本周怎样复习四级听力",
+    "请讲解Python字典",
+  ])
+    assert.equal(isLearningQuestion(question), true, question);
+  for (const question of [
+    "2029年四级报名截止日期和复习计划",
+    "请问考试时间，再给我备考建议",
+    "我能不能报名四级，应怎样复习",
+  ])
+    assert.equal(isLearningQuestion(question), false, question);
+  assert.equal(isExamPolicyQuestion("2029年四级报名截止日期和复习计划"), true);
 });

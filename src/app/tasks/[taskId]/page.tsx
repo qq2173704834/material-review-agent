@@ -74,9 +74,6 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
         hasModelConfiguration={runtimeStatus.hasModelConfiguration}
         sources={
           <>
-            <p className="mb-4 text-sm text-muted-foreground">
-              通知、指南、模板属于审查依据。它们告诉系统按什么要求检查。
-            </p>
             <TaskEditor task={task} />
             {task.noticeSource.inputType === "webpage" ? (
               <p className="mt-4 max-w-4xl break-words border-l-2 border-border pl-3 text-xs leading-5 text-muted-foreground">
@@ -173,27 +170,30 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
                 </ul>
               </section>
             ) : null}
-            <SupplementSourceUpload taskId={task.id} />
-            {task.description.startsWith("[合成演示:competition]") ? (
-              <DemoControls taskId={task.id} domain="competition" />
-            ) : task.description.startsWith("[合成演示:grant]") ? (
-              <DemoControls taskId={task.id} domain="grant" />
-            ) : null}
-            <SourceAttachments
-              taskId={task.id}
-              sources={currentSources
-                .filter((source) => source.inputType === "webpage")
-                .map(({ id, displayName }) => ({ id, displayName }))}
-            />
+            <details className="mt-4 rounded-xl border p-3">
+              <summary className="cursor-pointer text-sm text-primary">补充要求 / 来源附件</summary>
+              <SupplementSourceUpload taskId={task.id} />
+              {task.description.startsWith("[合成演示:competition]") ? (
+                <DemoControls taskId={task.id} domain="competition" />
+              ) : task.description.startsWith("[合成演示:grant]") ? (
+                <DemoControls taskId={task.id} domain="grant" />
+              ) : null}
+              <SourceAttachments
+                taskId={task.id}
+                sources={currentSources
+                  .filter((source) => source.inputType === "webpage")
+                  .map(({ id, displayName }) => ({ id, displayName }))}
+              />
+            </details>
           </>
         }
         materials={
           <>
-            <p className="mb-4 text-sm text-muted-foreground">
-              申请书、证明、项目文件等放在这里。选择后自动上传，原件和修订版本均会保留。
-            </p>
             <MaterialUpload key={task.id} taskId={task.id} initialMaterials={task.materials} />
-            <LinkMaterial taskId={task.id} />
+            <details className="mt-4 rounded-xl border p-3">
+              <summary className="cursor-pointer text-sm text-primary">添加链接 / 代码仓库</summary>
+              <LinkMaterial taskId={task.id} />
+            </details>
             <MaterialInsights task={task} />
           </>
         }

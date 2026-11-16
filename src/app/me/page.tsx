@@ -76,6 +76,15 @@ export default async function Page({
         <header className="page-heading">
           <h1 className="text-3xl font-semibold">我的备考</h1>
           <p className="mt-3">管理目标，开始今天的备考。</p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Link href="/tasks/new" className="button-primary">
+              新建材料自查
+            </Link>
+            <Link href="/tasks" className="button-secondary">
+              材料自查记录
+            </Link>
+            <span className="text-sm text-muted-foreground">提交前，检查报名材料缺项和格式。</span>
+          </div>
         </header>
         <details className="content-settings" open={view !== "overview"}>
           <summary>收藏与个人工具</summary>
@@ -84,7 +93,7 @@ export default async function Page({
               ["overview", "考试目标"],
               ["favorites", `我的收藏 ${items.length + resources.length}`],
               ["feedback", "我的反馈"],
-              ["reviews", "材料记录"],
+              ["reviews", "材料自查记录"],
             ].map(([key, label]) => (
               <Link
                 key={key}

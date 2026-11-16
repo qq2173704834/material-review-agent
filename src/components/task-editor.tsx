@@ -156,79 +156,16 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
         if (event.target instanceof Element && !event.target.closest('[aria-label="选择我的考试"]'))
           setIsDirty(true);
       }}
-      className="max-w-4xl space-y-8"
+      className={task ? "max-w-4xl space-y-4" : "max-w-4xl space-y-8"}
     >
-      <details
-        open={!task}
-        className="space-y-5 border-y border-border py-4"
-        aria-labelledby="task-info-heading"
-      >
-        <summary id="task-info-heading" className="cursor-pointer text-sm font-semibold">
-          任务信息与条件背景
-        </summary>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="text-sm font-medium">
-            任务名称
-            <input
-              className={fieldClassName}
-              value={name}
-              maxLength={120}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="留空时根据通知首行建议"
-            />
-          </label>
-          <label className="text-sm font-medium">
-            项目类型
-            <input
-              className={fieldClassName}
-              value={projectType}
-              maxLength={80}
-              onChange={(event) => setProjectType(event.target.value)}
-              placeholder="例如：科研项目、创业计划"
-            />
-          </label>
-          <label className="text-sm font-medium">
-            项目阶段
-            <input
-              className={fieldClassName}
-              value={projectStage}
-              maxLength={80}
-              onChange={(event) => setProjectStage(event.target.value)}
-              placeholder="例如：申报、结项"
-            />
-          </label>
-          <label className="text-sm font-medium">
-            参与范围
-            <select
-              className={fieldClassName}
-              value={collaborationScope}
-              onChange={(event) => setCollaborationScope(event.target.value as CollaborationScope)}
-            >
-              <option value="unknown">尚未确定</option>
-              <option value="individual">个人项目</option>
-              <option value="team">团队项目</option>
-            </select>
-          </label>
-        </div>
-        <label className="block text-sm font-medium">
-          任务说明
-          <textarea
-            className={`${fieldClassName} min-h-24 resize-y`}
-            value={description}
-            maxLength={2000}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="可记录本次申报范围或内部备注"
-          />
-        </label>
-      </details>
       <section className="space-y-3" aria-labelledby="notice-heading">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="notice-heading" className="text-sm font-semibold">
-            {sourceMode === "webpage" && !task ? "公开网页来源" : "通知或要求原文"}
+            {sourceMode === "webpage" && !task ? "公开网页来源" : "检查要求"}
           </h2>
           {sourceMode === "text" || task ? (
             <span className="text-xs text-muted-foreground">
-              {noticeText.length.toLocaleString()} / 200,000 字符
+              {task ? (isDirty ? "未保存" : "已保存") : ""}
             </span>
           ) : null}
         </div>
@@ -325,6 +262,19 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
             />
             <p className="mt-2 text-xs leading-5 text-muted-foreground">支持：PDF、DOCX、TXT</p>
           </div>
+        ) : task ? (
+          <details className="rounded-xl border bg-muted/20 p-3">
+            <summary className="cursor-pointer text-sm text-primary">修改要求</summary>
+            <textarea
+              id="notice-text"
+              aria-labelledby="notice-heading"
+              className={`${fieldClassName} min-h-[180px] resize-y leading-7`}
+              value={noticeText}
+              maxLength={200000}
+              required
+              onChange={(event) => setNoticeText(event.target.value)}
+            />
+          </details>
         ) : (
           <textarea
             id="notice-text"
@@ -338,12 +288,83 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
           />
         )}
       </section>
+      {task && (
+        <p className="line-clamp-4 whitespace-pre-wrap break-words text-sm leading-7 text-muted-foreground">
+          {task.noticeSource.originalText}
+        </p>
+      )}
+      <details
+        open={!task}
+        className="space-y-5 border-y border-border py-4"
+        aria-labelledby="task-info-heading"
+      >
+        <summary id="task-info-heading" className="cursor-pointer text-sm font-semibold">
+          任务信息与条件背景
+        </summary>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="text-sm font-medium">
+            任务名称
+            <input
+              className={fieldClassName}
+              value={name}
+              maxLength={120}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="留空时根据通知首行建议"
+            />
+          </label>
+          <label className="text-sm font-medium">
+            项目类型
+            <input
+              className={fieldClassName}
+              value={projectType}
+              maxLength={80}
+              onChange={(event) => setProjectType(event.target.value)}
+              placeholder="例如：科研项目、创业计划"
+            />
+          </label>
+          <label className="text-sm font-medium">
+            项目阶段
+            <input
+              className={fieldClassName}
+              value={projectStage}
+              maxLength={80}
+              onChange={(event) => setProjectStage(event.target.value)}
+              placeholder="例如：申报、结项"
+            />
+          </label>
+          <label className="text-sm font-medium">
+            参与范围
+            <select
+              className={fieldClassName}
+              value={collaborationScope}
+              onChange={(event) => setCollaborationScope(event.target.value as CollaborationScope)}
+            >
+              <option value="unknown">尚未确定</option>
+              <option value="individual">个人项目</option>
+              <option value="team">团队项目</option>
+            </select>
+          </label>
+        </div>
+        <label className="block text-sm font-medium">
+          任务说明
+          <textarea
+            className={`${fieldClassName} min-h-24 resize-y`}
+            value={description}
+            maxLength={2000}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="可记录本次申报范围或内部备注"
+          />
+        </label>
+      </details>
       {error ? (
         <p role="alert" className="text-sm text-red-700">
           {error}
         </p>
       ) : null}
-      <div className="flex flex-wrap items-center gap-3 border-t border-border pt-5">
+      <div
+        hidden={!!task && !isDirty}
+        className="flex flex-wrap items-center gap-3 border-t border-border pt-5"
+      >
         <button
           type="submit"
           disabled={

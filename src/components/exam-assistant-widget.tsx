@@ -1,5 +1,6 @@
 "use client";
 import { ContentFeedback } from "@/components/content-feedback";
+import { AssistantMascot } from "@/components/assistant-mascot";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CATEGORY_LABELS } from "@/domain/exam-catalog";
@@ -183,17 +184,7 @@ function AssistantPanel(): ReactElement {
         }}
         className="assistant-trigger flex items-center gap-2 rounded-full border bg-card p-3 shadow-lg"
       >
-        <svg aria-hidden="true" width="42" height="42" viewBox="0 0 48 48">
-          <path
-            d="M9 19Q4 5 18 12Q27 1 32 13Q45 8 41 25Q46 42 25 44Q5 43 9 19Z"
-            fill="#a7d8f0"
-            stroke="#235578"
-            strokeWidth="2"
-          />
-          <circle cx="18" cy="25" r="3" />
-          <circle cx="32" cy="25" r="3" />
-          <path d="M20 33Q25 38 30 33" fill="none" stroke="#235578" strokeWidth="2" />
-        </svg>
+        <AssistantMascot thinking={busy} />
         <span className="hidden sm:inline">考试学习助手</span>
       </button>
       {open && (
@@ -203,7 +194,15 @@ function AssistantPanel(): ReactElement {
           className="assistant-panel absolute right-0 bottom-20 flex h-[min(82dvh,800px)] w-[min(30rem,calc(100vw-3rem))] flex-col gap-4 overflow-hidden rounded-2xl border bg-card p-5 shadow-xl"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b pb-3">
-            <h2 className="text-base font-semibold">考试学习AI助手</h2>
+            <div className="flex items-center gap-2">
+              <AssistantMascot thinking={busy} />
+              <div>
+                <h2 className="text-base font-semibold">考试学习AI助手</h2>
+                <p className="text-xs text-muted-foreground">
+                  {busy ? "正在认真思考…" : error ? "暂时没有回答，可以重试" : "陪你安排每一步备考"}
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               className="rounded-lg px-3 text-sm text-muted-foreground"

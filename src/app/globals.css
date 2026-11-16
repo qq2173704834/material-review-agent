@@ -1539,3 +1539,108 @@ progress,
     font-size: clamp(1.8rem, 7.5vw, 2.15rem);
   }
 }
+
+/* ENG-107: compact schedule and original study companion. */
+.calendar-day {
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+.calendar-day:hover {
+  transform: translateY(-1px);
+}
+.calendar-day[aria-current="date"] {
+  outline: 1px solid var(--primary);
+  outline-offset: -2px;
+}
+.schedule-editor-dialog[open] {
+  animation: schedule-enter 160ms ease-out;
+}
+.assistant-mascot .mascot-body {
+  transform-origin: 40px 42px;
+  animation: mascot-float 4s ease-in-out infinite;
+}
+.assistant-mascot .mascot-tail {
+  transform-origin: 64px 53px;
+  animation: mascot-tail 3s ease-in-out infinite;
+}
+.assistant-mascot .mascot-eyes {
+  transform-origin: 40px 39px;
+  animation: mascot-blink 6s infinite;
+}
+.assistant-mascot .mascot-bubbles {
+  opacity: 0.5;
+}
+.assistant-mascot.is-thinking .mascot-bubbles {
+  animation: mascot-bubbles 1.2s ease-in-out infinite;
+}
+@keyframes schedule-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes mascot-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes mascot-tail {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+@keyframes mascot-blink {
+  0%,
+  44%,
+  48%,
+  100% {
+    transform: scaleY(1);
+  }
+  46% {
+    transform: scaleY(0.12);
+  }
+}
+@keyframes mascot-bubbles {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .calendar-day,
+  .schedule-editor-dialog[open],
+  .assistant-mascot * {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+[data-workflow-tool="sources"] form:has(#notice-heading) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+[data-workflow-tool="sources"] form:has(#notice-heading) {
+  row-gap: 1rem;
+}

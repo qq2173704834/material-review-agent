@@ -18,6 +18,9 @@ export async function GET(
     return NextResponse.json({ error: "任务编号无效。" }, { status: 400 });
   const executionId = new URL(request.url).searchParams.get("executionId");
   const reportType = new URL(request.url).searchParams.get("type");
+  const detail = new URL(request.url).searchParams.get("detail");
+  if (detail && detail !== "full")
+    return NextResponse.json({ error: "报告详细程度无效。" }, { status: 400 });
   const format = new URL(request.url).searchParams.get("format") ?? "markdown";
   if (!["markdown", "html"].includes(format))
     return NextResponse.json({ error: "报告格式无效。" }, { status: 400 });
@@ -40,8 +43,14 @@ export async function GET(
   const snapshotTask = { ...task, materials: store.listMaterials(taskId, true) };
   const body =
     reportType === "remediation"
-      ? createRemediationReport(snapshotTask, execution, ruleSet)
-      : createReviewReport(snapshotTask, execution, ruleSet, executions[index + 1]);
+      ? createRemediationReport(snapshotTask, execution, ruleSet, detail === "full")
+      : createReviewReport(
+          snapshotTask,
+          execution,
+          ruleSet,
+          executions[index + 1],
+          detail === "full",
+        );
   if (format === "html")
     return new Response(reportHtml(body), {
       headers: {

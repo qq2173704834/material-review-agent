@@ -1,4 +1,5 @@
 import { compareExecutions } from "@/lib/review-history";
+import { reviewSummary } from "@/lib/review-summary";
 
 import type { ReviewExecution, ReviewTaskDetails, ReviewVerdict } from "@/domain/review";
 import type { ReviewRuleSet } from "@/domain/review-rule";
@@ -34,7 +35,9 @@ export function createReviewReport(
   execution: ReviewExecution,
   ruleSet: ReviewRuleSet,
   previous?: ReviewExecution,
+  detailed = false,
 ): string {
+  if (!detailed) return createSimpleReport(task, execution);
   const lines = [
     `# ${plain(task.name)} · 材料预审报告`,
     "",
@@ -44,8 +47,7 @@ export function createReviewReport(
     `- 主通知来源：${sourceSummary(task.noticeHistory.find((source) => source.version === execution.sourceVersion) ?? task.noticeSource).slice(2)}`,
     `- 规则来源快照：${ruleSet.sourceVersions.map(ruleSourceLabel).join("；")}`,
     `- 规则集：${execution.ruleSetId}`,
-    `- 规则提取：${ruleSet.mode === "live" ? `真实模型 ${plain(ruleSet.provider)} / ${plain(ruleSet.model)}` : "本地模拟"}`,
-    `- 检查模式：${execution.metadata?.mode === "live" ? `真实模型与确定性工具（${plain(execution.metadata.provider)} / ${plain(execution.metadata.model)}）` : execution.metadata?.mode === "mock" ? "本地模拟流程与确定性工具" : "历史记录未注明"}`,
+    ...(execution.metadata?.mode === "mock" ? ["- 模拟演示，不代表真实内容核验。"] : []),
     `- 执行状态：${{ running: "执行中", completed: "已完成", cancelled: "已取消", failed: "执行中断" }[execution.status]}`,
     `- 开始时间：${execution.createdAt}`,
     `- 结束时间：${execution.completedAt || "尚未结束"}`,
@@ -155,21 +157,13 @@ export function createReviewReport(
       lines.push("");
     }
   }
-  const calls = [...ruleSet.modelCalls, ...(execution.metadata?.modelCalls ?? [])];
-  lines.push(
-    "## 模型调用与限制",
-    "",
-    `- 已记录模型步骤：${calls.length}；HTTP 请求：${calls.reduce((total, call) => total + call.requestCount, 0)}（包含有限重试）。`,
-    `- 已知输入 token：${calls.reduce((total, call) => total + (call.inputTokens ?? 0), 0)}；已知输出 token：${calls.reduce((total, call) => total + (call.outputTokens ?? 0), 0)}。`,
-    `- 未提供完整 token 用量的步骤：${calls.filter((call) => call.inputTokens === null || call.outputTokens === null).length}。费用和剩余额度以服务商账单为准；本报告没有估算价格。`,
-    ...calls.map(
-      (call) =>
-        `- ${call.operation} · ${plain(call.provider)}/${plain(call.model)} · ${call.startedAt}—${call.completedAt} · ${call.status}${call.errorCode ? `（${plain(call.errorCode)}）` : ""}`,
-    ),
-    "- OCR 只用于提取文字，不验证表格结构、签章真实性或官方提交结果。有限检索未命中不能证明全文不存在。",
-    ...(execution.metadata?.limitations ?? []).map((limitation) => `- ${plain(limitation)}`),
-    "",
-  );
+  if (execution.metadata?.limitations?.length)
+    lines.push(
+      "## 尚需核对的内容",
+      "",
+      ...execution.metadata.limitations.map((item) => `- ${plain(item)}`),
+      "",
+    );
   return lines.join("\n");
 }
 
@@ -177,7 +171,9 @@ export function createRemediationReport(
   task: ReviewTaskDetails,
   execution: ReviewExecution,
   ruleSet: ReviewRuleSet,
+  detailed = false,
 ): string {
+  if (!detailed) return createSimpleReport(task, execution, true);
   const actionable = execution.results.filter(
     (result) =>
       (result.strength === "required" && result.verdict === "failed") ||
@@ -232,5 +228,110 @@ export function createRemediationReport(
       "",
     );
   }
+  return lines.join("\n");
+}
+
+/** A readable snapshot: verdict, changes to make, and the evidence needed to act. */
+function createSimpleReport(
+  task: ReviewTaskDetails,
+  execution: ReviewExecution,
+  onlyActionable = false,
+): string {
+  const summary = reviewSummary(execution);
+  const lines = [
+    `# ${plain(task.name)} · ${onlyActionable ? "修改与确认清单" : "材料自查结果"}`,
+    "",
+    `## ${summary.title}`,
+    summary.description,
+    `检查时间：${new Date(execution.completedAt || execution.createdAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })}`,
+    `需修改 ${summary.failed} 项 · 待确认 / 未完成 ${summary.pending} 项 · 已通过 ${summary.passed} 项`,
+    ...(execution.metadata?.mode === "mock" ? ["模拟演示，不代表真实内容核验。"] : []),
+    ...(execution.validity === "needs_recheck"
+      ? ["材料或要求已更新，需要重新检查。以下保留上次结果。"]
+      : []),
+    ...(execution.unexecutedCount ? [`还有 ${execution.unexecutedCount} 项未完成检查。`] : []),
+    `检查文件：${execution.materialSnapshot.map((snapshot) => plain(task.materials.find((material) => material.id === snapshot.materialId && material.version === snapshot.version)?.originalFileName || "检查时的材料")).join("、") || "未上传材料"}`,
+    "",
+  ];
+  const groups = [
+    [
+      "需要修改",
+      execution.results.filter(
+        (result) => result.verdict === "failed" && result.strength === "required",
+      ),
+    ],
+    [
+      "可改进项",
+      execution.results.filter(
+        (result) =>
+          result.verdict === "failed" && ["recommended", "optional"].includes(result.strength),
+      ),
+    ],
+    [
+      "需要确认",
+      execution.results.filter(
+        (result) =>
+          ["needs_confirmation", "unable_to_check"].includes(result.verdict) ||
+          (result.verdict === "failed" && result.strength === "unknown"),
+      ),
+    ],
+    ...(!onlyActionable
+      ? [
+          ["已通过", execution.results.filter((result) => result.verdict === "passed")],
+          ["不适用", execution.results.filter((result) => result.verdict === "not_applicable")],
+        ]
+      : []),
+  ] as Array<[string, ReviewExecution["results"]]>;
+  for (const [title, results] of groups) {
+    if (!results.length) continue;
+    lines.push(`## ${title}`, "");
+    for (const result of results) {
+      lines.push(
+        `### ${plain(result.requirement)}`,
+        `${verdictLabels[result.verdict]}${result.strength === "recommended" ? " · 建议项" : result.strength === "optional" ? " · 可选项" : ""}：${plain(result.reason)}`,
+      );
+      if (result.recommendation) lines.push(`下一步：${plain(result.recommendation)}`);
+      lines.push(
+        `要求依据：${plain(result.source.displayName || "检查要求")} · ${plain(result.source.quotedText)}`,
+      );
+      for (const evidence of result.evidence) {
+        const file = task.materials.find(
+          (material) =>
+            material.id === evidence.materialId && material.version === evidence.materialVersion,
+        );
+        lines.push(
+          `材料依据：${plain(file?.originalFileName || "检查时的材料")} · ${plain(evidence.location)} · ${plain(evidence.quotedText)}`,
+        );
+      }
+      if (result.coverage && !result.coverage.isComplete)
+        lines.push("部分内容未能完整检查，请人工核对。");
+      const note = execution.humanResolutions?.find((item) => item.ruleId === result.ruleId);
+      if (note)
+        lines.push(
+          `人工备注：${{ confirmed: "认为符合", rejected: "认为不符合", deferred: "暂不确认" }[note.decision]} · ${plain(note.note)}（不改变检查结论）`,
+        );
+      lines.push("");
+    }
+  }
+  const consistency = (execution.metadata?.materialConsistency || []).filter(
+    (check) => check.verdict !== "passed",
+  );
+  if (consistency.length) {
+    lines.push("## 材料信息需要核对", "");
+    for (const check of consistency) {
+      lines.push(
+        `### ${plain(check.field)} · ${verdictLabels[check.verdict]}`,
+        plain(check.reason),
+        plain(check.recommendation),
+      );
+      for (const evidence of check.evidence)
+        lines.push(`依据：${plain(evidence.location)} · ${plain(evidence.quotedText)}`);
+      lines.push("");
+    }
+  }
+  if (onlyActionable && !summary.failed && !summary.pending)
+    lines.push("本次没有明确的必须项失败或待确认事项。", "");
+  if (!execution.results.length) lines.push("尚无逐项检查结果，不能据此判断材料合格。", "");
+  lines.push("结果仅供材料自查参考，最终以考试组织方审核为准。");
   return lines.join("\n");
 }

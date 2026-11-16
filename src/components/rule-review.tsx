@@ -464,11 +464,7 @@ export function RuleReview({
           ) : null}
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
             <span>通知 v{displayedRuleSet.sourceVersion}</span>
-            <span>
-              {displayedRuleSet.mode === "live"
-                ? `真实模型 · ${displayedRuleSet.provider} / ${displayedRuleSet.model}`
-                : "模拟模式"}
-            </span>
+            <span>{displayedRuleSet.mode === "live" ? "检查要求已整理" : "模拟模式"}</span>
             <span>
               {displayedRuleSet.rules.length} 条草稿 · {displayedRuleSet.sourceVersions.length}{" "}
               个来源

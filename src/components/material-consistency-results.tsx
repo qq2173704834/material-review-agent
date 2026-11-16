@@ -14,8 +14,8 @@ export function MaterialConsistencyResults({
   checks: MaterialConsistencyCheck[];
   task?: ReviewTaskDetails;
 }): ReactElement | null {
-  if (!checks.length) return null;
   const issues = checks.filter((check) => check.verdict !== "passed");
+  if (!issues.length) return null;
   return (
     <section className="my-5 space-y-3 rounded-xl border p-4">
       <h3 className="font-semibold">材料信息核对</h3>

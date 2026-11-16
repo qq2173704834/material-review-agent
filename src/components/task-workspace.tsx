@@ -14,6 +14,7 @@ import Link from "next/link";
 import { ArrowRight, Check, FileText, FolderOpen, Play, X } from "lucide-react";
 import { safeBrowseReturn } from "@/lib/browse-return";
 import { nextTaskAction } from "@/lib/task-flow";
+import { reviewSummary } from "@/lib/review-summary";
 import { QuickGuide } from "@/components/quick-guide";
 import type { TaskTool, TaskView } from "@/lib/task-flow";
 import type { ReviewExecution, ReviewTaskDetails } from "@/domain/review";
@@ -58,8 +59,8 @@ export function useTaskActivity(key: string, label: string | null): void {
 }
 
 const toolTitles: Record<TaskTool, string> = {
-  sources: "审查依据与任务背景",
-  materials: "待审查材料",
+  sources: "检查要求",
+  materials: "待检查文件",
   requirements: "查看 / 调整审查要求",
   clarification: "补充影响判定的信息",
   history: "来源历史与任务设置",
@@ -142,7 +143,13 @@ function ToolPane({
           : "min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6"
       }
     >
-      <div className="mb-5 flex items-start justify-between gap-3">
+      <div
+        className={
+          !isModal && (name === "sources" || name === "materials")
+            ? "sr-only"
+            : "mb-5 flex items-start justify-between gap-3"
+        }
+      >
         <h2 id={`tool-${name}-heading`} className="text-base font-semibold">
           {toolTitles[name]}
         </h2>
@@ -341,13 +348,15 @@ export function TaskWorkspace({
   const cannotRun = mode === "invalid" || (mode === "live" && !hasModelConfiguration);
   const actionLabel =
     activity ??
-    (gate === "clarification"
-      ? "暂时跳过并开始审查"
-      : gate === "partial"
-        ? "基于可用材料继续"
-        : error && next.kind === "start"
-          ? "重试审查"
-          : next.label);
+    (view === "review" && execution?.status === "completed" && !gate
+      ? "重新检查"
+      : gate === "clarification"
+        ? "暂时跳过并开始审查"
+        : gate === "partial"
+          ? "基于可用材料继续"
+          : error && next.kind === "start"
+            ? "重试审查"
+            : next.label);
   async function primaryAction(): Promise<void> {
     if (hasActivity()) return;
     reportError("");
@@ -356,11 +365,18 @@ export function TaskWorkspace({
       openTool("sources", "notice-text");
       return;
     }
-    if (next.kind === "results") {
+    if (next.kind === "results" && (view !== "review" || execution?.status === "running")) {
       navigate(next.view);
+      requestAnimationFrame(() =>
+        document.getElementById("stage-review")?.scrollIntoView({ block: "start" }),
+      );
       return;
     }
     await start.current?.({
+      forceFull:
+        view === "review" &&
+        execution?.status === "completed" &&
+        execution.validity !== "needs_recheck",
       skipClarification: gate === "clarification",
       allowPartial: gate === "partial",
     });
@@ -396,9 +412,12 @@ export function TaskWorkspace({
                     ? "返回校园通知"
                     : "返回任务列表"}
             </Link>
-            <QuickGuide />
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer">使用帮助</summary>
+              <QuickGuide />
+            </details>
           </div>
-          <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
               <div className="min-w-0">
                 <p className="mb-2 text-xs font-medium text-primary">
@@ -411,18 +430,31 @@ export function TaskWorkspace({
                         : "准备开始"}
                 </p>
                 <h1 className="break-words text-xl font-semibold sm:text-2xl">{task.name}</h1>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {
-                    [task.noticeSource, ...task.supplementalSources].filter(
-                      (source) => source.parseStatus === "text_extracted",
-                    ).length
-                  }{" "}
-                  份可用审查依据 · {task.materials.length} 份材料
-                </p>
+                {view === "results" && execution ? (
+                  <div aria-label="当前材料自查摘要" className="mt-3 space-y-1">
+                    <p className="text-sm font-semibold text-primary">
+                      {reviewSummary(execution).title}
+                    </p>
+                    <p className="text-xs leading-6 text-muted-foreground">
+                      {reviewSummary(execution).description}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {
+                      [task.noticeSource, ...task.supplementalSources].filter(
+                        (source) => source.parseStatus === "text_extracted",
+                      ).length
+                    }{" "}
+                    份可用审查依据 · {task.materials.length} 份材料
+                  </p>
+                )}
               </div>
               <button
                 data-testid="task-primary-action"
-                disabled={Boolean(activity) || (next.kind === "start" && cannotRun)}
+                disabled={
+                  Boolean(activity) || ((next.kind === "start" || view === "review") && cannotRun)
+                }
                 onClick={() => void primaryAction()}
                 className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
               >
@@ -430,11 +462,26 @@ export function TaskWorkspace({
                 <ArrowRight className="size-4" aria-hidden="true" />
               </button>
             </div>
+            {execution?.validity === "needs_recheck" && (
+              <div
+                role="status"
+                className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"
+              >
+                <span>材料或要求已更新，需要重新检查。</span>
+                <button
+                  type="button"
+                  onClick={() => navigate("results")}
+                  className="min-h-11 underline"
+                >
+                  查看上次结果
+                </button>
+              </div>
+            )}
             <p className="mt-4 text-xs leading-6 text-muted-foreground">
               {mode === "mock"
-                ? "模拟演示模式：不调用真实模型；规格工具读取实际材料，语义内容不会自动算作通过。"
+                ? "模拟演示：不调用真实模型，语义内容未核验。"
                 : mode === "live"
-                  ? "真实模型模式：审查依据及检查所需材料片段将发送至已配置的模型服务。"
+                  ? "检查时，相关要求与材料片段将发送至AI服务。"
                   : "AI服务暂不可用，请稍后重试或联系管理员。"}
             </p>
             {cannotRun && (
@@ -497,7 +544,7 @@ export function TaskWorkspace({
             )}
           </div>
           <div role="status" aria-live="polite" className="mt-3 text-sm text-primary">
-            {message || activity || ""}
+            {execution?.validity === "needs_recheck" ? "" : message || activity || ""}
           </div>
           {!tool && error && (
             <p role="alert" className="my-3 text-sm leading-6 text-red-800">
@@ -511,8 +558,8 @@ export function TaskWorkspace({
             {(
               [
                 ["prepare", "准备要求与材料", FolderOpen],
-                ["review", "执行审查", Play],
-                ["results", "处理问题与导出", FileText],
+                ["review", "检查进度", Play],
+                ["results", "自查结果", FileText],
               ] as const
             ).map(([key, label, Icon], index) => (
               <button
@@ -539,9 +586,6 @@ export function TaskWorkspace({
           inert={Boolean(tool)}
           className="flex flex-wrap items-center justify-between gap-3"
         >
-          <p className="text-sm text-muted-foreground">
-            左侧提供通知或指南，右侧放需要审查的文件。准备好后点击上方主按钮。
-          </p>
           <button
             onClick={() => openTool("requirements")}
             className="min-h-11 rounded-lg border bg-card px-4 text-sm text-primary"
@@ -618,7 +662,7 @@ export function TaskWorkspace({
           </button>
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <Check className="size-3" aria-hidden="true" />
-            已保存内容保留在本地
+            已保存
           </span>
         </div>
         {tool && <div className="fixed inset-0 z-40 bg-slate-950/45" aria-hidden="true" />}

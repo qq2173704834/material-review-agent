@@ -70,9 +70,9 @@ test("真实模式代码链完成提取、证据审查、复检和报告（受�
   expect(remediation.status()).toBe(200);
   expect(remediation.headers()["content-disposition"]).toContain("remediation-");
   const remediationMarkdown = await remediation.text();
-  expect(remediationMarkdown).toContain("整改与确认清单");
+  expect(remediationMarkdown).toContain("修改与确认清单");
   expect(remediationMarkdown).toContain("测试样本量：尚未提供。");
-  expect(remediationMarkdown).toContain("不记录整改完成状态");
+  expect(remediationMarkdown).toContain("需修改");
   const upload = await request.post(`/api/tasks/${task.id}/materials`, {
     multipart: {
       files: {
@@ -90,6 +90,7 @@ test("真实模式代码链完成提取、证据审查、复检和报告（受�
   await page.getByTestId("task-primary-action").click();
   await expect(page.getByText(/已解决 1 · 仍存在 0/)).toBeVisible();
   await page.getByLabel("按判定筛选").selectOption("all");
+  await page.getByText("查看依据", { exact: true }).first().click();
   await page.getByRole("button", { name: "定位证据", exact: true }).click();
   const preview = page.locator("dialog[open]");
   await expect(preview.locator("mark")).toHaveText("测试样本量：100。");
@@ -101,16 +102,18 @@ test("真实模式代码链完成提取、证据审查、复检和报告（受�
   const report = await request.get(`/api/tasks/${task.id}/report`);
   expect(report.headers()["content-type"]).toContain("text/markdown");
   const markdown = await report.text();
-  expect(markdown).toContain("已解决 1");
+  expect(markdown).toContain("本次自查未发现必须项问题");
   expect(markdown).toContain("测试样本量：100。");
-  expect(markdown).toContain("controlled-model");
-  expect(markdown).toContain("已知输入 token：246");
+  expect(markdown).not.toMatch(/controlled-model|token|执行 ID|任务 ID/iu);
+  const detailed = await (await request.get(`/api/tasks/${task.id}/report?detail=full`)).text();
+  expect(detailed).toContain("已解决 1");
+  expect(detailed).not.toMatch(/controlled-model|已知输入 token/iu);
   const resolvedRemediation = await request.get(
     `/api/tasks/${task.id}/report?executionId=${executions[0].id}&type=remediation`,
   );
   expect(await resolvedRemediation.text()).toContain("本次没有明确的必须项失败");
   const oldReport = await request.get(`/api/tasks/${task.id}/report?executionId=${first.id}`);
-  expect(await oldReport.text()).toContain("待复检");
+  expect(await oldReport.text()).toContain("需要重新检查");
   const other = await createTask(request);
   expect(
     (await request.get(`/api/tasks/${other.task.id}/report?executionId=${first.id}`)).status(),
@@ -303,13 +306,11 @@ test("明确切换模拟不会调用模型或复用真实结果，切回后重�
     expect(live.metadata?.mode).toBe("live");
     expect(live.results[0]?.method).toBe("model");
     await page.goto(`/tasks/${task.id}?view=results`);
-    await expect(page.getByText("此记录：真实模型审查", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("自查结论")).toContainText("有材料需要修改");
     await page.getByRole("button", { name: "明确使用模拟演示（不调用真实模型）" }).click();
-    await expect(page.getByTestId("task-primary-action")).toHaveText("复查受影响项");
+    await expect(page.getByTestId("task-primary-action")).toHaveText("重新检查");
     await page.getByTestId("task-primary-action").click();
-    await expect(
-      page.getByText("此记录：模拟演示，不代表真实模型语义核验", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("模拟演示，不代表真实内容核验。", { exact: true })).toBeVisible();
     const { executions } = await (
       await request.get(`/api/tasks/${task.id}/checks?mode=mock`)
     ).json();
@@ -319,9 +320,9 @@ test("明确切换模拟不会调用模型或复用真实结果，切回后重�
       true,
     );
     await page.goto(`/tasks/${task.id}?view=results`);
-    await expect(page.getByTestId("task-primary-action")).toHaveText("复查受影响项");
+    await expect(page.getByTestId("task-primary-action")).toHaveText("重新检查");
     await page.getByTestId("task-primary-action").click();
-    await expect(page.getByText("此记录：真实模型审查", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("自查结论")).toContainText("有材料需要修改");
     const final = (await (await request.get(`/api/tasks/${task.id}/checks`)).json()).executions[0];
     expect(final.metadata.mode).toBe("live");
     expect(final.results[0].method).toBe("model");
