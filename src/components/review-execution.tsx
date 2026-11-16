@@ -1035,28 +1035,12 @@ export function ReviewExecutionPanel({
                           key={`${evidence.materialId}-${index}`}
                           className="break-words text-muted-foreground"
                         >
-                          {evidence.segmentIndex !== undefined &&
-                          materials.some(
-                            (material) =>
-                              material.id === evidence.materialId &&
-                              material.version === evidence.materialVersion,
-                          ) ? (
-                            <a
-                              href={`#material-${evidence.materialId}-segment-${evidence.segmentIndex}`}
-                              onClick={() => {
-                                const element = document.getElementById(
-                                  `material-${evidence.materialId}-segment-${evidence.segmentIndex}`,
-                                );
-                                const details = element?.closest("details");
-                                if (details) details.open = true;
-                              }}
-                              className="text-primary underline underline-offset-4"
-                            >
-                              定位证据
-                            </a>
-                          ) : (
-                            "证据"
-                          )}
+                          <EvidencePreview
+                            taskId={taskId}
+                            evidence={[evidence]}
+                            triggerLabel="定位证据"
+                            compact
+                          />
                           ：{evidence.quotedText} · {evidence.location} · 材料 v
                           {evidence.materialVersion}
                         </li>

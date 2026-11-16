@@ -205,9 +205,13 @@ export function EvidencePane({
 export function EvidencePreview({
   taskId,
   evidence,
+  triggerLabel = "查看证据原文 / 对照",
+  compact = false,
 }: {
   taskId: string;
   evidence: ReviewCheckEvidence[];
+  triggerLabel?: string;
+  compact?: boolean;
 }): ReactElement {
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -218,13 +222,17 @@ export function EvidencePreview({
       <button
         ref={trigger}
         type="button"
-        className="mt-3 min-h-11 rounded-md border border-border px-3 text-xs text-primary"
+        className={
+          compact
+            ? "min-h-11 text-xs text-primary underline underline-offset-4"
+            : "mt-3 min-h-11 rounded-md border border-border px-3 text-xs text-primary"
+        }
         onClick={() => {
           setIsOpen(true);
           dialog.current?.showModal();
         }}
       >
-        查看证据原文 / 对照
+        {triggerLabel}
       </button>
       <dialog
         ref={dialog}

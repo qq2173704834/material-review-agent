@@ -90,10 +90,11 @@ test("真实模式代码链完成提取、证据审查、复检和报告（受�
   await page.getByTestId("task-primary-action").click();
   await expect(page.getByText(/已解决 1 · 仍存在 0/)).toBeVisible();
   await page.getByLabel("按判定筛选").selectOption("all");
-  await page.getByRole("link", { name: "定位证据" }).click();
-  await expect(
-    page.locator("details[open]").getByText("测试样本量：100。", { exact: true }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "定位证据", exact: true }).click();
+  const preview = page.locator("dialog[open]");
+  await expect(preview.locator("mark")).toHaveText("测试样本量：100。");
+  await preview.getByRole("button", { name: "关闭预览", exact: true }).click();
+  await expect(page.getByRole("button", { name: "定位证据", exact: true })).toBeFocused();
   const executions = (await (await request.get(`/api/tasks/${task.id}/checks`)).json()).executions;
   expect(executions[0].results[0].verdict).toBe("passed");
   expect(executions[0].validity).toBe("current");
