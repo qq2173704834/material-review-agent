@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { displayDateTime } from "@/lib/display-date";
 import { useRouter } from "next/navigation";
 import { useTaskActivity, useTaskWorkflow } from "@/components/task-workspace";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
@@ -470,7 +471,7 @@ export function RuleReview({
               个来源
             </span>
             <time dateTime={displayedRuleSet.createdAt}>
-              {new Date(displayedRuleSet.createdAt).toLocaleString("zh-CN")}
+              {displayDateTime(displayedRuleSet.createdAt)}
             </time>
           </div>
           {displayedRuleSet.rules.length === 0 ? (
@@ -864,7 +865,7 @@ export function RuleReview({
             {ruleSets.slice(1).map((ruleSet) => (
               <li key={ruleSet.id}>
                 通知 v{ruleSet.sourceVersion} · {ruleSet.rules.length} 条规则 ·{" "}
-                {new Date(ruleSet.createdAt).toLocaleString("zh-CN")}
+                {displayDateTime(ruleSet.createdAt)}
               </li>
             ))}
           </ol>

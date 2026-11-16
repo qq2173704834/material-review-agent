@@ -1,4 +1,5 @@
 import { TaskExamContext } from "@/components/task-exam-context";
+import { displayDateTime } from "@/lib/display-date";
 import { Clock3 } from "lucide-react";
 import { notFound } from "next/navigation";
 
@@ -287,7 +288,7 @@ export default async function TaskPage({ params }: TaskPageProps): Promise<React
                         {version.version === task.noticeSource.version ? " · 当前版本" : ""}
                       </h3>
                       <time className="text-xs text-muted-foreground" dateTime={version.createdAt}>
-                        {new Date(version.createdAt).toLocaleString("zh-CN")}
+                        {displayDateTime(version.createdAt)}
                       </time>
                     </div>
                     <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-muted-foreground">

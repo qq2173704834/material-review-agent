@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { displayDateTime } from "@/lib/display-date";
 
 import type { ModelCall } from "@/domain/model-call";
 import type { ReactElement } from "react";
@@ -62,8 +63,8 @@ export function ModelConnectionTest({ canTest }: { canTest: boolean }): ReactEle
       ) : null}
       {call ? (
         <p className="break-words text-xs leading-6 text-muted-foreground">
-          {call.provider} / {call.model} · {new Date(call.completedAt).toLocaleString("zh-CN")} ·
-          输入 {call.inputTokens ?? "未报告"} / 输出 {call.outputTokens ?? "未报告"} token ·{" "}
+          {call.provider} / {call.model} · {displayDateTime(call.completedAt)} · 输入{" "}
+          {call.inputTokens ?? "未报告"} / 输出 {call.outputTokens ?? "未报告"} token ·{" "}
           {call.requestCount} 次请求
         </p>
       ) : null}

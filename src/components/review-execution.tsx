@@ -1,6 +1,7 @@
 "use client";
 
 import { MaterialConsistencyResults } from "@/components/material-consistency-results";
+import { displayDateTime } from "@/lib/display-date";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTaskWorkflow } from "@/components/task-workspace";
@@ -694,8 +695,7 @@ export function ReviewExecutionPanel({
               >
                 {executions.map((execution) => (
                   <option key={execution.id} value={execution.id}>
-                    {new Date(execution.createdAt).toLocaleString("zh-CN")} ·{" "}
-                    {execution.results.length} 项 ·{" "}
+                    {displayDateTime(execution.createdAt)} · {execution.results.length} 项 ·{" "}
                     {execution.id !== executions[0]?.id ? "历史记录 · " : "最新记录 · "}
                     {execution.validity === "needs_recheck" ? "待复检" : "当时数据版本"}
                   </option>

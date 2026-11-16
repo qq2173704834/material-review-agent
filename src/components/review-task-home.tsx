@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { displayDateTime } from "@/lib/display-date";
 import { requestIdentity } from "@/lib/server/access-config";
 import { ArrowRight, FileCheck2, FolderOpen, Plus } from "lucide-react";
 import Link from "next/link";
@@ -134,7 +135,7 @@ export default async function TasksPage(): Promise<ReactElement> {
                       </span>
                     ) : null}
                     <time dateTime={task.latestUpdatedAt}>
-                      {new Date(task.latestUpdatedAt).toLocaleString("zh-CN", {
+                      {displayDateTime(task.latestUpdatedAt, {
                         dateStyle: "medium",
                         timeStyle: "short",
                       })}
