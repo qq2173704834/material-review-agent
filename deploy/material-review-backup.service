@@ -1,0 +1,9 @@
+[Unit]
+Description=Material review daily full snapshot
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/ubuntu/material-review-deploy/source/deploy/run-operations.sh --backup
+TimeoutStartSec=180

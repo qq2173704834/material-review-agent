@@ -107,6 +107,46 @@ test("REL02 备份目的地不能位于源目录内", () => {
 import { inspectOperations } from "../../scripts/lib/operations.mjs";
 import { createServer } from "node:http";
 import { once } from "node:events";
+
+test("BUG-065 HTTPS部署巡检保留Host且拒绝重定向和过大响应", async () => {
+  const f = fixture();
+  const previousOrigin = process.env.APP_PUBLIC_ORIGIN;
+  const server = createServer((request, response) => {
+    if (request.headers.host !== "exams.example.test") {
+      response.writeHead(503).end();
+    } else if (request.url === "/redirect") {
+      response.writeHead(302, { Location: "https://invalid.example/" }).end();
+    } else {
+      response.setHeader("Content-Type", "application/json");
+      response.end(
+        JSON.stringify({ status: "ok", padding: request.url === "/large" ? "x".repeat(8192) : "" }),
+      );
+    }
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  process.env.APP_PUBLIC_ORIGIN = "https://exams.example.test";
+  const options = { dataDirectory: f.source, backupDirectory: f.dest };
+  const url = `http://127.0.0.1:${server.address().port}`;
+  try {
+    assert.equal(
+      (await inspectOperations({ ...options, healthUrl: url + "/api/health" })).summary
+        .serviceAvailable,
+      true,
+    );
+    for (const path of ["/redirect", "/large"])
+      assert.equal(
+        (await inspectOperations({ ...options, healthUrl: url + path })).summary.serviceAvailable,
+        false,
+      );
+  } finally {
+    if (previousOrigin === undefined) delete process.env.APP_PUBLIC_ORIGIN;
+    else process.env.APP_PUBLIC_ORIGIN = previousOrigin;
+    await new Promise((done) => server.close(done));
+    rmSync(f.root, { recursive: true });
+  }
+});
+
 test("REL02 巡检实际生成服务/磁盘/备份/模型/采集告警且不输出正文", async () => {
   const f = fixture(),
     server = createServer((_request, response) => {

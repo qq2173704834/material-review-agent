@@ -30,7 +30,10 @@ services:
     restart: unless-stopped
     depends_on:
       - app
-    env_file: ../.env.deploy
+    environment:
+      APP_HOST: ${APP_HOST:?set deployment host}
+      GATE_USER: ${GATE_USER:?set private entrance user}
+      GATE_PASSWORD_HASH: ${GATE_PASSWORD_HASH:?set private entrance password hash}
     ports:
       - "80:80"
       - "443:443"

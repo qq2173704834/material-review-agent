@@ -1,0 +1,10 @@
+[Unit]
+Description=Inspect material review every fifteen minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=15min
+Unit=material-review-check.service
+
+[Install]
+WantedBy=timers.target

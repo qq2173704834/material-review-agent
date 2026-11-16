@@ -117,7 +117,7 @@ export function campusArticleTitle(
   const titleNode =
     profile === "pku"
       ? findNode(articleNode(root, profile) || root, (node) => node.nodeName === "h1")
-      : findNode(root, (node) => hasClass(node, titleClass));
+      : findNode(root, (node) => hasClass(node, titleClass) && text(node).trim().length > 0);
   const fallback = findNode(root, (node) => node.nodeName === "title");
   const heading =
     titleNode && (findNode(titleNode, (node) => /^h[1-3]$/u.test(node.nodeName)) || titleNode);

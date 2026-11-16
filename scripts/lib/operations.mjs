@@ -2,6 +2,50 @@ import { verifyFullBackup } from "./full-backup.mjs";
 import Database from "better-sqlite3";
 import { statfsSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { get as httpGet } from "node:http";
+import { get as httpsGet } from "node:https";
+
+function healthAvailable(url, configuredOrigin) {
+  return new Promise((done) => {
+    // Node's fetch may discard Host; the deployment validates its configured origin.
+    const get = url.protocol === "https:" ? httpsGet : httpGet;
+    const request = get(
+      url,
+      { headers: configuredOrigin ? { host: configuredOrigin.host } : undefined },
+      (response) => {
+        if (response.statusCode !== 200) {
+          response.destroy();
+          done(false);
+          return;
+        }
+        let sizeBytes = 0;
+        const chunks = [];
+        response.on("data", (chunk) => {
+          sizeBytes += chunk.length;
+          if (sizeBytes > 4096) {
+            response.destroy();
+            done(false);
+          } else chunks.push(chunk);
+        });
+        response.on("error", () => done(false));
+        response.on("end", () => {
+          try {
+            done(JSON.parse(Buffer.concat(chunks).toString("utf8")).status === "ok");
+          } catch {
+            done(false);
+          }
+        });
+      },
+    );
+    const deadline = setTimeout(() => {
+      request.destroy();
+      done(false);
+    }, 5000);
+    request.on("close", () => clearTimeout(deadline));
+    request.on("error", () => done(false));
+  });
+}
+
 export async function inspectOperations({
   dataDirectory,
   healthUrl,
@@ -30,12 +74,7 @@ export async function inspectOperations({
       : undefined;
     if (configuredOrigin && configuredOrigin.protocol !== "https:")
       throw new Error("invalid_public_origin");
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
-      redirect: "error",
-      headers: configuredOrigin ? { host: configuredOrigin.host } : undefined,
-    });
-    summary.serviceAvailable = response.ok && (await response.json()).status === "ok";
+    summary.serviceAvailable = await healthAvailable(url, configuredOrigin);
   } catch {
     summary.serviceAvailable = false;
   }

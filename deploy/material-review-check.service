@@ -1,0 +1,9 @@
+[Unit]
+Description=Material review service and backup inspection
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/ubuntu/material-review-deploy/source/deploy/run-operations.sh
+TimeoutStartSec=120

@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up material review daily at 03:30 Beijing time
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Shanghai
+Persistent=true
+Unit=material-review-backup.service
+
+[Install]
+WantedBy=timers.target

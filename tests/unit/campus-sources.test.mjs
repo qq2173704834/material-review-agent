@@ -7,6 +7,22 @@ import {
   campusArticleTitle,
   campusPublicationDate,
 } from "../../src/lib/campus-article.ts";
+
+test("BUG-066 空装饰标题不会遮蔽后续真实WebPlus通知标题", () => {
+  const html = `<title>真实通知</title><h2 class="arti_title arti_title2"></h2><h1 class="arti_title">新生程序设计大赛通知</h1><h2 class="arti_title"></h2>`;
+  assert.equal(campusArticleTitle(html), "新生程序设计大赛通知");
+  assert.equal(
+    campusArticleTitle(
+      '<title>2026—2027学年校历</title><h1 class="arti_title"> </h1><h1 class="arti_title">2026—2027学年校历</h1>',
+    ),
+    "2026—2027学年校历",
+  );
+  assert.equal(
+    campusArticleTitle('<title>报名通知</title><h1 class="arti_title"> </h1>'),
+    "报名通知",
+  );
+  assert.throws(() => campusArticleTitle('<h1 class="arti_title"> </h1>'), /标题/);
+});
 import { campusSourceLinks } from "../../src/lib/campus-source-links.ts";
 import { campusExternalEntries } from "../../src/lib/campus-listing.ts";
 import { CAMPUS_SOURCES, CAMPUS_SCHOOLS } from "../../src/domain/campus-schools.ts";
