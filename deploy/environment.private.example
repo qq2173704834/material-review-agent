@@ -1,0 +1,12 @@
+# Copy to ignored .env.deploy at project root. Never commit actual credentials.
+APP_HOST=exams.example.com
+APP_PUBLIC_ORIGIN=https://exams.example.com
+DEPLOY_TAG=replace-with-built-image-tag
+REVIEW_AUTH_MODE=accounts
+AI_MODE=mock
+EXAM_SCHEDULER=off
+AUTO_REVIEW_ENABLED=off
+GATE_USER=owner
+# Use caddy hash-password via stdin; retain single quotes around the bcrypt hash.
+GATE_PASSWORD_HASH='$2a$replace-with-generated-bcrypt-hash'
+NODE_OPTIONS=--max-old-space-size=1024

@@ -19,5 +19,5 @@ RUN mkdir /data && chown node:node /data
 USER node
 ENV NODE_ENV=production REVIEW_AUTH_MODE=accounts REVIEW_DATA_DIR=/data DEPLOY_HOST=0.0.0.0 PORT=3000 FFMPEG_PATH=/usr/bin/ffmpeg FFPROBE_PATH=/usr/bin/ffprobe NEXT_TELEMETRY_DISABLED=1
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s CMD node -e "fetch('http://127.0.0.1:3000/api/health',{headers:{host:new URL(process.env.APP_PUBLIC_ORIGIN).host}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s CMD node -e "const r=require('node:http').get('http://127.0.0.1:3000/api/health',{headers:{host:new URL(process.env.APP_PUBLIC_ORIGIN).host}},s=>process.exit(s.statusCode===200?0:1));r.setTimeout(4000,()=>r.destroy());r.on('error',()=>process.exit(1))"
 CMD ["node","scripts/start-production.mjs"]

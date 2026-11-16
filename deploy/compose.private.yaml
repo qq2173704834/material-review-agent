@@ -1,0 +1,47 @@
+# Run from project root with --env-file .env.deploy.
+name: material-review-private
+services:
+  app:
+    image: material-review-agent:${DEPLOY_TAG:?set deployed image tag}
+    restart: unless-stopped
+    env_file: ../.env.deploy
+    # Also fixes the probe in the initial image without rebuilding the application.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "const r=require('node:http').get('http://127.0.0.1:3000/api/health',{headers:{host:new URL(process.env.APP_PUBLIC_ORIGIN).host}},s=>process.exit(s.statusCode===200?0:1));r.setTimeout(4000,()=>r.destroy());r.on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    volumes:
+      - review-data:/data
+    ports:
+      - "127.0.0.1:3000:3000"
+    mem_limit: 1400m
+    cpus: 2
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+  proxy:
+    image: caddy:2.11.9@sha256:4e2425f6009577e7c651010f16679c28f7d12df3e7b1914f941a7a3370746b3c
+    restart: unless-stopped
+    depends_on:
+      - app
+    env_file: ../.env.deploy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.private:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    mem_limit: 192m
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  review-data:
+  caddy-data:
+  caddy-config:
