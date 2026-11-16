@@ -37,7 +37,7 @@ export function TaskCloneControl({ taskId }: TaskCloneControlProps): ReactElemen
       router.push(`/tasks/${clonedTask.id}`);
       router.refresh();
     } catch {
-      setError("暂时无法连接本地服务，请稍后重试。");
+      setError("暂时无法连接服务，请稍后重试。");
     } finally {
       setIsCloning(false);
     }

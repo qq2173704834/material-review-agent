@@ -44,7 +44,7 @@ export function TaskDeleteControl({ taskId, taskName }: TaskDeleteControlProps):
       router.replace("/");
       router.refresh();
     } catch {
-      setError("暂时无法连接本地服务，请稍后重试。");
+      setError("暂时无法连接服务，请稍后重试。");
     } finally {
       setIsDeleting(false);
     }

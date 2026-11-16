@@ -46,7 +46,7 @@ export function SourceEditor({
       clearUnsaved();
       router.refresh();
     } catch {
-      setError("无法连接本地服务，输入已保留。");
+      setError("无法连接服务，输入已保留。");
     } finally {
       setIsSaving(false);
     }
@@ -56,9 +56,7 @@ export function SourceEditor({
       <summary className="cursor-pointer text-primary">修订来源文字 / 更新要求</summary>
       {isOpen && (
         <div className="my-2 space-y-2 rounded border p-3">
-          <p>
-            保存为新来源版本，使规则和旧结果待更新。旧执行中的原文保持不变；可粘贴新通知正文或纠正识别错误。
-          </p>
+          <p>更新通知或修正文字后，请重新整理要求并复查材料。</p>
           <label className="block">
             来源正文
             <textarea
@@ -92,7 +90,7 @@ export function SourceEditor({
             disabled={isSaving || !note.trim() || !text.trim()}
             onClick={save}
           >
-            {isSaving ? "正在保存…" : "保存来源新版本"}
+            {isSaving ? "正在保存…" : "保存修改"}
           </button>
           {error && <p role="alert">{error}</p>}
         </div>

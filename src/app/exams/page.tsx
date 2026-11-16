@@ -110,9 +110,8 @@ export default async function Page({
   return (
     <AppShell activePage="exams">
       <div className="space-y-7">
-        <header>
-          <p className="text-sm text-primary">学生考试信息</p>
-          <h1 className="mt-2 text-3xl font-semibold">下一场考试，从这里准备</h1>
+        <header className="page-heading">
+          <h1 className="text-3xl font-semibold">考试中心</h1>
         </header>
         {account && <BrowsePosition identity={account.id} />}
         <SearchFilters

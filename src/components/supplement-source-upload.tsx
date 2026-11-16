@@ -45,7 +45,7 @@ export function SupplementSourceUpload({ taskId }: { taskId: string }): ReactEle
       clearUnsaved();
       router.refresh();
     } catch {
-      setError("本地服务暂时不可用，地址已保留，请重试。");
+      setError("服务暂时不可用，地址已保留，请重试。");
     } finally {
       setIsSaving(false);
       workflow?.setActivity("source-webpage", null);

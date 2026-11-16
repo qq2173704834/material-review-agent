@@ -286,7 +286,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
           <div className="source-preview">
             <p className="font-semibold">{imported.title}</p>
             <p className="text-sm text-muted-foreground">
-              {imported.region} · {imported.edition} · 公告版本{imported.version} · {imported.scope}
+              {imported.region} · {imported.edition} · {imported.scope}
             </p>
             <pre>{imported.text}</pre>
             {imported.warning && <p>{imported.warning}</p>}
@@ -307,7 +307,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
               className={fieldClassName}
             />
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              仅读取可公开访问的网页正文；登录受限或无法读取时，可返回并粘贴文本。
+              请输入公开网页链接，也可以直接粘贴通知。
             </p>
           </div>
         ) : sourceMode === "file" && !task ? (
@@ -334,7 +334,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
             maxLength={200000}
             required
             onChange={(event) => setNoticeText(event.target.value)}
-            placeholder="粘贴本次通知、指南或项目要求。原文会按段落保存，并可查看字符位置与历史版本。"
+            placeholder="粘贴考试通知或材料要求。"
           />
         )}
       </section>
@@ -365,13 +365,11 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
               : sourceMode === "webpage"
                 ? "读取网页并创建任务"
                 : sourceMode === "file"
-                  ? "解析文件并创建任务"
+                  ? "导入文件并创建任务"
                   : "创建审查任务"}
         </button>
         {task ? (
-          <span className="text-xs text-muted-foreground">
-            修改通知会保存为新版本，历史原文会保留。
-          </span>
+          <span className="text-xs text-muted-foreground">更新要求后，请重新检查材料。</span>
         ) : null}
       </div>
     </form>

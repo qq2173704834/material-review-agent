@@ -133,7 +133,6 @@ export default async function TasksPage(): Promise<ReactElement> {
                         {taskStatuses.get(task.id)?.unexecuted}
                       </span>
                     ) : null}
-                    <span>通知 v{task.noticeSourceVersion}</span>
                     <time dateTime={task.latestUpdatedAt}>
                       {new Date(task.latestUpdatedAt).toLocaleString("zh-CN", {
                         dateStyle: "medium",
@@ -170,18 +169,15 @@ export default async function TasksPage(): Promise<ReactElement> {
                 <FileCheck2 className="size-5" aria-hidden="true" />
               </span>
             </div>
-            <h3 className="text-xl font-semibold tracking-tight">从一份通知，开启一次清晰的审查</h3>
+            <h3 className="text-xl font-semibold tracking-tight">提交材料前，先自查一遍</h3>
             <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-              在这里管理通知、材料、检查结论与整改记录。
-              <br className="hidden sm:block" />
-              支持多格式材料、规格检查与模型辅助审查。
+              导入通知与材料，检查缺项、格式和信息一致性。
             </p>
             <Button asChild variant="outline" className="mt-7">
               <Link href="/tasks/new">
                 创建第一个任务 <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
-            <p className="mt-4 text-xs text-muted-foreground">没有预置任务或演示结论</p>
           </div>
         </section>
       )}

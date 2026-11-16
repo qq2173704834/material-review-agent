@@ -68,9 +68,8 @@ export default async function Learn({
     <AppShell activePage="learn">
       <div className="space-y-6">
         <header className="page-heading">
-          <p className="text-sm text-primary">围绕你的考试目标学习</p>
-          <h1 className="my-2 text-3xl font-semibold">学习资源与备考资讯</h1>
-          <p>找到适合你的资料，让今天的学习更有方向。</p>
+          <h1 className="my-2 text-3xl font-semibold">学习资源</h1>
+          <p>为你的考试，找到合适的资料。</p>
         </header>
         <nav aria-label="学习方向" className="flex flex-wrap gap-2">
           <Link className="button-secondary" href="/learn">
@@ -156,7 +155,7 @@ export default async function Learn({
               </h2>
               <p className="text-sm">
                 {item.content.text.startsWith("此条为公开官方入口导航")
-                  ? "查看考试介绍、考纲与官方通知，前往原站获取资料。"
+                  ? "考试介绍、考纲与官方资料入口。"
                   : !item.content.summary ||
                       /少量|不是NCRE|非完整考纲|不代表已读取/.test(item.content.summary)
                     ? item.content.text.slice(0, 180)

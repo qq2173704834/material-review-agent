@@ -53,13 +53,13 @@ export default async function Home({
     {
       id: "current",
       title: "当前考试",
-      description: "优先展示处于报名日期范围或今日有考试安排的项目。",
+      description: "报名中与考试中的项目。",
       items: items.filter((item) => examCardState(item.content, now).current),
     },
     {
       id: "registration",
       title: "报名中",
-      description: "绿色表示处于已公布的完整报名时段；仅有日期时以黄色提示具体时刻待确认。",
+      description: "查看正在报名的考试。",
       items: items.filter((item) => examCardState(item.content, now).kind === "registration"),
     },
     {
@@ -82,7 +82,7 @@ export default async function Home({
     {
       id: "deadline",
       title: "即将截止",
-      description: "未来7天内的报名截止安排，具体时刻请核对官方公告。",
+      description: "未来7天即将截止报名。",
       items: recent.filter((item) =>
         examTimeline(item.content).some(
           (node) => node.label === "报名截止" && isUpcoming(node.value, now, 7),
@@ -92,7 +92,7 @@ export default async function Home({
     {
       id: "latest",
       title: "最近更新",
-      description: "最近审核发布的公告，可能包含历史考期，请留意状态。",
+      description: "最新考试公告。",
       items: latest,
     },
   ];
@@ -220,7 +220,7 @@ export default async function Home({
                   ))}
                 </select>
               </label>
-              <button className="rounded border px-3 py-2">应用展示设置</button>
+              <button className="rounded border px-3 py-2">应用</button>
             </form>
           </details>
           <div id="exam-cards" className="scroll-mt-5">
@@ -235,8 +235,8 @@ export default async function Home({
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {selected.id === "latest"
-                    ? "暂无近期公告，去考试中心看看感兴趣的考试。"
-                    : "可切换“最近更新”，或到考试中心查看目录和官方入口。"}
+                    ? "暂无公告，去找找感兴趣的考试。"
+                    : "试试最近更新或浏览全部考试。"}
                 </p>
                 <Link
                   href={selected.id === "latest" ? "/exams" : "/?tab=latest#exam-cards"}
@@ -275,7 +275,7 @@ export default async function Home({
                         {item.content.region} · {item.content.edition}
                       </p>
                       <p className="mt-3 line-clamp-2 shrink-0 text-xs leading-5 text-muted-foreground">
-                        {item.content.summary || "资格条件与具体安排请核对官方原文。"}
+                        {item.content.summary || "查看报名条件与考试安排。"}
                       </p>
                       <RegistrationDeadline
                         disposition={item.content.disposition}
@@ -304,7 +304,7 @@ export default async function Home({
             )}
             {selected.items.length > options.size && (
               <Link href="/exams" className="mt-5 inline-block text-sm text-primary underline">
-                前往考试中心查看其余公告
+                查看更多公告 →
               </Link>
             )}
           </div>

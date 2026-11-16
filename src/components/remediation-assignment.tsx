@@ -92,7 +92,7 @@ export function RemediationAssignment({
           </li>
         ))}
       </ul>
-      <p>本地协作记录，填写姓名不会授予账户访问权限。</p>
+      <p>填写负责人仅用于分工，不会共享材料。</p>
     </details>
   );
 }

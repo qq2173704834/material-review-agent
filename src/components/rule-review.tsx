@@ -117,7 +117,7 @@ export function RuleReview({
       setRuleSets((existingRuleSets) => [result.ruleSet as ReviewRuleSet, ...existingRuleSets]);
       router.refresh();
     } catch {
-      setError("暂时无法连接本地服务，请稍后重试。");
+      setError("暂时无法连接服务，请稍后重试。");
     } finally {
       setIsExtracting(false);
     }
@@ -155,7 +155,7 @@ export function RuleReview({
       setIsDirty(false);
       router.refresh();
     } catch {
-      setError("暂时无法连接本地服务，请稍后重试。");
+      setError("暂时无法连接服务，请稍后重试。");
     } finally {
       setIsSaving(false);
     }
@@ -186,7 +186,7 @@ export function RuleReview({
       setRuleSets((existing) => [result.ruleSet as ReviewRuleSet, ...existing]);
       router.refresh();
     } catch {
-      setError("暂时无法连接本地服务，请稍后重试。");
+      setError("暂时无法连接服务，请稍后重试。");
     } finally {
       setIsSaving(false);
     }
@@ -240,7 +240,7 @@ export function RuleReview({
       setRuleSets((existing) => [result.ruleSet as ReviewRuleSet, ...existing]);
       router.refresh();
     } catch {
-      setError("暂时无法连接本地服务，请稍后重试。");
+      setError("暂时无法连接服务，请稍后重试。");
     } finally {
       setIsSaving(false);
     }
@@ -315,7 +315,7 @@ export function RuleReview({
       formElement.reset();
       router.refresh();
     } catch {
-      setError("暂时无法连接本地服务，请稍后重试。");
+      setError("暂时无法连接服务，请稍后重试。");
     } finally {
       setIsSaving(false);
     }

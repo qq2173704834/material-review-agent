@@ -75,7 +75,7 @@ export default async function Page({
       <div className="space-y-7">
         <header className="page-heading">
           <h1 className="text-3xl font-semibold">我的备考</h1>
-          <p className="mt-3">选定目标，安排学习，把每一次准备落到实处。</p>
+          <p className="mt-3">管理目标，开始今天的备考。</p>
         </header>
         <details className="content-settings" open={view !== "overview"}>
           <summary>收藏与个人工具</summary>

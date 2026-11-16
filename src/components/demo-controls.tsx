@@ -72,7 +72,7 @@ export function DemoControls({
           );
         }
       } catch {
-        setMessage("本地服务连接失败，请稍后重试。");
+        setMessage("服务连接失败，请稍后重试。");
       } finally {
         busy.current = false;
         setIsBusy(false);

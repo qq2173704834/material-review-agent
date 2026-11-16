@@ -147,7 +147,7 @@ function AssistantPanel(): ReactElement {
       if (sequence !== sendSequence.current) return;
       setError(
         cause instanceof Error && cause.name === "AbortError"
-          ? "已取消等待；已经发生的模型调用可能产生耗用。"
+          ? "已停止等待回复。"
           : cause instanceof Error
             ? cause.message
             : "请求失败，可重试。",
@@ -218,28 +218,12 @@ function AssistantPanel(): ReactElement {
               <p className="text-xs leading-6 text-muted-foreground">
                 {state?.mode === "mock"
                   ? "模拟模式，未调用真实模型"
-                  : "考试信息引用已审核知识；学习建议请自行核对。"}{" "}
-                私人材料不会进入公共知识库。
+                  : "问考试、找资料，也可以一起制定学习计划。"}
               </p>
-              {state && (
-                <p className="text-xs">
-                  {state.policy.enabled
-                    ? `每小时可提问${state.policy.hourlyLimit}次。`
-                    : "助手已暂停服务，考试和学习资料仍可访问。"}
+              {state && !state.policy.enabled && (
+                <p role="status" className="text-xs">
+                  助手暂不可用，你仍可浏览考试与资料。
                 </p>
-              )}
-              {state?.usage && (
-                <details className="text-xs text-muted-foreground">
-                  <summary>使用记录</summary>
-                  <p className="mt-2">
-                    最近1小时：{state.usage.questions}问，失败{state.usage.failed}次；已记录模型请求
-                    {state.usage.modelRequests}次，已知输入/输出Token {state.usage.inputTokens}/
-                    {state.usage.outputTokens}。
-                    {state.usage.unknownTokenCalls > 0
-                      ? `另有${state.usage.unknownTokenCalls}次Token不完整，合计仅为已知部分。`
-                      : "历史未记录耗用不计入合计，费用未知。"}
-                  </p>
-                </details>
               )}
               <details className="text-sm">
                 <summary>历史会话</summary>
@@ -319,16 +303,6 @@ function AssistantPanel(): ReactElement {
                     {message.payload.warning && (
                       <p className="mt-2 text-xs">{message.payload.warning}</p>
                     )}
-                    {message.payload.usage && (
-                      <details className="mt-2 text-xs text-muted-foreground">
-                        <summary>使用详情</summary>
-                        <p>
-                          {message.payload.usage.modelCall
-                            ? `模型请求${message.payload.usage.modelCall.requestCount}次 · 输入Token：${message.payload.usage.modelCall.inputTokens ?? "未知"} · 输出Token：${message.payload.usage.modelCall.outputTokens ?? "未知"} · 费用未知，请核对服务商账单`
-                            : "本次未调用外部模型"}
-                        </p>
-                      </details>
-                    )}
                     {(message.payload.actionLink?.href.startsWith("/me/schedule?") ||
                       message.payload.actionLink?.href.startsWith("/campus?")) && (
                       <Link
@@ -347,12 +321,12 @@ function AssistantPanel(): ReactElement {
                     {message.payload.citations?.map((citation) => (
                       <details key={citation.id}>
                         <summary>
-                          {citation.title} · v{citation.version}
-                          {citation.sourceType === "非官方参考" && " · 非官方参考，政策待核实"}
+                          {citation.title}
+                          {citation.sourceType === "非官方参考" && " · 第三方参考"}
                         </summary>
                         <blockquote className="whitespace-pre-wrap">{citation.quote}</blockquote>
                         <p>
-                          {citation.scope} · 核对：{citation.checkedAt}
+                          {citation.scope} · 更新：{citation.checkedAt}
                         </p>
                         <a className="underline" href={citation.url}>
                           核对来源详情

@@ -37,9 +37,7 @@ export function ExamDirectory({
       <summary className="cursor-pointer font-semibold">
         浏览考试目录 · {EXAM_CATEGORIES.length}类
       </summary>
-      <p className="my-4 text-sm text-muted-foreground">
-        查找感兴趣的考试，查看报考资料或添加备考目标。
-      </p>
+      <p className="my-4 text-sm text-muted-foreground">查看报考信息，添加考试目标。</p>
       {!items.length && <p>没有匹配的目录项，可清除关键词或类别。</p>}
       {EXAM_GROUPS.filter((group) => items.some((item) => item[2] === group)).map((group) => (
         <section aria-label={`${group}目录`} key={group} className="my-5">

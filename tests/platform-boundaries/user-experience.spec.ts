@@ -116,6 +116,8 @@ test("UXR助手无需逐次勾选即可发送，快捷问题和上下文选择�
   await page.getByRole("button", { name: "打开考试学习AI助手" }).click();
   const panel = page.getByRole("dialog", { name: "考试学习AI助手" });
   await expect(panel.getByText(/允许将本次问题/)).toHaveCount(0);
+  await expect(panel.getByText(/输入\/输出Token|费用未知|每小时可提问/)).toHaveCount(0);
+  await expect(panel.getByText("模拟模式，未调用真实模型", { exact: true })).toBeVisible();
   await expect(panel.getByRole("link", { name: "隐私设置" })).toBeVisible();
   await panel.getByRole("button", { name: "请帮我安排一周的基础复习计划。" }).click();
   const requestPromise = page.waitForRequest(

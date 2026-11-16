@@ -28,7 +28,7 @@ export function ReportDownload({
       }
       saveBlob(await response.blob(), fileName);
     } catch {
-      setError("本地服务暂时不可用，报告未导出，请重试。");
+      setError("服务暂时不可用，报告未导出，请重试。");
     } finally {
       setIsBusy(false);
     }
@@ -100,7 +100,7 @@ export function ExecutionPackage({
       }
       saveBlob(await response.blob(), "本次检查材料副本.zip");
     } catch {
-      setError("本地服务暂时不可用，选择和输出名称已保留，请重试。");
+      setError("服务暂时不可用，选择和输出名称已保留，请重试。");
     } finally {
       setIsBusy(false);
     }

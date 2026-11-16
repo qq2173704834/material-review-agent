@@ -204,7 +204,7 @@ export function ExamSourcePicker({
         <div className="source-preview">
           <p className="font-semibold">{preview.title}</p>
           <p className="text-sm text-muted-foreground">
-            {preview.region} · {preview.edition} · 公告版本{preview.version} · {preview.scope}
+            {preview.region} · {preview.edition} · {preview.scope}
           </p>
           <a
             href={preview.url}

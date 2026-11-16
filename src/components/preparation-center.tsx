@@ -347,14 +347,13 @@ export function PreparationCenter({
     <div className="prep-center space-y-6">
       <BrowsePosition identity={goal.id} />
       <header className="page-heading">
-        <p className="text-sm text-primary">MY PREPARATION</p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-semibold">{recordsOnly ? "学习记录" : "目标详情"}</h1>
           <Link className="button-secondary" href="/me">
             管理考试目标
           </Link>
         </div>
-        <p className="mt-2">围绕你的目标，走好今天这一步。</p>
+        <p className="mt-2">安排今天，稳步备考。</p>
       </header>
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-xl font-semibold">{CATEGORY_LABELS[goal.category]}</h2>
@@ -595,9 +594,7 @@ export function PreparationCenter({
                 </button>
               ))}
             </div>
-            <p className="prep-muted text-sm my-3">
-              通用学习建议，可按自己的节奏编辑；阶段区间属于个人计划。
-            </p>
+            <p className="prep-muted text-sm my-3">按自己的节奏调整阶段与任务。</p>
             {!state.stages.length && (
               <button
                 className="button-primary"
@@ -1388,7 +1385,7 @@ export function PreparationCenter({
                   />
                 </label>
                 <label>
-                  来源（用户自报）
+                  成绩来源
                   <input
                     name="source"
                     required
@@ -1631,8 +1628,7 @@ function ScoreTrend({
   const comparable = assessments.filter((item) => comparableScores(item, assessment)),
     first = Date.parse(comparable[0]?.date ?? assessment.date),
     last = Date.parse(comparable.at(-1)?.date ?? assessment.date);
-  if (comparable.length < 2)
-    return <p className="prep-muted">同一评分体系还需至少两次记录才能展示趋势。</p>;
+  if (comparable.length < 2) return <p className="prep-muted">添加两次同类成绩后查看趋势。</p>;
   const maximum = assessment.scores.reduce((sum, score) => sum + score.maximum, 0);
   const points = comparable.map((item) => ({
     item,

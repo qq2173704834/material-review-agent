@@ -40,7 +40,7 @@ export function SupplementSourceRemove({
       }
       router.refresh();
     } catch {
-      setError("暂时无法连接本地服务，请确认服务仍在运行后重试。");
+      setError("暂时无法连接服务，请确认服务仍在运行后重试。");
     } finally {
       setIsRemoving(false);
     }

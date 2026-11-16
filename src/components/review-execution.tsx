@@ -265,7 +265,7 @@ export function ReviewExecutionPanel({
         ],
       });
     } catch {
-      setError("本地服务暂时不可用，输入和处理状态已保留，请重试。");
+      setError("服务暂时不可用，输入和处理状态已保留，请重试。");
     }
   }
 
@@ -298,7 +298,7 @@ export function ReviewExecutionPanel({
         items.some((item) => item.id === todo.id) ? items : [todo, ...items],
       );
     } catch {
-      setError("本地服务暂时不可用，输入和处理状态已保留，请重试。");
+      setError("服务暂时不可用，输入和处理状态已保留，请重试。");
     }
   }
 
@@ -325,7 +325,7 @@ export function ReviewExecutionPanel({
       const todo = payload.remediationTask as RemediationTask;
       setRemediationTasks((items) => items.map((item) => (item.id === id ? todo : item)));
     } catch {
-      setError("本地服务暂时不可用，输入和处理状态已保留，请重试。");
+      setError("服务暂时不可用，输入和处理状态已保留，请重试。");
     }
   }
 
@@ -552,7 +552,7 @@ export function ReviewExecutionPanel({
         reportFailure(
           caught instanceof Error && !(caught instanceof TypeError)
             ? caught.message
-            : "暂时无法连接本地服务，请稍后重试，已保存内容仍保留。",
+            : "暂时无法连接服务，请稍后重试，已保存内容仍保留。",
         );
       }
     } finally {

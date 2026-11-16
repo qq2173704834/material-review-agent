@@ -348,9 +348,7 @@ export function CampusHub({
             notice.id === event.sourceId &&
             (notice.withdrawn || notice.digest !== event.sourceDigest),
         ) && (
-          <p className="mt-3 text-sm text-amber-700">
-            来源通知有变化，请重新核对安排；原填写内容仍保留在编辑中。
-          </p>
+          <p className="mt-3 text-sm text-amber-700">通知已更新，请核对安排。你的编辑已保留。</p>
         )}
       {(event.start || event.end || event.location) && (
         <p className="mt-3 text-sm text-muted-foreground">
@@ -458,15 +456,12 @@ export function CampusHub({
       <BrowsePosition identity={`campus-${mode}`} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-primary">CAMPUS & DEADLINES</p>
           <h1 className="mt-2 flex items-center gap-2 text-2xl font-semibold">
             <GraduationCap className="size-7" />
             {mode === "schedule" ? "我的日程" : school?.name || "校园通知"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "schedule"
-              ? "考试、报名与作业，按时间安排好每一件事。"
-              : "关注本校发布的消息，把重要安排加入自己的日程。"}
+            {mode === "schedule" ? "考试、学习与作业，一目了然。" : "查看本校通知，收藏重要安排。"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

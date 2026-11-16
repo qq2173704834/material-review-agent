@@ -160,7 +160,6 @@ export function LearningPreferences({
       >
         <div className="mb-4">
           <h2 className="font-semibold">学习偏好</h2>
-          <p className="mt-1 text-sm text-muted-foreground">选择适合你的推荐与会话方式。</p>
         </div>
         <div className="preference-options">
           <label>
@@ -181,7 +180,7 @@ export function LearningPreferences({
               checked={draft.retainChat}
               onChange={(event) => setDraft({ ...draft, retainChat: event.target.checked })}
             />
-            保存本站助手会话历史
+            保存会话历史
           </label>
         </div>
         <details className="mt-4 text-sm" id="assistant-privacy" open>
@@ -196,9 +195,12 @@ export function LearningPreferences({
             />
             使用AI生成回答
           </label>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">
-            开启后，你的问题、选定考试范围及相关公开资料将发送至模型服务，不自动发送私人材料。关闭后仅检索本站资料。关闭会话保存不影响服务商的处理记录，已有会话可在助手中单独删除。
-          </p>
+          <details className="mt-2 text-xs leading-6 text-muted-foreground">
+            <summary>隐私说明</summary>
+            <p>
+              开启后，问题、考试范围和相关公开资料会发送至模型服务，私人材料不会自动发送。关闭后仅搜索本站资料。会话可在助手中删除；关闭保存不影响服务商记录。
+            </p>
+          </details>
         </details>
         <div className="preference-footer">
           <p role="status" aria-live="polite">

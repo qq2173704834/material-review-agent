@@ -395,7 +395,7 @@ test("字体本地加载、多页面缩放与实际截图，失败时系统字�
   await fallbackPage.route("**/fonts/**", (route) => route.abort());
   await fallbackPage.goto("/learn");
   await fallbackPage.evaluate(() => document.fonts.ready);
-  await expect(fallbackPage.getByRole("heading", { name: "学习资源与备考资讯" })).toBeVisible();
+  await expect(fallbackPage.getByRole("heading", { name: "学习资源" })).toBeVisible();
   expect(await fallbackPage.locator(".resource-card").count()).toBeGreaterThan(0);
   await fallback.close();
   const publicContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
