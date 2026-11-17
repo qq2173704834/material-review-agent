@@ -295,7 +295,7 @@ function compareRule(
     if (records.every((record) => record.state === "accessible"))
       return {
         verdict: "passed",
-        reason: "关联链接在记录时间均可公开访问；不代表其内容符合其他要求或未来持续可用。",
+        reason: "已完成本次链接可访问性检查，关联链接均可公开访问。",
         recommendation: "",
         evidence,
       };

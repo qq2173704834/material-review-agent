@@ -106,26 +106,23 @@ export function examProfile(id: ExamCategoryId): {
             : group === "国际财经"
               ? "专业认证"
               : "考试/测试";
-  let audience =
-    "报考条件与成绩/证书有效期请以当期官方公告为准；是否评奖加分以本校当学年细则为准。";
+  let audience = "查看报考条件、成绩与证书有效期，以及本校评奖计分规则。";
   if (
     group === "工程资格" ||
     group === "医学" ||
     ["equivalent-master", "patent", "cpa", "law"].includes(id)
   )
-    audience =
-      "可能涉及专业、学历、应届身份或相关工作/学位年限；目录用于关注和职业规划，不表示在校生均可报考。";
+    audience = "适合关注专业资格与职业规划；报名条件涉及专业、学历、应届身份及相关年限。";
   if (group === "专业外语" || id === "tem4" || id === "tem8")
     audience =
       "专业四/八级与社会语言能力测试不同；通常由院校组织，请核对本校专业、年级和补考限制。";
   if (id === "teacher") audience = "在校可报年级按地区公告核对；笔面试通过后仍需教师资格认定。";
-  if (id === "ncre")
-    audience = "涵盖一至四级及不同科目；按考点核对科目与获证条件，等级不等同英语四级。";
+  if (id === "ncre") audience = "涵盖一至四级及不同科目，可查看考点提供的科目与获证条件。";
   return {
     aliases: aliases[id] ?? "",
     kind,
     audience,
-    status: "具体考期与举办状态以最新主办方公告为准",
+    status: "查看最新考期与举办安排",
   };
 }
 export function matchesExamSearch(id: ExamCategoryId, query: string): boolean {

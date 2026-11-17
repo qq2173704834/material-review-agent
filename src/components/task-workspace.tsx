@@ -479,7 +479,7 @@ export function TaskWorkspace({
             )}
             <p className="mt-4 text-xs leading-6 text-muted-foreground">
               {mode === "mock"
-                ? "模拟演示：不调用真实模型，语义内容未核验。"
+                ? "演示模式 · 文件规格检查"
                 : mode === "live"
                   ? "检查时，相关要求与材料片段将发送至AI服务。"
                   : "AI服务暂不可用，请稍后重试或联系管理员。"}
@@ -505,7 +505,7 @@ export function TaskWorkspace({
                   historyPush(params);
                 }}
               >
-                明确使用模拟演示（不调用真实模型）
+                切换到演示模式
               </button>
             )}
             {activities.review && (

@@ -39,8 +39,7 @@ export function catalogLifecycle(
       entry.content.catalogEffectiveAt <= day,
   );
   const states = new Set(evidence.map((entry) => entry.content.catalogStatus));
-  if (!evidence.length)
-    return { label: "举办状态待逐项核对，以当期官方通知为准", blocked: false, evidence };
+  if (!evidence.length) return { label: "举办状态待更新", blocked: false, evidence };
   if (states.size > 1)
     return { label: "目录状态依据存在冲突，待管理员核实", blocked: true, evidence };
   const status = evidence[0]!.content.catalogStatus!;

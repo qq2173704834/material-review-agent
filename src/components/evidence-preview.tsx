@@ -90,9 +90,7 @@ export function EvidencePane({
         <p role="status">正在读取对应版本…</p>
       ) : (
         <>
-          <p className="text-xs text-muted-foreground">
-            解析文本预览，不代表原始排版。{preview.parseMessage}
-          </p>
+          <p className="text-xs text-muted-foreground">提取的材料文字。{preview.parseMessage}</p>
           <div className="my-3 flex flex-wrap gap-3">
             <a href={`${endpoint}?file=1`} target="_blank" rel="noreferrer" className="underline">
               打开原件 v{evidence.materialVersion}

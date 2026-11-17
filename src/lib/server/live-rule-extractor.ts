@@ -151,7 +151,7 @@ paragraphIndex须是提供的段落编号；quotedText须为该段落中逐字�
   if (!rules.length)
     warnings.push({
       code: "unsupported_input",
-      message: "模型没有从已提供来源提取到规则；这不代表来源没有要求，请核对原文。",
+      message: "暂未提取到检查要求，请查看原文并补充需要检查的内容。",
     });
   return { rules, warnings, modelCalls };
 }

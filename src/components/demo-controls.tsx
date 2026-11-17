@@ -85,8 +85,8 @@ export function DemoControls({
       <p className="text-xs text-muted-foreground">
         合成演示数据 ·
         {forceMock
-          ? "明确使用模拟模式，不调用真实模型。创建独立示例并实际运行本地检查，不覆盖已有任务。"
-          : "创建独立案例，可从初始问题走到修订复检；使用当前配置的模拟或真实模型，并明确显示模式。"}
+          ? "演示模式 · 新建独立案例，体验检查与修订复检。"
+          : "新建独立案例，体验发现问题、修改材料与重新检查。"}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         {domain && taskId ? (

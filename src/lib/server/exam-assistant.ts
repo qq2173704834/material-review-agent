@@ -366,10 +366,7 @@ export async function askExamAssistant(
   })();
   let modelCall: ModelCall | null = null;
   try {
-    const warning =
-      mode === "mock"
-        ? "模拟助手：未调用真实模型。以下仅展示已检索来源；学习生成能力需要真实模型。"
-        : "AI生成建议，考试规定请以适用公告为准。";
+    const warning = mode === "mock" ? "演示模式 · 知识资料检索" : "AI考试与学习建议";
     let answer: AssistantAnswer;
     const scopeUnknown = !input.useContext && !/20\d{2}/.test(input.question);
     const currentScopes = sources
@@ -431,8 +428,7 @@ export async function askExamAssistant(
       sources.every((source) => source.sourceType === "非官方参考")
     ) {
       answer = {
-        answer:
-          "目前仅找到非官方参考资料，政策仍待官方核实。下列摘录可用于了解考试，不据此确定报名日期、个人报考资格或注册执业条件；请核对发布者、适用年份和地区。",
+        answer: "找到以下第三方资料。请补充考试年份、地区或对应公告，继续查询报名时间和报考条件。",
         kind: "需补充信息",
         mode: "retrieval",
         citations: sources.slice(0, 3).map(({ text, historical, ...source }) => {
@@ -440,17 +436,17 @@ export async function askExamAssistant(
           return { ...source, quote: text.slice(0, 240) };
         }),
         conversationId,
-        warning: "非官方参考；本次未调用模型，不据此更改目录或资格结论。",
+        warning: "第三方资料",
       };
     } else if (lacksDatedExamNotice(input.question, input.learning, sources)) {
       answer = {
         answer:
-          "尚未检索到对应考期的已审核日程公告，无法确认报名或考试的具体日期。通用考试介绍、历史时间和其他考期不能作为本次安排；请查询考试中心官方入口或补充当期公告。",
+          "暂未找到对应考期的日程公告。请补充考期或当期公告，也可从考试中心进入报名网站查询。",
         kind: "需补充信息",
         mode: "retrieval",
         citations: [],
         conversationId,
-        warning: "缺少对应考期日程原文，本次未调用模型，不推断具体日期。",
+        warning: "待补充考期公告",
       };
     } else if (
       !input.learning &&

@@ -39,7 +39,7 @@ export default async function Detail({
         />
         {entry.status === "withdrawn" && (
           <p role="status" className="rounded border p-4">
-            该资料已撤回，以下内容仅供历史查阅。
+            该资料已撤回，当前显示归档内容。
           </p>
         )}
         <h1 className="text-3xl font-semibold">{content.title}</h1>

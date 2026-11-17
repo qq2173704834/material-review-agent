@@ -37,7 +37,7 @@ export default async function NewTaskPage({
       {filters.reference && (
         <p className="mb-5 rounded border p-4">
           {school
-            ? `已带入${school.content.title}的原始网页。保存时将重新读取公开原文；目录摘录不作为全文，适用学校和版本仍需核对，不生成全国加分结论。`
+            ? `已带入${school.content.title}的原始网页，保存时读取完整要求。请确认所选学校与通知。`
             : "参考内容不存在、未发布或并非高校细则，请自行选择原始要求。"}
         </p>
       )}

@@ -196,7 +196,7 @@ export async function parsePdfMaterial(
                 : "failed",
           confidence: result.confidence,
           message: hasOcrText
-            ? "已识别整页文字；OCR 分数不代表漏字率，候选列仅按文字间距推断，合并单元格需人工核对；不验证签章真伪。"
+            ? "已提取本页OCR文字；请在原页核对表格合并单元格和签章区域。"
             : "未识别到可用 OCR 文字；请核对原页或上传更清晰版本。",
         });
       } catch {

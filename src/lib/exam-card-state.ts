@@ -20,7 +20,7 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
       kind: "paused",
       label: content.disposition,
       tone: "gray",
-      detail: "请以最新官方处置公告为准",
+      detail: "查看最新考试安排",
       current: false,
     };
   if (content.stage === "成绩") {
@@ -52,7 +52,7 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
       tone: dateOnly ? "amber" : "green",
       detail: dateOnly
         ? "处于公布的报名日期范围，请核对具体时刻和通道"
-        : "处于公告报名时段，资格及通道状态以官方为准",
+        : "已进入公告报名时段，可查看报名入口和报考条件",
       current: true,
     };
   }
@@ -71,7 +71,7 @@ export function examCardState(content: ExamSchedule, now = Date.now()): ExamCard
         ? "考试进行中"
         : "今日考试",
       tone: "blue",
-      detail: "今日有已公布考试安排，具体场次以准考证为准",
+      detail: "今日考试，请查看准考证上的具体场次",
       current: true,
     };
   if (Number.isFinite(startTime) && startTime > now)

@@ -86,9 +86,7 @@ export default async function GoalPage({
           </section>
         ) : (
           <section className="rounded border p-5">
-            <p>
-              尚无可用的关联公告。请先从考试中心找到适用地区、考期和阶段的已审核公告，再编辑目标进行关联；不会用通用目录替代资格依据。
-            </p>
+            <p>尚无关联公告。请从考试中心选择对应地区和考期的公告，再编辑目标进行关联。</p>
             <Link href="/exams" className="underline">
               选择官方考试公告
             </Link>
@@ -130,7 +128,7 @@ export default async function GoalPage({
                     (count, call) => count + (call.outputTokens ?? 0),
                     0,
                   ) ?? 0}
-                  。未返回Token时合计仅为已知部分，费用未知，以服务商账单为准。
+                  。用量记录包含服务商已返回的数据。
                 </p>
               </details>
               <p>

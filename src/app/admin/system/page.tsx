@@ -30,7 +30,7 @@ const initializedItems = [
 const capabilityLimits = [
   "复杂扫描件：多栏阅读顺序、合并表格与手写识别仍需增强和样本验收；不判断签章真伪。",
   "复杂语义：隐含条件冲突、字段别名和多主体对应仍需人工核对。",
-  "考试覆盖：来源逐站适配并经审核发布，未收录不代表没有考试。",
+  "考试覆盖：查看已接入来源、采集状态与待审核公告。",
   "运行与上线：当前为本机单实例；公网部署、HTTPS、外置灾备和多实例运行尚未完成上线验收。",
   "效果与体验：独立业务效果评估、首次学生走查与完整辅助技术人工审计仍待完成。",
 ];
@@ -127,9 +127,7 @@ export default async function SetupPage(): Promise<ReactElement> {
         </p>
         <pre className="mt-4 overflow-x-auto rounded-md bg-muted p-4 text-xs leading-7">{`AI_MODE=live\nAI_PROVIDER=deepseek\nAI_BASE_URL=https://api.deepseek.com\nAI_MODEL=deepseek-flash\nAI_API_KEY=在本地填入你的密钥`}</pre>
         <p className="mt-3 text-xs leading-6 text-muted-foreground">
-          地址填写 API 根地址，不要填写 /chat/completions；模型 ID
-          以服务商控制台为准。默认每个审查最多 12
-          个模型步骤、每步最多一次重试；未知费用以服务商账单为准。
+          填写API根地址及服务商提供的模型ID。默认每个审查最多12个模型步骤，每步最多一次重试；费用可在服务商控制台查看。
         </p>
         <ModelConnectionTest
           canTest={runtimeStatus.mode === "live" && runtimeStatus.hasModelConfiguration}

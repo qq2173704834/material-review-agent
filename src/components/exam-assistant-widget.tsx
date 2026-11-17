@@ -216,7 +216,7 @@ function AssistantPanel(): ReactElement {
               {historyLoading && <p role="status">正在读取会话…</p>}
               <p className="text-xs leading-6 text-muted-foreground">
                 {state?.mode === "mock"
-                  ? "模拟模式，未调用真实模型"
+                  ? "演示模式 · 资料检索"
                   : "问考试、找资料，也可以一起制定学习计划。"}
               </p>
               {state && !state.policy.enabled && (

@@ -75,7 +75,7 @@ export default async function TasksPage(): Promise<ReactElement> {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">我的审查任务</h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            提交考试材料前，检查缺项、格式和信息一致性。自查供准备材料参考，最终审核以考试组织方为准。
+            提交考试材料前，检查缺项、格式和信息一致性，按问题建议修改后重新检查。
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">

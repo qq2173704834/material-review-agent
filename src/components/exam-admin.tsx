@@ -86,7 +86,7 @@ export function ExamAdmin(): ReactElement {
       <header>
         <h1 className="text-3xl font-semibold">考试内容管理</h1>
         <p className="mt-3">
-          官方采集先进入草稿。发布前核对标题、考期、适用地区与日期引用；未知日期留空，摘要不替代官方规定。
+          官方采集先进入草稿。发布前核对标题、考期、适用地区与日期引用，未知日期留空。
         </p>
       </header>
       <p role="status" className="rounded border p-3">

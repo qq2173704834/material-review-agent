@@ -54,7 +54,7 @@ export async function POST(
         parts.push({ text: content.slice(0, 40000), location: `网页正文 · ${finalUrl}` });
       } catch {
         incomplete = true;
-        message += "；正文读取失败或超限，访问状态不代表内容已核验。";
+        message += "；正文尚未读取，请打开原文或导入文件。";
       }
     }
   } catch (error) {
@@ -154,7 +154,7 @@ export async function POST(
       segments,
       pageCount: null,
       sheetNames: [],
-      parseMessage: `链接状态：${state}；${message}；仅反映${fetchedAt}的访问，不保证后续可用。`,
+      parseMessage: `链接状态：${state}；${message}；检查时间：${fetchedAt}。`,
       createdAt: fetchedAt,
     });
     return NextResponse.json({ material, state, status }, { status: 201 });

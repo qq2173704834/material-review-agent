@@ -307,10 +307,10 @@ test("明确切换模拟不会调用模型或复用真实结果，切回后重�
     expect(live.results[0]?.method).toBe("model");
     await page.goto(`/tasks/${task.id}?view=results`);
     await expect(page.getByLabel("自查结论")).toContainText("有材料需要修改");
-    await page.getByRole("button", { name: "明确使用模拟演示（不调用真实模型）" }).click();
+    await page.getByRole("button", { name: "切换到演示模式" }).click();
     await expect(page.getByTestId("task-primary-action")).toHaveText("重新检查");
     await page.getByTestId("task-primary-action").click();
-    await expect(page.getByText("模拟演示，不代表真实内容核验。", { exact: true })).toBeVisible();
+    await expect(page.getByText("演示模式", { exact: true })).toBeVisible();
     const { executions } = await (
       await request.get(`/api/tasks/${task.id}/checks?mode=mock`)
     ).json();

@@ -20,7 +20,7 @@
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -45,7 +45,7 @@
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -65,12 +65,12 @@
         "author": "Duolingo",
         "url": "https://englishtest.duolingo.com/",
         "text": "Duolingo English Test提供在线英语测试及准备信息。院校是否接受以及要求分数因项目而异，不把考试介绍当作所有学校认可。",
-        "summary": "Duolingo English Test提供在线英语测试及准备信息。院校是否接受以及要求分数因项目而异，不把考试介绍当作所有学校认可。",
+        "summary": "Duolingo English Test在线英语测试介绍、备考资料及院校查询入口。",
         "language": "中文",
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -95,7 +95,7 @@
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -115,12 +115,12 @@
         "author": "Cambridge English",
         "url": "https://www.cambridgeenglish.org/exams-and-tests/advanced/",
         "text": "C1 Advanced是剑桥英语考试体系中的高级英语资格。此条接入C1产品说明；C2 Proficiency尚待单独核对，不能把两个级别合成一份证书。",
-        "summary": "C1 Advanced是剑桥英语考试体系中的高级英语资格。此条接入C1产品说明；C2 Proficiency尚待单独核对，不能把两个级别合成一份证书。",
+        "summary": "C1 Advanced是剑桥英语考试体系中的高级英语资格，提供考试介绍与备考入口。",
         "language": "中文",
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -140,12 +140,12 @@
         "author": "ACCA",
         "url": "https://www.accaglobal.com/gb/en/qualifications.html",
         "text": "ACCA官网提供会计专业资格与学习路径信息。考试阶段、学历豁免与会员资格分别管理，完成部分考试不等于取得会员身份。",
-        "summary": "ACCA官网提供会计专业资格与学习路径信息。考试阶段、学历豁免与会员资格分别管理，完成部分考试不等于取得会员身份。",
+        "summary": "ACCA会计专业资格与学习路径，包含考试阶段、学历豁免和会员申请信息。",
         "language": "中文",
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -165,12 +165,12 @@
         "author": "CFA Institute",
         "url": "https://www.cfainstitute.org/programs/cfa-program",
         "text": "CFA Program提供分级投资分析与职业道德学习及考试信息。考试通过与取得特许资格并不相同，学生需结合自己的学历和经验安排核对条件。",
-        "summary": "CFA Program提供分级投资分析与职业道德学习及考试信息。考试通过与取得特许资格并不相同，学生需结合自己的学历和经验安排核对条件。",
+        "summary": "CFA Program提供分级投资分析、职业道德学习、考试与特许资格申请信息。",
         "language": "中文",
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -190,12 +190,12 @@
         "author": "GARP",
         "url": "https://www.garp.org/frm",
         "text": "FRM是GARP的金融风险管理认证项目，官网提供考试与准备信息。考试部分与认证所需经验分别核对，不认为在校生通过考试就已取得全部资格。",
-        "summary": "FRM是GARP的金融风险管理认证项目，官网提供考试与准备信息。考试部分与认证所需经验分别核对，不认为在校生通过考试就已取得全部资格。",
+        "summary": "FRM是GARP的金融风险管理认证项目，提供考试准备与认证申请条件。",
         "language": "中文",
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -215,12 +215,12 @@
         "author": "Alibaba Cloud",
         "url": "https://edu.alibabacloud.com/certification",
         "text": "阿里云学院提供云计算认证及学习入口。ACA与ACP属于不同层次，具体产品、语言和考试方式以相应认证页面为准。",
-        "summary": "阿里云学院提供云计算认证及学习入口。ACA与ACP属于不同层次，具体产品、语言和考试方式以相应认证页面为准。",
+        "summary": "阿里云学院云计算认证与学习入口，包含ACA和ACP等不同层次认证。",
         "language": "中文",
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -240,12 +240,12 @@
         "author": "Amazon Web Services",
         "url": "https://aws.amazon.com/certification/",
         "text": "AWS认证覆盖基础、助理、专业及专项等学习路径。应按具体认证产品选择准备资源，不为预约型考试编造全国统一报名截止。",
-        "summary": "AWS认证覆盖基础、助理、专业及专项等学习路径。应按具体认证产品选择准备资源，不为预约型考试编造全国统一报名截止。",
+        "summary": "AWS认证覆盖基础、助理、专业及专项等学习路径，提供备考与考试预约入口。",
         "language": "中文",
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }
@@ -265,12 +265,12 @@
         "author": "Microsoft Learn",
         "url": "https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/",
         "text": "Azure Fundamentals为微软Azure基础认证，页面介绍云概念、Azure架构服务以及管理治理相关技能。按具体考试版本准备，不能与其他微软认证混为一类。",
-        "summary": "Azure Fundamentals为微软Azure基础认证，页面介绍云概念、Azure架构服务以及管理治理相关技能。按具体考试版本准备，不能与其他微软认证混为一类。",
+        "summary": "Azure Fundamentals为微软Azure基础认证，介绍云概念、Azure架构服务及管理治理技能。",
         "language": "中文",
         "fee": "未知",
         "permission": "仅链接",
         "checkedAt": "2026-11-15",
-        "scope": "产品介绍参考；具体地区、考期、费用与资格以原站适用说明为准。",
+        "scope": "认证产品介绍与报名入口。",
         "reviewNote": "2026-11-15读取实际产品页面并核对名称和提供方；仅整理概况，不确认正在报名或具体个人资格。",
         "disposition": "现行"
       }

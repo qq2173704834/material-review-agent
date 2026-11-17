@@ -151,7 +151,7 @@ export async function collectorTick(
         )?.count ?? 0;
     const changes = count
       ? `今日采集生成${count}个新增或变化版本，仍需审核。`
-      : "今日检查尚无新增或变化草稿；失败来源不代表没有新公告。";
+      : "今日检查尚无新增或变化草稿，可查看各来源采集状态。";
     const message =
       (!current.length
         ? "没有启用自动采集来源；今日未执行采集，保留已审核信息。"

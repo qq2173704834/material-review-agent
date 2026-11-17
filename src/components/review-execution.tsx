@@ -730,9 +730,7 @@ export function ReviewExecutionPanel({
                 已通过 {reviewSummary(currentExecution).passed}
               </span>
             </div>
-            {currentExecution.metadata?.mode === "mock" && (
-              <p className="mt-2 text-xs">模拟演示，不代表真实内容核验。</p>
-            )}
+            {currentExecution.metadata?.mode === "mock" && <p className="mt-2 text-xs">演示模式</p>}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
             {currentExecution.status !== "running" ? (

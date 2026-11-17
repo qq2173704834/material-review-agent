@@ -342,8 +342,8 @@ export function RuleReview({
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             {mode === "live"
-              ? "将当前通知发送到配置的真实模型，拆分要求并核对原文引用；草稿仍需关注条件与歧义。"
-              : "当前使用可重复的本地模拟提取，不代表真实模型输出或已完成材料审查。"}
+              ? "AI整理通知要求，可查看和调整每项依据。"
+              : "演示模式 · 从通知中整理检查要求。"}
           </p>
         </div>
         <button

@@ -37,15 +37,15 @@ export function reviewSummary(execution: ReviewExecution): {
                   : "本次自查未发现必须项问题";
   const description =
     execution.validity === "needs_recheck"
-      ? "下方是上次检查结果，不能代表更新后的材料。"
+      ? "下方保留上次结果，请重新检查当前材料。"
       : execution.status !== "completed"
-        ? "未完成的检查不会计为通过。"
+        ? "查看已完成项目，继续检查其余内容。"
         : failed
           ? "按问题建议修改材料，然后重新检查。"
           : pending
             ? "请补充信息或核对未能检查的内容。"
             : execution.metadata?.mode !== "live"
-              ? "模拟演示不代表真实内容审查通过。"
-              : "结果仅供自查参考，最终以考试组织方审核为准。";
+              ? "文件规格检查已完成，可查看每项结论与依据。"
+              : "本次检查已完成，可查看每项结论与依据。";
   return { title, description, failed, pending, passed };
 }

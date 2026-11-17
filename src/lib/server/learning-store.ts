@@ -3,6 +3,7 @@ import { EXAM_PORTALS } from "@/domain/exam-portals";
 import officialKnowledge from "@/domain/official-knowledge.json";
 import supplementalKnowledge from "@/domain/supplemental-knowledge.json";
 import studyCollection from "@/domain/study-collection.json";
+import learningDisplayCopy from "@/domain/learning-display-copy.json";
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { platformDb, securityEvent } from "./platform-db";
@@ -22,12 +23,23 @@ interface ContentRow {
   payload: string;
 }
 function contentRow(row: ContentRow): ContentEntry {
+  const content = learningContentSchema.parse(JSON.parse(row.payload));
+  // Apply current editorial copy to previously seeded descriptions without rewriting history.
+  for (const [before, after] of learningDisplayCopy) {
+    if (before === undefined || after === undefined) continue;
+    content.scope = content.scope.replaceAll(before, after);
+    content.summary = content.summary.replaceAll(before, after);
+    // Only these project-authored sentences may occur in a resource body.
+    if (before.startsWith("内容属性：") || before.startsWith("此条为公开官方入口导航")) {
+      content.text = content.text.replaceAll(before, after);
+    }
+  }
   return {
     id: row.id,
     version: row.version,
     status: row.status,
     updatedAt: row.updated_at,
-    content: learningContentSchema.parse(JSON.parse(row.payload)),
+    content,
   };
 }
 export function learningEntries(admin = false): ContentEntry[] {
@@ -258,8 +270,8 @@ export function seedPortalReferences(): void {
       kind: "resource",
       author: portal.name,
       url: portal.url,
-      text: "此条为公开官方入口导航，供查询考试介绍、考纲及官方通知。未导入具体课程、完整教材或当期报名安排，请进入原站核对。",
-      summary: "官方查询导航；不代表已读取全部资料或正在报名。",
+      text: "进入官方站点，查看考试介绍、考纲及相关通知。",
+      summary: "考试介绍、考纲与官方资料入口。",
       checkedAt: portal.checkedAt,
       scope: "按原站最新公告核对具体考期、科目、报考对象和费用。",
       reviewNote: "公开官方考试目录与入口可达性核验，仅收录入口链接与说明，不转载课程资料。",
@@ -293,7 +305,7 @@ export function seedPortalReferences(): void {
     author: "上海师范大学商学院",
     url: "https://sfb.shnu.edu.cn/84/7d/c15123a820349/page.htm",
     text: "大学英语六级、法语专业八级合格得5分。中级口译证书加5分、高级口译证书加10分，通过笔试未通过口试者减半加分。",
-    summary: "已读高校参考，不能套用其他学校或当前学年。",
+    summary: "上海师范大学商学院2024年11月综合测评细则摘录。",
     language: "中文",
     fee: "免费",
     permission: "仅链接",

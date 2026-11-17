@@ -47,7 +47,7 @@ export function createReviewReport(
     `- 主通知来源：${sourceSummary(task.noticeHistory.find((source) => source.version === execution.sourceVersion) ?? task.noticeSource).slice(2)}`,
     `- 规则来源快照：${ruleSet.sourceVersions.map(ruleSourceLabel).join("；")}`,
     `- 规则集：${execution.ruleSetId}`,
-    ...(execution.metadata?.mode === "mock" ? ["- 模拟演示，不代表真实内容核验。"] : []),
+    ...(execution.metadata?.mode === "mock" ? ["- 检查模式：演示模式"] : []),
     `- 执行状态：${{ running: "执行中", completed: "已完成", cancelled: "已取消", failed: "执行中断" }[execution.status]}`,
     `- 开始时间：${execution.createdAt}`,
     `- 结束时间：${execution.completedAt || "尚未结束"}`,
@@ -64,7 +64,7 @@ export function createReviewReport(
     ),
     "",
     `必需项未通过：${execution.results.filter((result) => result.strength === "required" && result.verdict === "failed").length}；建议/可选项未满足：${execution.results.filter((result) => result.strength !== "required" && result.verdict === "failed").length}。`,
-    "未执行、证据不足和解析失败的项目不计为通过。报告仅反映本次预审，不构成官方审核结论。",
+    "待确认、无法检查和未执行的项目分别列出，便于继续处理。",
     "",
     "## 材料快照",
     "",
@@ -138,7 +138,7 @@ export function createReviewReport(
     if (resolution)
       lines.push(
         `- 人工复核意见：${{ confirmed: "认为符合", rejected: "认为不符合", deferred: "暂不确认" }[resolution.decision]} · ${plain(resolution.note) || "未填写依据"} · ${resolution.updatedAt}`,
-        "- 人工意见独立于上方系统判定，不代表自动复检结果。",
+        "- 人工复核意见与系统检查记录分别保存。",
       );
     lines.push("");
   }
@@ -189,7 +189,7 @@ export function createRemediationReport(
     `- 规则来源快照：${ruleSet.sourceVersions.map(ruleSourceLabel).join("；")}`,
     `- 清单项目：${actionable.length}`,
     "",
-    "此清单只汇总需要处理或人工确认的项目，不记录整改完成状态，也不表示复检通过。",
+    "按清单修改材料或补充信息，再启动重新检查。",
     "",
   ];
   const sourcesAddedAfterExecution = task.supplementalSources.filter(
@@ -223,7 +223,7 @@ export function createRemediationReport(
         execution.humanResolutions?.filter((item) => item.ruleId === result.ruleId) ?? []
       ).flatMap((resolution) => [
         `- 人工复核意见：${{ confirmed: "认为符合", rejected: "认为不符合", deferred: "暂不确认" }[resolution.decision]} · ${plain(resolution.note) || "未填写依据"} · ${resolution.updatedAt}`,
-        "- 人工意见独立于系统判定，不代表复检通过。",
+        "- 人工复核意见与系统检查记录分别保存。",
       ]),
       "",
     );
@@ -245,7 +245,7 @@ function createSimpleReport(
     summary.description,
     `检查时间：${new Date(execution.completedAt || execution.createdAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })}`,
     `需修改 ${summary.failed} 项 · 待确认 / 未完成 ${summary.pending} 项 · 已通过 ${summary.passed} 项`,
-    ...(execution.metadata?.mode === "mock" ? ["模拟演示，不代表真实内容核验。"] : []),
+    ...(execution.metadata?.mode === "mock" ? ["检查模式：演示模式"] : []),
     ...(execution.validity === "needs_recheck"
       ? ["材料或要求已更新，需要重新检查。以下保留上次结果。"]
       : []),
@@ -331,7 +331,6 @@ function createSimpleReport(
   }
   if (onlyActionable && !summary.failed && !summary.pending)
     lines.push("本次没有明确的必须项失败或待确认事项。", "");
-  if (!execution.results.length) lines.push("尚无逐项检查结果，不能据此判断材料合格。", "");
-  lines.push("结果仅供材料自查参考，最终以考试组织方审核为准。");
+  if (!execution.results.length) lines.push("尚无逐项检查结果，请先启动材料检查。", "");
   return lines.join("\n");
 }

@@ -113,8 +113,7 @@ export const EXAM_PORTALS = [
     status: "accessible",
     title: "GMAT - 中国教育考试网",
     collectionMode: "query",
-    collectionNote:
-      "本入口仍展示2020年安排及历史北京停考通知；不代表当前停办或取消，当前安排须到GMAT官方核对。",
+    collectionNote: "本入口展示2020年历史通知，当前考位与安排可到GMAT官方报名入口查询。",
   },
   {
     category: "bec",

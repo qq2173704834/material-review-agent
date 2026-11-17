@@ -110,7 +110,7 @@ export async function parseVideoMaterial(
         });
       } catch {
         blocks.push({
-          text: "该时间点画面未能读取，不代表视频没有对应内容。",
+          text: "该时间点画面读取失败，请在原视频查看对应位置。",
           location: `视频 ${seconds.toFixed(2)} 秒 · 未读取`,
         });
       }
