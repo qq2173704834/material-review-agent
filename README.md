@@ -1,129 +1,45 @@
-# 材料预审工作台
+# 考试与学习
 
-由当前通知或项目要求驱动的通用材料预审 Agent：提取要求、匹配材料、逐项核验，提供可追溯的问题说明、整改建议与复检报告。
+AI先锋团队的大学生备考Web应用，提供考试信息、校园通知、个人目标与日程、学习资源、AI助手和考试材料自检。
 
-当前为 **v0.1.0 本地审查闭环开发版**。原始 114 条功能已实现；本轮补齐原剩余 39 条，包括链接/安全 ZIP/视频/仓库、文档结构、复杂条件澄清、模板与范围工具、背景建议、追问、分工、提交包及可选本地授权。逐项证据与边界见 [需求状态](docs/requirements-status.md) 和 [剩余需求验收](docs/acceptance-remaining-39.md)。独立人工业务效果、复杂打印及全面辅助技术验收继续单独登记。
+## 本地启动
 
-新增**学生考试信息与账号模块**：用户名+密码注册登录、一次恢复码、考试类别/全国地区筛选、官方公告审核发布、收藏工作台与公告关联材料预审。面向升学、语言、计算机、教资/职业资格及就业招录，目录29类；已核验31省官方机构链接，其中18个入口可达。可达不代表公告已全部采集，真实覆盖、失败和核查时间在页面明确显示。
-
-首次使用从 `/register` 注册并保存恢复码，登录默认到 `/exams`；旧预审入口仍为 `/`。普通用户不能进入内容后台；管理员需在本机显式授权。旧任务归属保持隔离，需要明确迁移，绝不会自动交给首注册者。详见 [本地操作、采集和迁移](docs/platform-operation.md) 与 [新增48条验收](docs/exam-platform-acceptance.md)。
-
-本机工作目录已按用户要求迁移到 `E:\Projects\material-review-agent`，后续开发、Git、文档与测试均在此目录进行。
-
-## 安装和运行
-
-需要 Node.js 24、pnpm 11.25.0、Git。依赖版本由 pnpm-lock.yaml 锁定。
+需要Node.js 24与pnpm 11.25.0。复制.env.example为.env.local，安装锁定依赖后启动：
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-访问 http://127.0.0.1:3000 。开发与生产服务默认仅绑定本机。任务、原件和解析内容保存在项目 `.local-data/`，SQLite 自动初始化和迁移；模拟模式无需模型密钥。
+打开http://127.0.0.1:3000，注册用户名和密码并保存恢复码。模拟模式无需模型密钥。生产运行执行pnpm build，然后pnpm start。
 
-首次配置时复制 `.env.example` 为 `.env.local`；已有配置时直接编辑，避免覆盖密钥。模板默认 `AI_MODE=mock`，真实调用使用 `AI_MODE=live`。DeepSeek 示例：
+真实AI配置见docs/model-setup.md。源码使用环境模板，不包含真实密钥、账号数据库和用户上传文件。SQLite在首次运行时创建。
 
-```dotenv
-AI_MODE=live
-AI_PROVIDER=deepseek
-AI_BASE_URL=https://api.deepseek.com
-AI_MODEL=deepseek-flash
-AI_API_KEY=在本机填写你的密钥
-AI_TIMEOUT_MS=60000
-AI_MAX_CALLS_PER_REVIEW=12
-```
+## 使用入口
 
-模型名与额度以服务商控制台为准。填写 API 根地址，不填写 `/chat/completions`；重启服务后访问 `/setup`，点击“测试模型连接”。测试只发送合成请求，生成规则发送通知，运行语义审查发送相关材料片段；密钥只在服务端使用。详见 [模型配置与联调](docs/model-setup.md)。
+首页查看考试信息；考试中心查找公告并保存目标；我的备考管理目标、日程和材料自检；校园通知选择学校；学习资源收藏资料；右下角AI助手提供咨询。
 
-## 本地操作流程
+材料自检：新建材料自查，提供通知要求和文件，启动检查，查看问题与依据；修改文件后重新上传并重新检查，保存新的结果报告。
 
-1. 新建任务，粘贴通知，或导入公开网页、PDF、DOCX、TXT 要求文件，并填写项目背景。
-2. 生成规则草稿，查看必须/建议/可选、条件、真实模型标识和原文位置。生成后会自动更新检查入口。
-3. 在任务详情添加补充 PDF、DOCX、TXT 或公开网页来源，或从网页发现并逐个导入直接关联附件；所有当前来源参与规则提取。可上传 PDF、DOCX、TXT、XLSX、CSV、JPG、PNG、MP4、WebM、MOV 及安全 ZIP 材料，也可添加公开链接或 GitHub 仓库，单文件最多 20 MiB，每批最多 10 个/50 MiB；可核对内容候选、纠正类型和人工匹配。
-4. 运行检查，查看逐项进度、结论、要求引用与材料证据；可取消。真实模式用模型匹配具体材料，文件格式、大小、数量、PDF 总页数仍由程序比较。
-5. 上传同名修订材料、人工纠正解析文字或更新要求后，旧结果标记待复检。先查看影响范围，默认增量检查，也可全量复检。复用结果保留原执行与时间，不确定项重新执行。
-6. 打开联动工作台，查看对应历史版本原件/文本、双方证据和整改动作；从当前或历史快照导出 Markdown，或打开报告预览并打印/另存为 PDF。
-7. 首页可创建竞赛提交或项目申报演示案例，按实际配置的模型生成规则与检查；应用修订材料后复检，重新创建初始案例不会覆盖旧任务。
+## 技术与目录
 
-确定性工具支持严格数值/单位、文件名与明确字段模板、日期、跨材料字段、同单位预算合计/比例、具有唯一标记的指定范围统计，以及来源明示必填字段/必要章节的模板检查。范围、字段、单位或模板依据不清晰时保留待确认。
+React、Next.js、TypeScript、Tailwind CSS、SQLite、DeepSeek兼容接口、文档解析与OCR。
 
-视频使用实际 ffprobe/ffmpeg 读取规格并最多抽取 6 帧 OCR，位置对应时间戳；不含音轨理解、不承诺全视频覆盖。Windows x64 安装可选工具依赖；其他平台需配置 FFMPEG_PATH 和 FFPROBE_PATH。仓库核对限公开 GitHub 根仓库的 README、依赖和配置模板，保存实际 API 地址与 blob 哈希，不执行仓库代码。ZIP 限嵌套 2 层、100 条目、50 份材料、50 MiB 总展开量，校验路径、CRC 与实际输出量。
+- src/：页面、接口、账号与业务逻辑。
+- public/及data/：界面资源与公开数据快照。
+- tests/：单元、端到端、合成样例及受控模型测试。
+- scripts/：运行、数据维护与工程工具。
+- deploy/：Docker与HTTPS部署模板。
+- docs/：项目介绍、模型配置、操作与测试说明。
 
-材料提示区支持背景建议人工采用、重复/相似提醒、遮盖敏感字段提醒和副本打包。结果工作台提供基于具体快照的追问，整改待办可分派或认领。敏感扫描仅覆盖已解析文字的常见标记，不能证明文件没有敏感信息。
+## 检查与部署
 
-JPG/PNG 与扫描 PDF 使用本地中英 OCR，逐页记录覆盖，最多处理 200 页/20 页 OCR，不保证手写、复杂表格和印章真实性；单页失败可重试，人工文字修订保留旧版本。网页附件限直接 PDF/DOCX/TXT，最多列出 20 个，每份 4 MiB/12 秒；受限网页改为上传或粘贴。
+pnpm test:unit运行单元测试；pnpm test:install安装测试浏览器；生产构建后可运行pnpm test:e2e、pnpm test:model和pnpm test:access。测试方式见tests/README.md。
 
-每条语义规则最多检索 60 块/24,000 字符，含邻近上下文扩展；覆盖不足保留不确定。真实提取来源合计最多 40,000 字符、每来源最多 100 条输出，默认每次审查最多 12 个模型步骤、每步最多两次实际请求，执行总时限 180 秒。独立人工标注、OCR 业务质量和真实材料效果尚待复核，详见 [评估报告](docs/quality-evaluation.md)。
+云端使用deploy/Dockerfile，数据放独立持久卷。需要自行设置域名、入口认证、APP_PUBLIC_ORIGIN与环境文件；部署配置见deploy/compose.yaml和deploy/compose.private.yaml。
 
-```sh
-pnpm check
-pnpm build
-pnpm start
-```
+## 项目链接
 
-check 包括 ESLint、TypeScript、Prettier 检查和提交校验单测。生产启动先 build。/api/health 返回白名单状态，不返回密钥、服务地址或原始环境。
+演示视频：https://www.bilibili.com/video/BV1Cssg6AEPu/
 
-## 网页功能测试
-
-```sh
-pnpm test:install
-pnpm build
-pnpm test:e2e
-pnpm test:model
-pnpm test:access
-pnpm test:ui
-pnpm test:report
-```
-
-普通 E2E 在 3100 端口以模拟模式启动生产构建；模型集成 E2E 在 3110/3310 端口使用受控本地兼容接口，不读取真实密钥、不会调用收费服务。两者覆盖桌面/移动 Chromium。模型集成通过仅证明代码流程与防护分支，不代表真实模型准确率。详见 [tests/README.md](tests/README.md)。
-
-## 技术和目录
-
-React + Next.js App Router / Route Handlers、严格 TypeScript、Tailwind CSS + shadcn/ui 基础组件、Vercel AI SDK、Zod、pnpm、ESLint、Prettier、Playwright。状态库按需引入。
-
-```text
-src/app/                 页面、布局、任务/模型/材料/检查/报告 API
-src/components/          任务、规则、材料与结果工作台
-src/domain/              规则、材料、判定、执行与模型用量契约
-src/lib/server/          SQLite、文档解析、模型接入与证据审查
-src/lib/                 确定性工具、复检与 Markdown 报告
-scripts/                 Git 配置与提交格式校验
-.githooks/               当前仓库提交钩子
-.github/workflows/       工程 CI
- tests/                  场景、样例、模拟与辅助工具
- docs/                   需求、计划、决策与真实进度
-```
-
-当前解析使用 PDF.js、Mammoth、ExcelJS 与 UTF-8 文本/CSV 工具。检索是受限的片段词项排序，尚无向量索引与复杂 RAG。产品入口使用用户名+密码、持久会话及按任务授权；旧 REVIEW_ACCESS_USERS 只留作显式隔离测试适配。账号/旧任务迁移见 [本地操作](docs/platform-operation.md)。仍仅绑定本机，本轮不公开部署。
-
-## Git 协作
-
-首次克隆后执行 `pnpm git:setup` 启用当前仓库提交钩子；每位协作者自行设置本地作者。使用 main 分支，不修改全局 Git 设置。
-
-```text
-[类型(编号)]: 中文摘要
-
-目的：为什么进行本次修改。
-变更：实现或修复了什么。
-验证：实际执行的检查及结果；未执行时说明原因。
-```
-
-工程编号先在任务记录登记，需求沿用原编号，缺陷建立真实记录。格式校验不能代替编号真实性和暂存审查。密钥、本地数据、依赖和测试产物、work/、outputs/ 默认忽略。用户授权建立 GitHub 私有仓库，公开与部署另行决定。
-
-## 项目资料
-
-- [项目规则](AGENTS.md)：协作、命名、提交、安全与测试约定。
-- [需求](docs/requirements.md)：114 条编号需求及 12 场景。
-- [计划](docs/development-plan.md)、[任务](docs/tasks.md)：分功能顺序与实际状态。
-- [环境记录](docs/environment.md)、[测试策略](docs/test-strategy.md)：环境和验证边界。
-- [原始交接](docs/handoff/handoff-prompt.md)：历史快照。
-
-临时名称为材料预审工作台，团队信息待提供。比赛信息来自交接历史资料，实际提交前核对最新官方通知。本轮不部署、不制作比赛材料。
-
-## 考试与学习平台新入口（ENG-038—ENG-043）
-
-登录后首页为考试信息与学习导航；`/exams` 查找目录、公告和官方入口，`/me` 建立考试目标并记录进度，`/learn` 按目标浏览学习资源，右下角卡通助手提供带来源的考试咨询/学习答疑。管理端 `/admin/learning` 维护版本化资源、知识和内容反馈。已有预审任务在 `/tasks`，目标材料入口在个人中心。
-
-默认官方资源种子仅为18条查询导航，不表示课程、教材或当期考试安排已全部导入。68类目录含待核验候选，来源与公告覆盖分别披露。每日检查使用已启用来源，时点可在学习管理端设置，新内容仍须审核。
-
-目标自动预审默认关闭。用户明确授权后，规则/材料版本变化约一分钟内检测，同一快照去重，每账号最近24小时最多5次。缺材料、未读附件、未知考期及公告新版尚未明确采用时不执行；手动复检始终保留。测试只使用隔离目录与合成材料。完整进展与限制见 [实现记录](docs/portal-implementation.md)，不代表全部88条已经关闭或已公网部署。
+依赖及锁定版本见package.json与pnpm-lock.yaml。安装依赖后可在对应包中查看其许可证。

@@ -1,6 +1,9 @@
 allowBuilds:
   better-sqlite3: false
   tesseract.js: false
+overrides:
+  exceljs>uuid: 11.1.1
+  minimatch@10.2.6: 11.0.1
 storeDir: ../../CodexCache/material-review-agent/pnpm-store
 minimumReleaseAgeExclude:
   - "@ai-sdk/gateway@4.0.142"

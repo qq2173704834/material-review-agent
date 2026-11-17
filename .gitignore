@@ -16,3 +16,14 @@ Thumbs.db
 work/
 outputs/
 .vercel/
+# Local credentials, database copies, and backups.
+*.pem
+*.key
+*.pfx
+*.p12
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.bak

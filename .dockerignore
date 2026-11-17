@@ -10,3 +10,13 @@ test-results
 playwright-report
 *.log
 *.tsbuildinfo
+*.pem
+*.key
+*.pfx
+*.p12
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.bak
