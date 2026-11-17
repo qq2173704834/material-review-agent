@@ -1098,3 +1098,7 @@ BUG-074：ExcelJS间接uuid锁定11.1.1，真实写入带扩展条件格式XLSX�
 源码与作品包补入真实README、技术文档、环境、Git历史副本及配置补丁。首轮源码545文件、两个ZIP CRC与视频SHA256核对通过，bundle verify通过。最终离线克隆、Git版本与推送核对见本轮记录和本地报告；不重跑全应用、不新增模型请求。沿用已授权私有GitHub更新，原next.config.ts、src/instrumentation.ts、tsconfig.json保持且不提交；运行源码包含这三项配置并另附补丁。
 
 仓库评审权限、网站普通体验账号及评审期可用性仍待收尾，不把离线bundle当成托管权限已满足。材料先交用户审阅，不公开仓库、不改云端、不上传网盘、不代提交比赛或关机。详细要求见docs/submission/requirements-review-2026-11-17.md。
+
+## ENG-117 核心逻辑有效注释（2026-11-17）
+
+状态：已完成本地补充与验证。实际阅读openGauss-server固定版本的heapam.cpp与nodeAgg.cpp，按函数职责、调用前提和关键分支原因，为16个核心源码文件补充中文注释；修正检索预算旧注释，数值和流程保持。逐文件差异与去注释后的TypeScript输出比较通过，三个原有配置SHA256不变；格式/Lint/类型检查通过，单元135/135通过，git diff --check通过。参考、范围及验证详见[注释记录](code-comment-review-2026-11-17.md)。本次独立本地提交，不推送、部署、调用真实模型或关机，既有技术Word与配置修改保留。

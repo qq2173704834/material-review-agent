@@ -8,7 +8,10 @@ export interface RetrievedSnippet {
   chunkStart: number;
 }
 
-/** Bounded lexical retrieval, then adjacent-context expansion. Positions always refer to original segments. */
+/**
+ * 为单条规则选择材料片段，按主查询、相关词和相邻上下文分配检索预算。
+ * 返回的段落编号和块起点沿用材料坐标，coverage 记录本轮实际覆盖范围。
+ */
 export function retrieveEvidence(
   rule: ReviewRule,
   materials: ReviewMaterialSummary[],
@@ -50,6 +53,7 @@ export function retrieveEvidence(
   );
   const chunks = segments.flatMap((segment) => {
     const result: Array<RetrievedSnippet & { score: number; key: string }> = [];
+    // 每块最多 2,000 字符、步长 1,800，保留重叠以覆盖跨块边界的内容。
     for (let start = 0; start < segment.text.length; start += 1800) {
       const text = segment.text.slice(start, start + 2000);
       result.push({
@@ -77,13 +81,12 @@ export function retrieveEvidence(
     });
     remaining -= text.length;
   }
-  // Reserve half the budget for expansion so a long first segment cannot hide later evidence.
+  // 限制主查询先占用的预算，为相关词扩展和相邻上下文留出空间。
   for (const chunk of ranked) {
     if (remaining <= 18_000) break;
     add(chunk);
   }
-  // Supplement the initial query using explicit parameters and bounded related vocabulary.
-  // This changes retrieval only, never adds a requirement or treats an unsearched region as absent.
+  // 用规则参数与预设相关词补充候选；先从每份材料取候选，再补入其余高分块。
   const expanded = chunks
     .map((chunk) => ({
       ...chunk,
@@ -109,6 +112,7 @@ export function retrieveEvidence(
         candidate.segmentIndex === chunk.segmentIndex &&
         candidate.chunkStart === chunk.chunkStart,
     );
+    // 相邻块只在同一材料内扩展，保留选中内容前后的语境。
     for (const neighbor of [chunks[index - 1], chunks[index + 1]]) {
       if (neighbor?.materialId === chunk.materialId) add(neighbor);
     }
@@ -122,6 +126,7 @@ export function retrieveEvidence(
         snippets.map((snippet) => `${snippet.materialId}:${snippet.segmentIndex}`),
       ).size,
       totalSegments: segments.length,
+      // 完整覆盖同时要求解析成功、每个候选块均被完整纳入；仅命中段落数不足以判定。
       isComplete:
         materials.every((material) => material.parseStatus === "text_extracted") &&
         chunks.every((chunk) => selected.get(chunk.key)?.text.length === chunk.text.length),

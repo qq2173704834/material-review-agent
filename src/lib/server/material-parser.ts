@@ -38,6 +38,7 @@ export interface ParsedMaterial {
   pageCoverage?: MaterialPageCoverage[];
 }
 
+/** 将非空逻辑块拼接为全文，段落偏移以拼接后的字符串为准，保留原文位置描述。 */
 function createSegments(blocks: Array<{ text: string; location: string }>): {
   text: string;
   segments: MaterialContentSegment[];
@@ -61,6 +62,7 @@ function createSegments(blocks: Array<{ text: string; location: string }>): {
   return { text, segments };
 }
 
+/** 在交给 Office 解析器前，检查容器必需文件、声明解压总量，并逐项读取校验。 */
 async function validateOfficeArchive(buffer: Buffer, requiredPath: string): Promise<void> {
   const zip = await JSZip.loadAsync(buffer);
   const paths = Object.keys(zip.files);
@@ -68,6 +70,7 @@ async function validateOfficeArchive(buffer: Buffer, requiredPath: string): Prom
     throw new Error("文件不是有效的 Office 文档容器。");
   }
   let expandedBytes = 0;
+  // 先累计声明大小，超过总量上限时不继续逐项解压。
   for (const entry of Object.values(zip.files)) {
     if (entry.dir) continue;
     const uncompressedSize = (entry as typeof entry & { _data?: { uncompressedSize?: number } })
@@ -90,6 +93,10 @@ function assertUtf8(buffer: Buffer): string {
   return new TextDecoder("utf-8", { fatal: true }).decode(buffer).replace(/^\uFEFF/, "");
 }
 
+/**
+ * 按扩展名选择解析器，对二进制格式同时校验文件签名。
+ * 各解析器统一返回全文、定位片段和解析状态，供检索与规格检查共用。
+ */
 export async function parseMaterial(
   buffer: Buffer,
   originalFileName: string,
@@ -244,6 +251,7 @@ export async function parseMaterial(
           }
         : {}),
     }));
+    // OCR 有文字、置信度达标且没有推断列时才标记完整，其余结果保留部分解析状态。
     const isComplete =
       hasRecognizedText &&
       recognized.confidence >= MINIMUM_COMPLETE_OCR_CONFIDENCE &&

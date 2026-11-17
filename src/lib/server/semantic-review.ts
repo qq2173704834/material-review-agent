@@ -34,6 +34,10 @@ const semanticReviewSchema = z.object({
     .max(30),
 });
 
+/**
+ * 检查单条规则：先采用适用的确定性工具，语义项再检索材料并请求模型。
+ * 校验模型匹配、逐字引用和检索覆盖范围，再确定最终判定。
+ */
 export async function reviewLiveRule(options: {
   rule: ReviewRule;
   materials: ReviewMaterialSummary[];
@@ -188,6 +192,7 @@ passed和failed都要给出证据；若缺乏充分证据则needs_confirmation�
     }),
   });
   const response = generated.value;
+  // 模型选择必须是本轮材料 ID 的无重复子集，避免后续证据关联到其他材料。
   const selectedIds = new Set(response.targetMaterialIds);
   if (
     selectedIds.size !== response.targetMaterialIds.length ||
@@ -199,6 +204,7 @@ passed和failed都要给出证据；若缺乏充分证据则needs_confirmation�
       422,
       generated.call,
     );
+  // 引文须在实际发给模型的片段内连续命中；版本、位置和区域取自解析记录。
   const evidence: ReviewCheckEvidence[] = response.evidence.map((citation) => {
     const material = materials.find((candidate) => candidate.id === citation.materialId);
     const snippet = context.snippets.find(
@@ -236,6 +242,7 @@ passed和failed都要给出证据；若缺乏充分证据则needs_confirmation�
     response.matching === "confirmed" &&
     selected.length > 0 &&
     selected.every((material) => evidence.some((citation) => citation.materialId === material.id));
+  // 属性类规则让模型匹配目标，实际规格仍交回工具计算。
   if (isPropertyRule && hasConfirmedMatch && context.coverage.isComplete) {
     const checked = executeReviewRule(rule, selected, background);
     return {
@@ -248,6 +255,7 @@ passed和failed都要给出证据；若缺乏充分证据则needs_confirmation�
       call: generated.call,
     };
   }
+  // 候选 OCR 区域涉及关键字段时转为待确认，保留需要核对的识别结果。
   let verdict = response.verdict;
   if (
     evidence.some((item) => item.region?.status === "candidate") &&
@@ -267,6 +275,7 @@ passed和failed都要给出证据；若缺乏充分证据则needs_confirmation�
     verdict = "not_applicable";
     reason = "该项为可选材料，本轮没有确认提交，不构成缺失问题。";
   } else if (
+    // 确定结论还需匹配到材料、具备引用且本轮检索完整覆盖。
     !hasConfirmedMatch ||
     ((verdict === "passed" || verdict === "failed") &&
       (!evidence.length || !context.coverage.isComplete)) ||

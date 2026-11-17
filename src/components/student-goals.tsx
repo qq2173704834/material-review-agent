@@ -37,6 +37,7 @@ export function StudentGoals({
     [failed, setFailed] = useState(false);
   const editor = useRef<HTMLDetailsElement>(null),
     saving = useRef(false);
+  // 成功反馈短暂显示后收起；错误反馈保留，便于用户查看和重试。
   useEffect(() => {
     if (!message || failed) return;
     const timer = setTimeout(() => setMessage(""), 2200);
@@ -77,6 +78,7 @@ export function StudentGoals({
       if (!response.ok) throw new Error(result.error);
       setMessage("考试目标已保存。");
       setEditing(null);
+      // 目标会改变日程投影，保存成功后同时通知日程视图并刷新当前服务端数据。
       notifyScheduleChanged();
       if (editingGoalId && returnTo) router.replace(returnTo);
       router.refresh();

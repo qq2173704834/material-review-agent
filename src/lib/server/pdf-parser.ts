@@ -13,7 +13,10 @@ const MAXIMUM_RENDER_PIXELS = 8_000_000;
 const MAXIMUM_RENDER_EDGE = 4_096;
 const PDF_TIMEOUT_MS = 120_000;
 
-/** Read text pages directly; rasterize image-bearing pages once to avoid duplicate text. */
+/**
+ * 逐页提取 PDF 文本和位置；onlyPage 指定时仅处理该页，pageCount 仍为文档总页数。
+ * 纯文本页直接读取，含图或无文本页渲染后做 OCR，并逐页记录读取状态。
+ */
 export async function parsePdfMaterial(
   buffer: Buffer,
   onlyPage?: number,
@@ -99,6 +102,7 @@ export async function parsePdfMaterial(
           }
           row.items.push({ x, width: item.width, text: item.str });
         }
+        // PDF 坐标按纵向从上到下、横向从左到右排序；较大的横向间隔保留列分隔。
         nativeText = rows
           .sort((a, b) => b.y - a.y)
           .map((row) =>
@@ -142,6 +146,7 @@ export async function parsePdfMaterial(
         }
         ocrPageCount++;
         const baseViewport = page.getViewport({ scale: 1 });
+        // 缩放比例同时受长边和像素总量限制，避免大页面生成过大的画布。
         const scale = Math.min(
           2,
           MAXIMUM_RENDER_EDGE / Math.max(baseViewport.width, baseViewport.height),
@@ -172,7 +177,7 @@ export async function parsePdfMaterial(
           Math.max(1, Math.min(30_000, deadline - Date.now())),
         );
         const hasOcrText = Boolean(result.text.trim());
-        // Keep native text if OCR fails, but disclose the unread image content.
+        // OCR 有结果时整页采用 OCR，避免与文本层重复拼接；无结果时保留已有文本层。
         if (hasOcrText && result.lines.length) {
           result.lines.forEach((line, index) =>
             appendText(
@@ -211,6 +216,7 @@ export async function parsePdfMaterial(
         page?.cleanup();
       }
     }
+    // 只处理单页时按该页状态汇总；整份解析还需满足页数上限内的全部页均已读取。
     const isComplete =
       (onlyPage !== undefined || document.numPages <= MAXIMUM_PDF_PAGES) &&
       pageCoverage.every((page) => page.status === "read");

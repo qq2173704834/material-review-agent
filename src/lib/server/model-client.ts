@@ -72,6 +72,10 @@ export function modelErrorResponse(error: unknown): {
   return { error: "模型请求失败，请稍后重试。", code: "model_error", status: 502 };
 }
 
+/**
+ * 执行一次业务模型步骤，返回通过调用方 schema 校验的对象及调用记录。
+ * 所有尝试共用超时与取消信号，失败时也携带请求次数和已知用量。
+ */
 export async function generateModelJson<T>(options: {
   schema: z.ZodType<T>;
   operation: ModelCall["operation"];
@@ -125,6 +129,7 @@ export async function generateModelJson<T>(options: {
               : ""),
           output: Output.json(),
           maxOutputTokens: options.maxOutputTokens ?? 6000,
+          // 重试由外层循环统一控制，避免 SDK 重试与业务重试叠加。
           maxRetries: 0,
           abortSignal: signal,
           providerOptions:
@@ -132,6 +137,7 @@ export async function generateModelJson<T>(options: {
               ? { deepseek: { thinking: { type: "disabled" } } }
               : undefined,
         });
+        // 任一尝试缺少用量时，累计值保持未知，避免仅汇总成功尝试造成低估。
         hasUnknownUsage ||=
           generated.usage.inputTokens === undefined || generated.usage.outputTokens === undefined;
         inputTokens = hasUnknownUsage
@@ -157,6 +163,7 @@ export async function generateModelJson<T>(options: {
           typeof error === "object" && error !== null && "statusCode" in error
             ? error.statusCode
             : undefined;
+        // 仅对结构无效、JSON 生成失败、限流和服务端错误进行有上限的重试。
         const canRetry =
           error instanceof ModelServiceError
             ? error.code === "invalid_response"

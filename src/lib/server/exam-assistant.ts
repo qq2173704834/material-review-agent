@@ -76,11 +76,15 @@ export function assistantUsage(userId: string): {
       if (parsed.data.inputTokens === null || parsed.data.outputTokens === null)
         usage.unknownTokenCalls++;
     } catch {
-      /* Old metadata cannot be interpreted as zero model consumption. */
+      // 旧记录的 JSON 无法解析时跳过该行，继续统计其余调用。
     }
   }
   return usage;
 }
+/**
+ * 按问题和目标范围选择上下文；校园问题读取本校通知，个人日程按 useContext 加入。
+ * 考试与学习资料按类别、地区和考期筛选，再按状态及词法命中排序截取。
+ */
 export function assistantSources(userId: string, input: AssistantInput): ContextSource[] {
   if (!input.learning && /学校|校园|校内|作业|期中|期末|本周|今天先做/u.test(input.question)) {
     const state = campusState(userId),
@@ -261,7 +265,7 @@ export function assistantSources(userId: string, input: AssistantInput): Context
       term.slice(index, index + 2),
     ),
   ]);
-  // Prefer reviewed primary/legacy sources for policy; secondary material remains a labelled fallback.
+  // 考试咨询有非第三方来源时优先使用；学习问题可同时使用标注来源属性的参考资料。
   const primaryRecords = records.filter((record) => record.sourceType !== "非官方参考");
   return (!input.learning && primaryRecords.length ? primaryRecords : records)
     .map((source) => ({
@@ -302,6 +306,10 @@ export function assistantMessages(
     .all(conversationId)
     .map((item) => ({ ...item, payload: JSON.parse(item.payload) }));
 }
+/**
+ * 按账号与请求编号登记问题，选择检索回答或模型生成，并校验来源引用。
+ * 完成后的同一请求可返回已保存回答；聊天正文是否留存由用户偏好决定。
+ */
 export async function askExamAssistant(
   userId: string,
   input: AssistantInput,
@@ -346,7 +354,7 @@ export async function askExamAssistant(
     portalPreferences(userId).externalEnabled && input.allowExternal !== false;
   let conversationId: string | null = retain ? (input.conversationId ?? randomUUID()) : null;
   db.transaction(() => {
-    // A per-user reservation prevents two parallel requests from billing the same question twice.
+    // (user_id, id) 唯一键在调用模型前占用请求编号，阻止同一账号重复执行该请求。
     db.prepare(
       "INSERT INTO assistant_requests(id,user_id,conversation_id,input_hash,status,created_at) VALUES (?,?,NULL,?,'running',?)",
     ).run(input.requestId, userId, hash, new Date().toISOString());
@@ -534,6 +542,7 @@ export async function askExamAssistant(
         }),
       });
       modelCall = result.call;
+      // 引用必须命中本轮来源及版本的连续原文；标题与链接从来源记录补齐。
       const citations = result.value.citations.map((citation) => {
         const source = sources.find(
           (source) => source.id === citation.id && source.version === citation.version,
@@ -567,7 +576,7 @@ export async function askExamAssistant(
     }
     answer.usage = { modelCall, cost: null };
     if (signal?.aborted) throw new Error("生成已取消；已发生的模型调用可能有耗用。");
-    // A concurrent history deletion must not resurrect a conversation or leak it into another account.
+    // 生成期间历史可能已被删除；写消息前再次核对归属，不重新创建已删除的会话。
     if (
       conversationId &&
       !db

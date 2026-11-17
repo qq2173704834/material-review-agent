@@ -27,6 +27,7 @@ async function derive(password: string, salt: string): Promise<Buffer> {
     ),
   );
 }
+/** 使用独立随机盐派生密码摘要，连同算法版本保存，供验证时还原参数。 */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
   return `scrypt-v1$${salt}$${(await derive(password, salt)).toString("hex")}`;
@@ -90,6 +91,10 @@ export async function registerAccount(
     return { account: accountById(id)!, codes };
   })();
 }
+/**
+ * 返回写入客户端的随机会话令牌，数据库仅保存其摘要和过期时间。
+ * 创建时清理过期会话，并将该账号保留的会话数限制为最近 20 条。
+ */
 export function createSession(userId: string): string {
   const token = randomBytes(32).toString("hex");
   const db = platformDb();
@@ -115,6 +120,7 @@ export function tokenFromRequest(request: Request): string {
       ?.slice(SESSION_COOKIE.length + 1) ?? ""
   );
 }
+/** 每次请求联查会话与账号，只返回尚未过期且未被停用的账号。 */
 export function sessionAccount(request: Request): Account | undefined {
   const token = tokenFromRequest(request);
   if (!/^[a-f0-9]{64}$/.test(token)) return undefined;
@@ -132,6 +138,7 @@ export function revokeSession(request: Request): void {
 export function revokeAll(userId: string): void {
   platformDb().prepare("DELETE FROM sessions WHERE user_id=?").run(userId);
 }
+/** 在同一事务中验证恢复码、替换密码、撤销会话，并重新生成整组恢复码。 */
 export async function resetPassword(
   username: string,
   recoveryCode: string,
@@ -163,6 +170,7 @@ export async function changePassword(
   const nextHash = await hashPassword(password);
   const db = platformDb();
   return db.transaction(() => {
+    // 更新时再次匹配旧摘要和账号状态，避免派生新密码期间发生的并发修改被覆盖。
     if (
       !db
         .prepare(

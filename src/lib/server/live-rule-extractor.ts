@@ -47,6 +47,10 @@ const extractedRulesSchema = z.object({
     .max(100),
 });
 
+/**
+ * 按来源顺序提取规则，并将每条引用定位回对应版本的原文。
+ * 后续来源可看到已提取条款；关系候选在规则生成后另行校验双方引用。
+ */
 export async function extractLiveRules(
   sources: RequirementSourceVersion[],
   signal: AbortSignal,
@@ -98,6 +102,7 @@ paragraphIndex须是提供的段落编号；quotedText须为该段落中逐字�
       const segment = source.segments.find(
         (candidate) => candidate.paragraphIndex === draft.paragraphIndex,
       );
+      // 模型只提供段落编号与引文；全文偏移由原段落起点和逐字匹配位置计算。
       const localOffset = segment?.text.indexOf(draft.quotedText) ?? -1;
       if (!segment || localOffset < 0)
         throw new ModelServiceError(
@@ -107,6 +112,7 @@ paragraphIndex须是提供的段落编号；quotedText须为该段落中逐字�
           generated.call,
         );
       const startOffset = segment.startOffset + localOffset;
+      // 标识、展示编号和来源版本由服务端赋值，使规则始终关联本轮输入来源。
       const rule = reviewRuleSchema.parse({
         id: randomUUID(),
         code: `R-${String(rules.length + 1).padStart(3, "0")}`,

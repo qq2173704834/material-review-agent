@@ -43,6 +43,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
   const [previousTask, setPreviousTask] = useState(task);
   if (task !== previousTask) {
     setPreviousTask(task);
+    // 服务端刷新只回填未编辑的表单，保留当前尚未提交的输入。
     if (task && !isDirty) {
       setName(task.name);
       setDescription(task.description);
@@ -53,6 +54,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
     }
   }
 
+  /** 保存当前依据；审查准备阶段由外层流程接续，普通保存才触发跳转和刷新。 */
   async function saveTask(forReview = false): Promise<boolean> {
     if (saving.current) return false;
     saving.current = true;
@@ -120,6 +122,7 @@ export function TaskEditor({ task, initialSource }: TaskEditorProps): ReactEleme
         return false;
       }
       const savedTask = result.task as ReviewTaskDetails;
+      // 保存接口成功返回任务后才清理未保存标记，失败分支继续保留表单供重试。
       clearUnsaved();
       setIsDirty(false);
       if (!forReview && !task) router.push(`/tasks/${savedTask.id}`);

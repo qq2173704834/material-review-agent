@@ -22,9 +22,11 @@ interface RouteContext {
   params: Promise<{ taskId: string }>;
 }
 
+// 同一进程内按任务互斥；放在 globalThis 中，使模块重载后仍能识别正在执行的任务。
 const reviewGlobals = globalThis as typeof globalThis & { __activeReviewTasks?: Set<string> };
 const activeReviewTasks = (reviewGlobals.__activeReviewTasks ??= new Set<string>());
 
+/** 读取历史与当前复检计划；浏览检查页面时不启动新的执行或模型调用。 */
 export async function reviewChecksState(
   request: Request,
   context: RouteContext,
@@ -52,7 +54,7 @@ export async function reviewChecksState(
         new URL(request.url).searchParams.get("mode") === "mock" ? "mock" : undefined,
       );
   } catch {
-    /* Configuration errors are surfaced when starting a check. */
+    // 配置错误留到实际启动检查时返回，历史记录仍可读取。
   }
   return NextResponse.json(
     {
@@ -72,6 +74,10 @@ export async function reviewChecksState(
   );
 }
 
+/**
+ * 为当前来源版本创建执行快照，逐项保存结果并通过 SSE 推送实际进度。
+ * 请求取消与总时限共用中断信号，结束时记录剩余未执行项。
+ */
 export async function runReviewChecks(request: Request, context: RouteContext): Promise<Response> {
   const { taskId } = await context.params;
   if (!reviewTaskIdSchema.safeParse(taskId).success) {
@@ -136,6 +142,7 @@ export async function runReviewChecks(request: Request, context: RouteContext): 
       completedAt: "",
       metadata,
     };
+    // 先保存执行及材料版本快照，后续结果按此执行追加，保留本轮输入版本。
     store.saveReviewExecution(execution);
     const encoder = new TextEncoder();
     const streamState = { cancellationRequested: false };
@@ -260,6 +267,7 @@ export async function runReviewChecks(request: Request, context: RouteContext): 
               dependencyKey: planned.dependencyKey,
               checkedAt: result.checkedAt ?? new Date().toISOString(),
             };
+            // 先持久化再通知浏览器，流连接中断后仍能读取已完成项。
             store.appendReviewExecutionResult(execution.id, result, metadata);
             results.push(result);
             send({
@@ -296,6 +304,7 @@ export async function runReviewChecks(request: Request, context: RouteContext): 
             results,
             completedAt,
           };
+          // 执行期间输入可能被更新，完成时按最新任务重新标注结果有效性。
           const latestTask = store.getTask(taskId);
           const finalExecution = latestTask
             ? annotateExecutions(latestTask, store.listRuleSets(taskId), [completedExecution])[0]
@@ -318,6 +327,7 @@ export async function runReviewChecks(request: Request, context: RouteContext): 
               controller.error(new Error("Review execution stream failed"));
             }
           })
+          // 异步执行结束后统一释放心跳、请求监听和任务互斥标记。
           .finally(() => {
             clearInterval(heartbeat);
             request.signal.removeEventListener("abort", onAbort);

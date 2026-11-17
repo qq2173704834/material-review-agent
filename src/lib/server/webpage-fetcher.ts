@@ -76,6 +76,7 @@ function isPublicAddress(address: string): boolean {
   );
 }
 
+/** 在连接所用的 DNS 查询中检查全部返回地址，任一地址不属于允许范围即拒绝连接。 */
 function createPublicOnlyAgent(): Agent {
   return new Agent({
     connect: {
@@ -126,6 +127,7 @@ async function readLimitedBody(response: UndiciResponse): Promise<Uint8Array> {
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > MAXIMUM_WEBPAGE_BYTES)
     throw new Error("网页内容超过 4 MiB 限制。");
+  // 响应头可能缺失或低报长度，实际读取时继续累计字节并执行同一上限。
   const reader = response.body?.getReader();
   if (!reader) throw new Error("网页没有可读取的内容。");
   const chunks: Uint8Array[] = [];
@@ -220,13 +222,12 @@ export function extractWebpageContent(
           });
         }
       } catch {
-        /* Invalid or private attachment links are excluded. */
+        // URL 格式、协议、端口或字面 IP 校验失败的链接不进入候选列表。
       }
     }
     for (const child of node.childNodes ?? []) findAttachments(child);
   }
-  // Site-wide menus may exhaust the limits before the actual article attachments.
-  // Visit semantic content and explicit attachment blocks first, without lifting limits.
+  // 优先遍历正文和附件区，避免全站导航先耗尽链接数量上限；随后补查整个正文树。
   function prioritizeContent(node: HtmlNode): void {
     if (node.tagName && EXCLUDED_ELEMENTS.has(node.tagName)) return;
     const markers = node.attrs
@@ -259,6 +260,10 @@ export function extractWebpageContent(
   };
 }
 
+/**
+ * 在统一时限与响应大小限制内读取公开资源，重定向由本函数逐跳处理。
+ * probe 仅获取状态和响应头，随即取消正文读取。
+ */
 export async function fetchPublicResource(
   rawUrl: string,
   probe = false,
@@ -298,6 +303,7 @@ export async function fetchPublicResource(
         await response.body?.cancel();
         if (!location || redirects === MAXIMUM_REDIRECTS)
           throw new Error("网页重定向次数超出限制或目标无效。");
+        // 每跳重新校验 URL；下一次连接仍通过同一公开地址 DNS 校验。
         url = validateUrl(new URL(location, url).toString());
         continue;
       }

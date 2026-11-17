@@ -90,6 +90,7 @@ export function ReviewExecutionPanel({
   const [remediationTasks, setRemediationTasks] = useState(initialRemediationTasks);
   const [error, setError] = useState("");
   const [recheckPlan, setRecheckPlan] = useState<RecheckPlanItem[]>([]);
+  // 初次进入只读复检计划，实际执行由 runChecks 中的 POST 启动。
   useEffect(() => {
     const controller = new AbortController();
     void fetch(`/api/tasks/${taskId}/checks?${requestModeQuery}`, {
@@ -343,6 +344,7 @@ export function ReviewExecutionPanel({
     return [];
   }
 
+  /** 中断执行流后短暂轮询，同步已保存的结果与服务端执行状态。 */
   async function cancelChecks(): Promise<void> {
     abortController.current?.abort();
     for (let attempt = 0; attempt < 10; attempt += 1) {
@@ -362,6 +364,7 @@ export function ReviewExecutionPanel({
     workflow?.reportError(message);
   }
 
+  /** 保存准备区、读取最新输入并处理确认项后，显式启动检查并消费结果流。 */
   async function runChecks(forceFull = false, options: StartOptions = {}): Promise<void> {
     if (runLock.current || workflow?.hasActivity()) return;
     runLock.current = true;
@@ -423,6 +426,7 @@ export function ReviewExecutionPanel({
           }
           currentRules = reviewRuleSetSchema.parse(generated.ruleSet);
         }
+        // 继续部分解析或跳过澄清的选择只对当前输入有效，版本变化后重新确认。
         const signature = `${mode}:${freshTask.latestUpdatedAt}:${currentRules.id}:${freshTask.materials.map((item) => `${item.id}:${item.version}`).join(",")}`;
         if (approvals.current.signature !== signature)
           approvals.current = { signature, allowPartial: false, skipClarification: false };
@@ -483,6 +487,7 @@ export function ReviewExecutionPanel({
         while (true) {
           const { done, value } = await reader.read();
           buffered += decoder.decode(value, { stream: !done });
+          // 网络读取块不等于 SSE 消息边界，保留末尾未闭合消息供下一次拼接。
           const messages = buffered.split("\n\n");
           buffered = messages.pop() ?? "";
           for (const message of messages) {

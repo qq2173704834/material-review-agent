@@ -38,7 +38,10 @@ function scheduleDb(): ReturnType<typeof platformDb> {
   return db;
 }
 
-/** Projections retain their source IDs. No copy of a public timeline is imported into private events. */
+/**
+ * 将本人的有效目标和收藏公告投影为日程，再叠加个人完成状态与手动日期。
+ * 公告节点保留来源 ID；没有匹配公告或考试时间的目标仍生成时间待定节点。
+ */
 export function examScheduleNodes(userId: string): ScheduleNode[] {
   const goals = studentGoals(userId).filter((goal) => goal.state === "active");
   const notices = listNotices();
@@ -109,8 +112,9 @@ export function examScheduleNodes(userId: string): ScheduleNode[] {
     return examTimeline(notice.content).map((point): ScheduleNode => {
       const index = counts.get(point.label) || 0;
       counts.set(point.label, index + 1);
-      // The date is deliberately excluded so postponement updates the existing node.
+      // 节点 ID 不包含日期，公告延期后仍更新同一节点并保留个人状态。
       const id = `exam:${notice.id}:${point.label}:${index}`;
+      // 目标从时间待定转为明确安排时，将原节点状态承接到首个考试节点。
       const unknownState =
         !linkedUnknown && /考试|笔试|口试|面试/u.test(point.label)
           ? (goalIds.get(notice.id) || []).map((id) => saved.get(`goal:${id}:exam`)).find(Boolean)
@@ -120,6 +124,7 @@ export function examScheduleNodes(userId: string): ScheduleNode[] {
       const sourceValue = JSON.stringify(
         point.endValue ? [valid, point.value, point.endValue] : [valid, point.value],
       );
+      // 保存时的来源值与当前值不同，手动日期暂不投影，等待用户核对新安排。
       const changed = !valid || (!!prior && prior.sourceValue !== sourceValue);
       const date = valid && Number.isFinite(scheduleTimestamp(point.value)) ? point.value : "";
       return {
@@ -184,6 +189,7 @@ const mutationSchema = z
     ]),
   })
   .strict();
+/** 校验本人当前可见节点、修订号和来源值后写入个人状态，防止旧页面覆盖新安排。 */
 export function mutateScheduleNode(userId: string, raw: unknown): void {
   const input = mutationSchema.parse(raw),
     db = scheduleDb();
